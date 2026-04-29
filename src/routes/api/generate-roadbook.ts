@@ -57,6 +57,7 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             "Voici les paramètres du voyage à mettre en forme :\n\n" +
             JSON.stringify(inputs, null, 2);
 
+          const t0 = Date.now();
           const resp = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: {
@@ -65,12 +66,18 @@ export const Route = createFileRoute("/api/generate-roadbook")({
               "anthropic-version": "2023-06-01",
             },
             body: JSON.stringify({
-              model: "claude-sonnet-4-5",
-              max_tokens: 8000,
+              model: "claude-haiku-4-5",
+              max_tokens: 4000,
               system: ROADBOOK_SYSTEM_PROMPT,
               messages: [{ role: "user", content: userMessage }],
             }),
           });
+          console.log(
+            "[generate-roadbook] Anthropic responded in",
+            Date.now() - t0,
+            "ms status:",
+            resp.status,
+          );
 
           if (!resp.ok) {
             const errText = await resp.text();
