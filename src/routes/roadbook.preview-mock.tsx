@@ -314,9 +314,10 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
               <th className="px-3 py-3 w-20">Date</th>
               <th className="px-3 py-3">Étape</th>
               <th className="px-3 py-3">Hébergement</th>
-              <th className="px-3 py-3 w-24">Type</th>
+              <th className="px-3 py-3 w-28">Type</th>
+              <th className="px-3 py-3">Vols / Transport</th>
               <th className="px-3 py-3 w-24 text-right">Distance</th>
-              <th className="px-3 py-3 w-20 text-right">Itinéraire</th>
+              <th className="px-3 py-3 w-20 text-right">Route</th>
             </tr>
           </thead>
           <tbody>
