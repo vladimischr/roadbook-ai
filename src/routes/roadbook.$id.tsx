@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
   ChevronDown,
   Download,
   Pencil,
@@ -13,14 +12,21 @@ import {
   Trash2,
   GripVertical,
   Sparkles,
-  Map as MapIcon,
+  MapPin,
   Clock,
   Plane,
   Phone,
   Mail,
   BedDouble,
+  Tent,
+  Hotel,
+  Home as HomeIcon,
+  Building2,
+  CloudCheck,
+  CloudUpload,
 } from "lucide-react";
 import { useScrollReveal, staggerStyle } from "@/lib/animations";
+import { AppShell, useTopbarSlot, BreadcrumbLine } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +45,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
