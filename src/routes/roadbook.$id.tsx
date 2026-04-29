@@ -697,27 +697,31 @@ function RoadbookPage() {
                         "Génération du PDF en cours…",
                       );
                       try {
-                        const { data: sess } = await supabase.auth.getSession();
-                        const token = sess.session?.access_token;
-                        const res = await fetch(`/api/export-pdf/${id}`, {
-                          headers: token
-                            ? { Authorization: `Bearer ${token}` }
-                            : {},
-                        });
-                        if (!res.ok) {
-                          let errMsg = `Erreur ${res.status}`;
-                          try {
-                            const errBody = await res.json();
-                            errMsg = errBody.error || errMsg;
-                          } catch {}
-                          throw new Error(errMsg);
-                        }
-                        const blob = await res.blob();
-                        const cd = res.headers.get("Content-Disposition") || "";
-                        const m = cd.match(/filename="?([^"]+)"?/);
-                        const filename =
-                          m?.[1] ||
-                          `Roadbook-${rb.client_name || "voyage"}-${rb.destination || ""}.pdf`;
+                        const [{ pdf }, { RoadbookPDF }] = await Promise.all([
+                          import("@react-pdf/renderer"),
+                          import("@/lib/pdf/RoadbookPDF"),
+                        ]);
+                        const slug = (s: string | undefined | null) =>
+                          (s || "voyage")
+                            .toLowerCase()
+                            .normalize("NFD")
+                            .replace(/[\u0300-\u036f]/g, "")
+                            .replace(/[^a-z0-9]+/g, "-")
+                            .replace(/^-+|-+$/g, "");
+                        const content = {
+                          ...rb.content,
+                          client_name:
+                            rb.content?.client_name || rb.client_name || "",
+                          destination:
+                            rb.content?.destination || rb.destination || "",
+                        };
+                        const blob = await pdf(
+                          <RoadbookPDF
+                            roadbook={content}
+                            mapsApiKey={apiKey || undefined}
+                          />,
+                        ).toBlob();
+                        const filename = `Roadbook-${slug(content.client_name)}-${slug(content.destination)}.pdf`;
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
                         a.href = url;
@@ -730,9 +734,11 @@ function RoadbookPage() {
                       } catch (e: unknown) {
                         const err = e as { message?: string };
                         console.error("PDF export failed", e);
-                        toast.error(err?.message || "Erreur de génération du PDF", {
-                          id: toastId,
-                        });
+                        toast.error(
+                          "Erreur génération PDF: " +
+                            (err?.message || "inconnue"),
+                          { id: toastId },
+                        );
                       }
                     }}
                     className="gap-2"
