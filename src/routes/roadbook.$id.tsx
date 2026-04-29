@@ -710,11 +710,25 @@ function RoadbookPage() {
                             .replace(/[^a-z0-9]+/g, "-")
                             .replace(/^-+|-+$/g, "");
                         const content = { ...rb };
+                        // Fetch Pexels cover URL (best-effort, ignored on failure)
+                        let coverImageUrl: string | null = null;
+                        try {
+                          const { fetchDestinationCover } = await import(
+                            "@/server/cover.functions"
+                          );
+                          const r = await fetchDestinationCover({
+                            data: { destination: content.destination || "" },
+                          });
+                          coverImageUrl = r.url;
+                        } catch (e) {
+                          console.warn("Cover fetch failed (PDF):", e);
+                        }
                         const blob = await pdf(
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           <RoadbookPDF
                             roadbook={content as any}
                             mapsApiKey={apiKey || undefined}
+                            coverImageUrl={coverImageUrl}
                           />,
                         ).toBlob();
                         const filename = `Roadbook-${slug(content.client_name)}-${slug(content.destination)}.pdf`;
