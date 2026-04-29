@@ -130,9 +130,9 @@ function Dashboard() {
         ) : roadbooks.length === 0 ? (
           <EmptyState />
         ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {roadbooks.map((rb) => (
-              <RoadbookCard key={rb.id} rb={rb} onDelete={() => setToDelete(rb)} />
+          <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {roadbooks.map((rb, i) => (
+              <RoadbookCard key={rb.id} rb={rb} index={i} onDelete={() => setToDelete(rb)} />
             ))}
           </ul>
         )}
@@ -184,21 +184,24 @@ function EmptyState() {
   );
 }
 
-function RoadbookCard({ rb, onDelete }: { rb: RoadbookRow; onDelete: () => void }) {
+function RoadbookCard({ rb, index = 0, onDelete }: { rb: RoadbookRow; index?: number; onDelete: () => void }) {
   const navigate = useNavigate();
   const cover = useDestinationCover(rb.destination);
   const dateRange = formatDateRange(rb.start_date, rb.end_date);
 
   return (
-    <li className="group relative">
+    <li
+      className="group relative animate-fade-in"
+      style={{ animationDelay: `${index * 80}ms`, animationFillMode: "backwards" }}
+    >
       <button
         type="button"
         onClick={() => navigate({ to: "/roadbook/$id", params: { id: rb.id } })}
-        className="block w-full overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-smooth hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_12px_24px_-12px_rgba(15,110,86,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+        className="block w-full overflow-hidden rounded-2xl border border-border/60 bg-surface text-left shadow-soft transition-smooth hover:-translate-y-1 hover:border-primary/30 hover:shadow-soft-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
         aria-label={`Ouvrir ${rb.destination} — ${rb.client_name}`}
       >
-        {/* Cover image */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-light">
+        {/* Cover image — portrait 4/5 editorial */}
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-light">
           {cover ? (
             <img
               src={cover}
@@ -228,15 +231,15 @@ function RoadbookCard({ rb, onDelete }: { rb: RoadbookRow; onDelete: () => void 
           </div>
 
           {/* Title overlay */}
-          <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-12 text-white">
-            <h3 className="font-display text-2xl font-semibold leading-tight drop-shadow-sm">
-              {rb.destination}
-            </h3>
-            <p className="mt-1 text-sm font-medium text-white/85">
+          <div className="absolute inset-x-0 bottom-0 px-6 pb-6 pt-16 text-white">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75">
               {rb.client_name}
             </p>
+            <h3 className="font-display text-[28px] font-semibold leading-[1.05] drop-shadow-sm sm:text-[32px]">
+              {rb.destination}
+            </h3>
             {dateRange && (
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white/95 backdrop-blur-sm">
+              <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium text-white/95 backdrop-blur-sm">
                 <Calendar className="h-3 w-3" />
                 {dateRange}
               </div>
