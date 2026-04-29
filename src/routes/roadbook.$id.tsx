@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Download,
@@ -17,6 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { APIProvider } from "@vis.gl/react-google-maps";
+import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
+import { RoadbookMap } from "@/components/RoadbookMap";
+import { PlacesAutocompleteInput } from "@/components/PlacesAutocompleteInput";
+import { geocodePlace } from "@/server/maps.functions";
 
 export const Route = createFileRoute("/roadbook/$id")({
   component: RoadbookPage,
