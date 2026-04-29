@@ -18,11 +18,11 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/new")({
   component: NewRoadbook,
-  head: () => ({ meta: [{ title: "New roadbook — Roadbook.ai" }] }),
+  head: () => ({ meta: [{ title: "Nouveau roadbook — Roadbook.ai" }] }),
 });
 
-const THEMES = ["Luxury safari", "Cultural", "Adventure", "Beach", "Road trip", "Custom"];
-const PROFILES = ["Couple", "Family", "Solo", "Friends"];
+const THEMES = ["Safari premium", "Culture", "Aventure", "Plage", "Autotour", "Sur mesure"];
+const PROFILES = ["Couple", "Famille", "Solo", "Amis"];
 const BUDGETS = ["3–5k €", "5–8k €", "8–12k €", "12–15k €", "15k €+"];
 
 function NewRoadbook() {
@@ -36,7 +36,7 @@ function NewRoadbook() {
     end_date: "",
     travelers_count: 2,
     traveler_profile: "Couple",
-    theme: "Cultural",
+    theme: "Culture",
     budget_range: "5–8k €",
     generation_mode: "ai",
     agent_notes: "",
@@ -67,14 +67,13 @@ function NewRoadbook() {
   const onGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.client_name || !form.destination) {
-      toast.error("Client name and destination are required.");
+      toast.error("Le nom du client et la destination sont obligatoires.");
       return;
     }
 
     setSubmitting(true);
-    // Simulate generation latency, then redirect to mock preview.
     await new Promise((r) => setTimeout(r, 1200));
-    toast.success("Roadbook generated");
+    toast.success("Roadbook généré");
     navigate({ to: "/roadbook/preview-mock" });
   };
 
@@ -84,9 +83,9 @@ function NewRoadbook() {
         <div className="grid min-h-[60vh] place-items-center text-center">
           <div>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <h2 className="mt-6 text-xl font-semibold">Crafting your roadbook…</h2>
+            <h2 className="mt-6 text-xl font-semibold">Création du roadbook…</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Designing the itinerary, picking the rhythm, polishing the prose.
+              Construction de l’itinéraire, réglage du rythme, mise en forme du récit.
             </p>
           </div>
         </div>
@@ -97,18 +96,18 @@ function NewRoadbook() {
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
-        <h1 className="text-3xl font-semibold tracking-tight">New roadbook</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Nouveau roadbook</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Tell us about the trip — we'll do the rest.
+          Renseignez le voyage — nous préparons la trame du programme.
         </p>
 
         <form onSubmit={onGenerate} className="mt-8 space-y-8">
-          <Section title="Client & destination">
-            <Field label="Client name">
+          <Section title="Client et destination">
+            <Field label="Nom du client">
               <Input
                 value={form.client_name}
                 onChange={(e) => update("client_name", e.target.value)}
-                placeholder="Marie & Julien Dupont"
+                placeholder="Marie et Julien Dupont"
                 required
               />
             </Field>
@@ -116,19 +115,19 @@ function NewRoadbook() {
               <Input
                 value={form.destination}
                 onChange={(e) => update("destination", e.target.value)}
-                placeholder="Tanzania, Northern Circuit"
+                placeholder="Tanzanie, circuit nord"
                 required
               />
             </Field>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Start date">
+              <Field label="Date de début">
                 <Input
                   type="date"
                   value={form.start_date}
                   onChange={(e) => update("start_date", e.target.value)}
                 />
               </Field>
-              <Field label="End date">
+              <Field label="Date de fin">
                 <Input
                   type="date"
                   value={form.end_date}
@@ -138,9 +137,9 @@ function NewRoadbook() {
             </div>
           </Section>
 
-          <Section title="Travelers">
+          <Section title="Voyageurs">
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Number of travelers">
+              <Field label="Nombre de voyageurs">
                 <Input
                   type="number"
                   min={1}
@@ -148,7 +147,7 @@ function NewRoadbook() {
                   onChange={(e) => update("travelers_count", parseInt(e.target.value) || 1)}
                 />
               </Field>
-              <Field label="Profile">
+              <Field label="Profil">
                 <SelectField
                   value={form.traveler_profile}
                   onChange={(v) => update("traveler_profile", v)}
@@ -157,14 +156,14 @@ function NewRoadbook() {
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Theme">
+              <Field label="Thème">
                 <SelectField
                   value={form.theme}
                   onChange={(v) => update("theme", v)}
                   options={THEMES}
                 />
               </Field>
-              <Field label="Budget range">
+              <Field label="Budget">
                 <SelectField
                   value={form.budget_range}
                   onChange={(v) => update("budget_range", v)}
@@ -174,21 +173,21 @@ function NewRoadbook() {
             </div>
           </Section>
 
-          <Section title="Itinerary mode">
+          <Section title="Mode d’itinéraire">
             <div className="grid grid-cols-2 gap-3">
               <ModeCard
                 active={form.generation_mode === "ai"}
                 onClick={() => update("generation_mode", "ai")}
                 icon={<Sparkles className="h-4 w-4" />}
-                title="AI generates itinerary"
-                body="We'll draft a day-by-day plan based on the brief."
+                title="Génération automatique"
+                body="Création d’un programme jour par jour à partir du brief."
               />
               <ModeCard
                 active={form.generation_mode === "manual"}
                 onClick={() => update("generation_mode", "manual")}
                 icon={<PenLine className="h-4 w-4" />}
-                title="I'll enter steps manually"
-                body="Add your own stops, nights, and activities."
+                title="Saisie manuelle"
+                body="Ajoutez vos propres étapes, nuits et activités."
               />
             </div>
 
@@ -198,7 +197,7 @@ function NewRoadbook() {
                   <div key={i} className="rounded-lg border border-border bg-card p-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-muted-foreground">
-                        Step {i + 1}
+                        Étape {i + 1}
                       </span>
                       {(form.manual_steps?.length || 0) > 1 && (
                         <button
@@ -213,14 +212,14 @@ function NewRoadbook() {
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       <Input
                         className="col-span-2"
-                        placeholder="Location"
+                        placeholder="Lieu"
                         value={step.location}
                         onChange={(e) => updateStep(i, { location: e.target.value })}
                       />
                       <Input
                         type="number"
                         min={1}
-                        placeholder="Nights"
+                        placeholder="Nuits"
                         value={step.nights}
                         onChange={(e) => updateStep(i, { nights: parseInt(e.target.value) || 1 })}
                       />
@@ -228,25 +227,25 @@ function NewRoadbook() {
                     <Textarea
                       className="mt-2"
                       rows={2}
-                      placeholder="Activities (comma-separated)"
+                      placeholder="Activités, séparées par des virgules"
                       value={step.activities}
                       onChange={(e) => updateStep(i, { activities: e.target.value })}
                     />
                   </div>
                 ))}
                 <Button type="button" variant="outline" size="sm" onClick={addStep} className="gap-2">
-                  <Plus className="h-3.5 w-3.5" /> Add step
+                  <Plus className="h-3.5 w-3.5" /> Ajouter une étape
                 </Button>
               </div>
             )}
           </Section>
 
-          <Section title="Personal notes (optional)">
+          <Section title="Notes personnelles facultatives">
             <Textarea
               rows={3}
               value={form.agent_notes}
               onChange={(e) => update("agent_notes", e.target.value)}
-              placeholder="Anything we should know? Allergies, anniversaries, travel quirks…"
+              placeholder="Informations utiles : allergies, anniversaire, rythme souhaité…"
             />
           </Section>
 
@@ -256,11 +255,11 @@ function NewRoadbook() {
               variant="ghost"
               onClick={() => navigate({ to: "/dashboard" })}
             >
-              Cancel
+              Annuler
             </Button>
             <Button type="submit" className="gap-2">
               <Sparkles className="h-4 w-4" />
-              Generate roadbook
+              Générer un roadbook
             </Button>
           </div>
         </form>

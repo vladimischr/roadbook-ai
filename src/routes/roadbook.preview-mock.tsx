@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/roadbook/preview-mock")({
   component: PreviewMockPage,
-  head: () => ({ meta: [{ title: "Aperçu du roadbook — Roadbook.ai" }] }),
+  head: () => ({ meta: [{ title: "Aperçu du programme — Roadbook.ai" }] }),
 });
 
 interface Cover {
@@ -40,6 +40,15 @@ interface Contact {
   email?: string;
 }
 interface Roadbook {
+  client_name: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  duration_days: number;
+  travelers: number;
+  profile: string;
+  theme: string;
+  budget_range: string;
   cover: Cover;
   overview: string;
   days: Day[];
@@ -49,6 +58,15 @@ interface Roadbook {
 }
 
 const MOCK: Roadbook = {
+  client_name: "Sophie et Marc Lambert",
+  destination: "Namibie - Du désert à la faune",
+  start_date: "2026-09-15",
+  end_date: "2026-09-26",
+  duration_days: 12,
+  travelers: 2,
+  profile: "Couple",
+  theme: "Désert et faune",
+  budget_range: "8 à 12 k€",
   cover: {
     title: "Namibie",
     subtitle: "Du désert du Namib aux plaines d'Etosha",
@@ -56,20 +74,20 @@ const MOCK: Roadbook = {
     dates_label: "15 au 26 septembre 2026",
   },
   overview:
-    "Douze jours pour traverser la Namibie d'ouest en est, en autotour 4x4. Des dunes orangées du Sossusvlei aux brumes côtières de Swakopmund, des peintures rupestres du Twyfelfontein aux safaris au lever du jour à Etosha. Un itinéraire conçu pour un couple amoureux de paysages bruts et de nuits étoilées.",
+    "Douze jours pour traverser la Namibie d'ouest en est, en autotour 4x4. Sossusvlei aux brumes côtières de Swakopmund, des peintures rupestres du Twyfelfontein aux safaris au levier du jour à Etosha. Un itinéraire conçu pour un couple amoureux de paysages bruts et de nuits étoilées.",
   days: [
     { day: 1, date: "2026-09-15", stage: "Arrivée Windhoek", accommodation: "Hartmann Suites Apartments", type: "Appartement", distance_km: 50, drive_hours: 1, narrative: "Arrivée en fin de matinée. Prise du véhicule 4x4 et nuit à Windhoek pour récupérer du voyage." },
     { day: 2, date: "2026-09-16", stage: "Windhoek → Naukluft", accommodation: "Camp Gecko", type: "Camp", distance_km: 280, drive_hours: 4, narrative: "Route plein sud vers les plateaux du Naukluft. Première nuit en camp, sous les étoiles." },
-    { day: 3, date: "2026-09-17", stage: "Sesriem - dunes du Sossusvlei", accommodation: "Sesriem Campsite", type: "Camp", distance_km: 150, drive_hours: 2, narrative: "Lever de soleil sur Dune 45 puis marche jusqu'à Deadvlei. Retour au camp en fin d'après-midi." },
-    { day: 4, date: "2026-09-18", stage: "Sesriem - Sesriem Canyon", accommodation: "Sesriem Campsite", type: "Camp", distance_km: 30, drive_hours: 1, narrative: "Matinée au Sesriem Canyon. Après-midi libre pour profiter de la piscine du camp avant la soirée." },
+    { day: 3, date: "2026-09-17", stage: "Sesriem - dunes du Sossusvlei", accommodation: "Camping Sesriem", type: "Camp", distance_km: 150, drive_hours: 2, narrative: "Lever de soleil sur Dune 45 puis marche jusqu'à Deadvlei. Retour au camp en fin d'après-midi." },
+    { day: 4, date: "2026-09-18", stage: "Sesriem - Sesriem Canyon", accommodation: "Sesriem Camping", type: "Camp", distance_km: 30, drive_hours: 1, narrative: "Matinée au Sesriem Canyon. Après-midi libre pour profiter de la piscine du camp avant la soirée." },
     { day: 5, date: "2026-09-19", stage: "Sesriem → Swakopmund", accommodation: "Bruckendorf Apartment", type: "Appartement", distance_km: 350, drive_hours: 5, narrative: "Traversée du désert vers la côte. Arrivée à Swakopmund en fin de journée. Dîner au restaurant The Tug." },
     { day: 6, date: "2026-09-20", stage: "Swakopmund - excursion Sandwich Harbour", accommodation: "Bruckendorf Apartment", type: "Appartement", distance_km: 100, drive_hours: 4, narrative: "Excursion guidée à Sandwich Harbour : dunes plongeant dans l'océan, otaries, flamants roses." },
     { day: 7, date: "2026-09-21", stage: "Swakopmund → Brandberg", accommodation: "Brandberg White Lady Lodge", type: "Lodge", distance_km: 240, drive_hours: 3, narrative: "Route par Henties Bay et la Skeleton Coast jusqu'au pied du Brandberg, plus haut sommet de Namibie." },
     { day: 8, date: "2026-09-22", stage: "Brandberg - peintures rupestres", accommodation: "Brandberg White Lady Lodge", type: "Lodge", distance_km: 0, drive_hours: 0, narrative: "Marche guidée jusqu'à la White Lady, peinture rupestre vieille de 2000 ans. Après-midi détente." },
     { day: 9, date: "2026-09-23", stage: "Brandberg → Twyfelfontein → Khowarib", accommodation: "Khowarib Lodge", type: "Lodge", distance_km: 220, drive_hours: 4, narrative: "Visite du site UNESCO de Twyfelfontein, gravures rupestres dans le grès rouge." },
-    { day: 10, date: "2026-09-24", stage: "Khowarib → Etosha (porte sud)", accommodation: "Etosha Safari Lodge", type: "Lodge", distance_km: 280, drive_hours: 4, narrative: "Route vers Etosha. Premier game drive en fin d'après-midi autour des points d'eau." },
+    { day: 10, date: "2026-09-24", stage: "Khowarib → Etosha (porte sud)", accommodation: "Etosha Safari Lodge", type: "Lodge", distance_km: 280, drive_hours: 4, narrative: "Route vers Etosha. Premier safari en fin d'après-midi autour des points d'eau." },
     { day: 11, date: "2026-09-25", stage: "Etosha - safari journée pleine", accommodation: "Etosha Safari Lodge", type: "Lodge", distance_km: 180, drive_hours: 6, narrative: "Safari toute la journée dans le parc. Pause pique-nique à Halali. Retour en lodge au coucher du soleil." },
-    { day: 12, date: "2026-09-26", stage: "Etosha → Windhoek - vol retour", accommodation: "Vol", type: "Vol", distance_km: 480, drive_hours: 6, narrative: "Retour à Windhoek. Restitution du véhicule. Vol international en fin de journée." },
+    { day: 12, date: "26/09/2026", stage: "Etosha → Windhoek - vol retour", accommodation: "Vol", type: "Vol", distance_km: 480, drive_hours: 6, narrative: "Retour à Windhoek. Restitution du véhicule. Vol international en fin de journée." },
   ],
   accommodations_summary: [
     { name: "Hartmann Suites Apartments", location: "Windhoek", nights: 1, type: "Appartement" },
@@ -92,11 +110,12 @@ const MOCK: Roadbook = {
     "Pour les excursions à Sossusvlei, partir avant 6h pour profiter du lever de soleil sur les dunes.",
     "Prévoir des vêtements chauds : nuits fraîches dans le désert (5-10°C), chaudes en journée (25-30°C).",
     "Eau potable : préférer l'eau en bouteille ou filtrée. Pas de risque sanitaire majeur.",
-    "Pourboires : 50-100 NAD par jour pour les guides, 10-20 NAD pour les services lodges.",
+    "Pourboires : 50-100 NAD par jour pour les guides, 10-20 NAD pour les services en lodge.",
   ],
 };
 
 function formatShortDate(iso: string) {
+  if (iso.includes("/")) return iso;
   return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
@@ -104,7 +123,7 @@ function PreviewMockPage() {
   const [rb, setRb] = useState<Roadbook>(MOCK);
 
   const exportPDF = () => {
-    toast.info("Export PDF bientôt disponible.");
+    toast.info("L’exportation PDF sera bientôt disponible.");
   };
 
   return (
@@ -192,42 +211,42 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
           <div className="flex items-center gap-1">
             <Button size="sm" variant="ghost"
               onClick={() => { setDraft(cover); setEditing(false); }}
-              className="gap-1.5 text-primary-foreground/90 hover:bg-white/15 hover:text-primary-foreground">
+               className="gap-1.5 text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground">
               <X className="h-3.5 w-3.5" /> Annuler
             </Button>
             <Button size="sm" onClick={() => { onSave(draft); setEditing(false); }}
-              className="gap-1.5 bg-white text-primary hover:bg-white/90">
+              className="gap-1.5 bg-primary-foreground text-primary hover:bg-primary-foreground/90">
               <Check className="h-3.5 w-3.5" /> Enregistrer
             </Button>
           </div>
         ) : (
           <Button size="sm" variant="ghost" onClick={() => setEditing(true)}
-            className="gap-1.5 text-primary-foreground/90 hover:bg-white/15 hover:text-primary-foreground">
+            className="gap-1.5 text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground">
             <Pencil className="h-3.5 w-3.5" /> Modifier
           </Button>
         )}
       </div>
 
       <div className="mx-auto max-w-3xl text-center">
-        <div className="text-[11px] font-medium uppercase tracking-[0.3em] opacity-80">Roadbook</div>
+        <div className="text-[11px] font-medium uppercase tracking-[0.3em] opacity-80">Carnet de voyage</div>
 
         {editing ? (
           <div className="mt-8 space-y-3 text-left">
             <Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60 text-2xl font-bold" />
+              className="border-primary-foreground/30 bg-primary-foreground/15 text-2xl font-bold text-primary-foreground placeholder:text-primary-foreground/60" />
             <Input value={draft.subtitle} onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60" />
+              className="border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/60" />
             <Input value={draft.tagline} onChange={(e) => setDraft({ ...draft, tagline: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60" />
+              className="border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/60" />
             <Input value={draft.dates_label} onChange={(e) => setDraft({ ...draft, dates_label: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60" />
+              className="border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/60" />
           </div>
         ) : (
           <>
             <h1 className="mt-6 text-5xl font-bold tracking-tight sm:text-6xl">{cover.title}</h1>
             <p className="mt-6 text-xl opacity-95 sm:text-2xl">{cover.subtitle}</p>
             <p className="mt-3 text-base italic opacity-85">{cover.tagline}</p>
-            <div className="mt-10 inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-2 text-sm font-medium tracking-wide backdrop-blur">
+            <div className="mt-10 inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-5 py-2 text-sm font-medium tracking-wide backdrop-blur">
               {cover.dates_label}
             </div>
           </>
@@ -294,7 +313,7 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
               <th className="px-3 py-3">Hébergement</th>
               <th className="px-3 py-3 w-24">Type</th>
               <th className="px-3 py-3 w-24 text-right">Distance</th>
-              <th className="px-3 py-3 w-20 text-right">Route</th>
+              <th className="px-3 py-3 w-20 text-right">Itinéraire</th>
             </tr>
           </thead>
           <tbody>
@@ -454,7 +473,7 @@ function ContactsSection({
               <th className="px-4 py-3">Rôle</th>
               <th className="px-4 py-3">Nom</th>
               <th className="px-4 py-3">Téléphone</th>
-              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Courriel</th>
             </tr>
           </thead>
           <tbody>
