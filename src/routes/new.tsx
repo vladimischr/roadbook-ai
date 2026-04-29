@@ -69,43 +69,16 @@ function NewRoadbook() {
 
   const onGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
     if (!form.client_name || !form.destination) {
       toast.error("Client name and destination are required.");
       return;
     }
 
     setSubmitting(true);
-    try {
-      const content = await callClaudeAPI(form);
-      const { data, error } = await supabase
-        .from("roadbooks")
-        .insert([{
-          user_id: user.id,
-          client_name: form.client_name,
-          destination: form.destination,
-          start_date: form.start_date || null,
-          end_date: form.end_date || null,
-          travelers_count: form.travelers_count || null,
-          traveler_profile: form.traveler_profile || null,
-          theme: form.theme || null,
-          budget_range: form.budget_range || null,
-          generation_mode: form.generation_mode,
-          agent_notes: form.agent_notes || null,
-          content: content as unknown as import("@/integrations/supabase/types").Json,
-          status: "ready",
-        }])
-        .select("id")
-        .single();
-
-      if (error) throw error;
-      toast.success("Roadbook generated");
-      navigate({ to: "/roadbook/$id", params: { id: data.id } });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Something went wrong";
-      toast.error(msg);
-      setSubmitting(false);
-    }
+    // Simulate generation latency, then redirect to mock preview.
+    await new Promise((r) => setTimeout(r, 1200));
+    toast.success("Roadbook generated");
+    navigate({ to: "/roadbook/preview-mock" });
   };
 
   if (submitting) {
