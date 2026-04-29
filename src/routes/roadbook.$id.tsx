@@ -920,9 +920,13 @@ function DaysTableSection({
   // null = panneau fermé, "end" = ajout en fin, number = insertion à cet index.
   const [addingAt, setAddingAt] = useState<number | "end" | null>(null);
 
+  // Resync local draft whenever the parent days prop changes. Évite la
+  // divergence quand une étape est ajoutée/supprimée via la carte ou via
+  // InsertRow pendant que la section est en mode édition locale (sinon le
+  // bouton "Enregistrer" écraserait la mutation avec un draft obsolète).
   useEffect(() => {
-    if (forceEdit) setDraft(days);
-  }, [forceEdit, days]);
+    setDraft(days);
+  }, [days]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
