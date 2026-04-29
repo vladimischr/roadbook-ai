@@ -114,16 +114,19 @@ function PrintPage() {
     if (filename) document.title = filename;
   }, [filename]);
 
-  // Auto-trigger print dialog once the content is ready.
+  // Best-effort auto-trigger of print dialog once the content is ready.
+  // Many browsers block this without a user gesture — the on-screen button is
+  // the reliable fallback.
   useEffect(() => {
     if (!rb) return;
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("auto") === "1") {
-      const t = setTimeout(() => {
+    const t = setTimeout(() => {
+      try {
         window.print();
-      }, 600);
-      return () => clearTimeout(t);
-    }
+      } catch (e) {
+        console.warn("Auto-print blocked, user must click button", e);
+      }
+    }, 800);
+    return () => clearTimeout(t);
   }, [rb]);
 
   if (error) {
