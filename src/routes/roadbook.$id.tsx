@@ -78,6 +78,7 @@ interface Day {
   narrative: string;
   lat?: number | null;
   lng?: number | null;
+  narrative_user_modified?: boolean;
 }
 interface AccommodationSummary {
   name: string;
