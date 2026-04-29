@@ -862,16 +862,21 @@ function DaysTableSection({
   onAutoSave,
   regionBias,
   forceEdit,
+  onAddDayFromPlace,
 }: {
   days: Day[];
   onSave: (d: Day[]) => void;
   onAutoSave: (d: Day[]) => void;
   regionBias?: string;
   forceEdit: boolean;
+  onAddDayFromPlace?: (place: PlaceSelection, position: number | null) => void;
 }) {
   const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(days);
   const editing = localEdit || forceEdit;
+  // Position où on est en train d'insérer un nouveau jour via autocomplete.
+  // null = panneau fermé, "end" = ajout en fin, number = insertion à cet index.
+  const [addingAt, setAddingAt] = useState<number | "end" | null>(null);
 
   useEffect(() => {
     if (forceEdit) setDraft(days);
