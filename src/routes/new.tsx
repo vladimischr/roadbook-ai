@@ -115,12 +115,12 @@ function NewRoadbook() {
               <Input
                 value={form.destination}
                 onChange={(e) => update("destination", e.target.value)}
-                placeholder="Tanzania, Northern Circuit"
+                placeholder="Tanzanie, circuit nord"
                 required
               />
             </Field>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Start date">
+              <Field label="Date de début">
                 <Input
                   type="date"
                   value={form.start_date}
@@ -147,7 +147,7 @@ function NewRoadbook() {
                   onChange={(e) => update("travelers_count", parseInt(e.target.value) || 1)}
                 />
               </Field>
-              <Field label="Profile">
+              <Field label="Profil">
                 <SelectField
                   value={form.traveler_profile}
                   onChange={(v) => update("traveler_profile", v)}
@@ -173,21 +173,21 @@ function NewRoadbook() {
             </div>
           </Section>
 
-          <Section title="Itinerary mode">
+          <Section title="Mode d’itinéraire">
             <div className="grid grid-cols-2 gap-3">
               <ModeCard
                 active={form.generation_mode === "ai"}
                 onClick={() => update("generation_mode", "ai")}
                 icon={<Sparkles className="h-4 w-4" />}
-                title="AI generates itinerary"
-                body="We'll draft a day-by-day plan based on the brief."
+                title="Génération automatique"
+                body="Création d’un programme jour par jour à partir du brief."
               />
               <ModeCard
                 active={form.generation_mode === "manual"}
                 onClick={() => update("generation_mode", "manual")}
                 icon={<PenLine className="h-4 w-4" />}
-                title="I'll enter steps manually"
-                body="Add your own stops, nights, and activities."
+                title="Saisie manuelle"
+                body="Ajoutez vos propres étapes, nuits et activités."
               />
             </div>
 
@@ -197,7 +197,7 @@ function NewRoadbook() {
                   <div key={i} className="rounded-lg border border-border bg-card p-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-muted-foreground">
-                        Step {i + 1}
+                        Étape {i + 1}
                       </span>
                       {(form.manual_steps?.length || 0) > 1 && (
                         <button
@@ -212,14 +212,14 @@ function NewRoadbook() {
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       <Input
                         className="col-span-2"
-                        placeholder="Location"
+                        placeholder="Lieu"
                         value={step.location}
                         onChange={(e) => updateStep(i, { location: e.target.value })}
                       />
                       <Input
                         type="number"
                         min={1}
-                        placeholder="Nights"
+                        placeholder="Nuits"
                         value={step.nights}
                         onChange={(e) => updateStep(i, { nights: parseInt(e.target.value) || 1 })}
                       />
@@ -227,25 +227,25 @@ function NewRoadbook() {
                     <Textarea
                       className="mt-2"
                       rows={2}
-                      placeholder="Activities (comma-separated)"
+                      placeholder="Activités, séparées par des virgules"
                       value={step.activities}
                       onChange={(e) => updateStep(i, { activities: e.target.value })}
                     />
                   </div>
                 ))}
                 <Button type="button" variant="outline" size="sm" onClick={addStep} className="gap-2">
-                  <Plus className="h-3.5 w-3.5" /> Add step
+                  <Plus className="h-3.5 w-3.5" /> Ajouter une étape
                 </Button>
               </div>
             )}
           </Section>
 
-          <Section title="Personal notes (optional)">
+          <Section title="Notes personnelles facultatives">
             <Textarea
               rows={3}
               value={form.agent_notes}
               onChange={(e) => update("agent_notes", e.target.value)}
-              placeholder="Anything we should know? Allergies, anniversaries, travel quirks…"
+              placeholder="Informations utiles : allergies, anniversaire, rythme souhaité…"
             />
           </Section>
 
