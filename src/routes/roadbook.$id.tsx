@@ -315,6 +315,8 @@ function RoadbookPage() {
         <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <CoverSection
             cover={rb.cover}
+            theme={rb.theme}
+            travelMode={rb.travel_mode}
             forceEdit={globalEdit}
             onSave={(cover) => persist({ ...rb, cover })}
             onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
@@ -455,11 +457,15 @@ function SectionHeader({
 
 function CoverSection({
   cover,
+  theme,
+  travelMode,
   forceEdit,
   onSave,
   onAutoSave,
 }: {
   cover: Cover;
+  theme?: string;
+  travelMode?: string;
   forceEdit: boolean;
   onSave: (c: Cover) => void;
   onAutoSave: (c: Cover) => void;
@@ -555,9 +561,16 @@ function CoverSection({
       </h1>
       <p className="mb-3 text-2xl">{cover.subtitle}</p>
       <p className="mb-6 text-lg italic opacity-85">{cover.tagline}</p>
-      <span className="inline-block rounded-full bg-white/15 px-5 py-2 text-sm">
-        {cover.dates_label}
-      </span>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <span className="inline-block rounded-full bg-white/15 px-5 py-2 text-sm">
+          {cover.dates_label}
+        </span>
+        {(theme || travelMode) && (
+          <span className="inline-block rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-wider">
+            {[theme, travelMode].filter(Boolean).join(" · ")}
+          </span>
+        )}
+      </div>
     </section>
   );
 }
