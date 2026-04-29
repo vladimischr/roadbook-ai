@@ -113,6 +113,9 @@ function RoadbookPage() {
   const { user, loading: authLoading } = useAuth();
   const [rb, setRb] = useState<Roadbook | null>(null);
   const [loading, setLoading] = useState(true);
+  const { apiKey } = useGoogleMapsKey();
+  const rbRef = useRef<Roadbook | null>(null);
+  rbRef.current = rb;
 
   useEffect(() => {
     if (authLoading) return;
@@ -122,7 +125,7 @@ function RoadbookPage() {
     }
     supabase
       .from("roadbooks")
-      .select("content")
+      .select("content,destination")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -131,7 +134,12 @@ function RoadbookPage() {
           navigate({ to: "/dashboard" });
           return;
         }
-        setRb(data.content as unknown as Roadbook);
+        const content = data.content as unknown as Roadbook;
+        // Garantit que la destination est dans l'objet pour le bias géo
+        if (!content.destination && data.destination) {
+          content.destination = data.destination;
+        }
+        setRb(content);
         setLoading(false);
       });
   }, [id, user, authLoading, navigate]);
@@ -149,6 +157,65 @@ function RoadbookPage() {
     }
   };
 
+  // Persistance silencieuse (sans toast) pour le géocodage rétroactif
+  const persistSilent = async (next: Roadbook) => {
+    setRb(next);
+    const { error } = await supabase
+      .from("roadbooks")
+      .update({ content: next as any })
+      .eq("id", id);
+    if (error) console.error("Geocode persist failed:", error.message);
+  };
+
+  // Géocodage rétroactif des jours sans lat/lng
+  useEffect(() => {
+    if (!rb) return;
+    const days = rb.days || [];
+    const missing = days
+      .map((d, idx) => ({ d, idx }))
+      .filter(({ d }) => typeof d.lat !== "number" || typeof d.lng !== "number")
+      .filter(({ d }) => (d.stage || d.accommodation || "").trim().length > 0);
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      let working = rbRef.current;
+      if (!working) return;
+      for (const { idx } of missing) {
+        if (cancelled) return;
+        const day = working.days[idx];
+        if (!day) continue;
+        if (typeof day.lat === "number" && typeof day.lng === "number") continue;
+        const query = (day.stage || day.accommodation || "").trim();
+        if (!query) continue;
+        try {
+          const res = await geocodePlace({
+            data: { query, region: working.destination },
+          });
+          if (cancelled) return;
+          if (res.lat == null || res.lng == null) {
+            console.warn(
+              `[map] Géocodage impossible pour J${day.day} : "${query}"`,
+            );
+            continue;
+          }
+          const nextDays = working.days.map((d, i) =>
+            i === idx ? { ...d, lat: res.lat, lng: res.lng } : d,
+          );
+          working = { ...working, days: nextDays };
+          await persistSilent(working);
+        } catch (e) {
+          console.error("Geocode error:", e);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rb?.days?.length, id]);
+
   if (authLoading || loading || !rb) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
@@ -157,7 +224,7 @@ function RoadbookPage() {
     );
   }
 
-  return (
+  const content = (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
@@ -191,13 +258,28 @@ function RoadbookPage() {
               onSave={(overview) => persist({ ...rb, overview })}
             />
 
+            <section>
+              <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                Tracé du voyage
+              </h2>
+              {apiKey ? (
+                <RoadbookMap days={rb.days || []} />
+              ) : (
+                <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
+                  Chargement de la carte…
+                </div>
+              )}
+            </section>
+
             <DaysTableSection
               days={rb.days || []}
+              regionBias={rb.destination}
               onSave={(days) => persist({ ...rb, days })}
             />
 
             <AccommodationsSection
               items={rb.accommodations_summary || []}
+              regionBias={rb.destination}
               onSave={(accommodations_summary) =>
                 persist({ ...rb, accommodations_summary })
               }
@@ -205,6 +287,7 @@ function RoadbookPage() {
 
             <ContactsSection
               contacts={rb.contacts || []}
+              regionBias={rb.destination}
               onSave={(contacts) => persist({ ...rb, contacts })}
             />
 
@@ -213,6 +296,13 @@ function RoadbookPage() {
         </article>
       </main>
     </div>
+  );
+
+  if (!apiKey) return content;
+  return (
+    <APIProvider apiKey={apiKey} libraries={["places", "marker"]}>
+      {content}
+    </APIProvider>
   );
 }
 
