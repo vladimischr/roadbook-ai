@@ -161,7 +161,11 @@ function RoadbookPage() {
           </Link>
           <Button
             size="sm"
-            onClick={() => toast.info("L'exportation PDF sera bientôt disponible.")}
+            onClick={() => {
+              toast.info("Génération du PDF en cours…", { duration: 2500 });
+              const url = `/roadbook/${id}/print?auto=1`;
+              window.open(url, "_blank", "noopener,noreferrer");
+            }}
             className="gap-2"
           >
             <Download className="h-4 w-4" /> Exporter en PDF
