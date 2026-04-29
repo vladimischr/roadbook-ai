@@ -299,8 +299,8 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
           </thead>
           <tbody>
             {list.map((d, i) => (
-              <>
-                <tr key={`r-${i}`} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+              <Fragment key={i}>
+                <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
                   <td className="px-3 py-3 font-semibold text-primary">J{d.day}</td>
                   <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
                     {editing
