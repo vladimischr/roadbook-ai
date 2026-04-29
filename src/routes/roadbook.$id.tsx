@@ -38,7 +38,7 @@ import { APIProvider } from "@vis.gl/react-google-maps";
 import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
 import { RoadbookMap, type DirectionsSegment } from "@/components/RoadbookMap";
 import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
-import { geocodePlace } from "@/server/maps.functions";
+import { geocodePlace, getDirectionsSegment } from "@/server/maps.functions";
 import {
   DndContext,
   closestCenter,
