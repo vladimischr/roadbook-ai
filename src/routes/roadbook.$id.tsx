@@ -917,10 +917,14 @@ function SectionHeader({
   hideEditButton?: boolean;
 }) {
   return (
-    <div className="mb-5 flex items-center justify-between">
-      <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-        {label}
-      </h2>
+    <div className={`flex items-center justify-between ${label ? "mb-5" : "-mt-1 mb-3"}`}>
+      {label ? (
+        <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+          {label}
+        </h2>
+      ) : (
+        <span aria-hidden />
+      )}
       {editing ? (
         hideEditButton ? null : (
           <div className="flex items-center gap-1">
