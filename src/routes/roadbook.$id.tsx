@@ -273,6 +273,7 @@ function RoadbookPage() {
   const updateAndAutosave = (next: Roadbook) => {
     setRb(next);
     dirtyRef.current = next;
+    setSavingState("saving");
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       const toSave = dirtyRef.current;
@@ -282,13 +283,30 @@ function RoadbookPage() {
         .update({ content: toSave as never })
         .eq("id", id)
         .then(({ error }) => {
+          setSavingState("idle");
           if (error) {
             toast.error("Échec auto-save : " + error.message);
           } else {
-            toast.success("Modifications enregistrées", { duration: 1500 });
+            setLastSavedAt(Date.now());
           }
         });
-    }, 2000);
+    }, 1500);
+  };
+
+  // Mettre à jour le statut
+  const updateStatus = async (next: RoadbookStatus) => {
+    const prev = status;
+    setStatus(next);
+    const { error } = await supabase
+      .from("roadbooks")
+      .update({ status: next })
+      .eq("id", id);
+    if (error) {
+      toast.error("Mise à jour du statut impossible : " + error.message);
+      setStatus(prev);
+    } else {
+      toast.success(`Marqué comme ${STATUS_LABEL[next].toLowerCase()}`, { duration: 1800 });
+    }
   };
 
   // Géocodage rétroactif
