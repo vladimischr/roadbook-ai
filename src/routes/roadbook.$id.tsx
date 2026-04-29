@@ -134,6 +134,29 @@ interface Roadbook {
   directions_segments?: DirectionsSegment[];
 }
 
+type RoadbookStatus = "draft" | "ready" | "delivered" | "archived";
+const STATUS_LABEL: Record<RoadbookStatus, string> = {
+  draft: "Brouillon",
+  ready: "Prêt",
+  delivered: "Livré",
+  archived: "Archivé",
+};
+function normalizeStatus(s: string | null | undefined): RoadbookStatus {
+  if (s === "ready" || s === "delivered" || s === "archived") return s;
+  return "draft";
+}
+
+/* Icon mapping for accommodations */
+function accommodationIcon(type: string) {
+  const t = (type || "").toLowerCase();
+  if (/lodge/.test(t)) return HomeIcon;
+  if (/camp|tent/.test(t)) return Tent;
+  if (/h[oô]tel/.test(t)) return Hotel;
+  if (/appart|apartment/.test(t)) return Building2;
+  if (/vol|fly|plane|avion/.test(t)) return Plane;
+  return BedDouble;
+}
+
 function formatShortDate(iso: string) {
   if (!iso) return "";
   if (iso.includes("/")) return iso;
