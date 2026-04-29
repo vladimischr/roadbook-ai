@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Download, Pencil, Check, X, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,11 +121,45 @@ function formatShortDate(iso: string) {
 }
 
 function PreviewMockPage() {
-  const [rb, setRb] = useState<Roadbook>(MOCK);
+  const [rb, setRb] = useState<Roadbook | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = sessionStorage.getItem("roadbook:last");
+    if (raw) {
+      try {
+        setRb(JSON.parse(raw) as Roadbook);
+      } catch {
+        // ignore parse errors — show empty state
+      }
+    }
+    setLoaded(true);
+  }, []);
 
   const exportPDF = () => {
     toast.info("L’exportation PDF sera bientôt disponible.");
   };
+
+  if (!loaded) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
+  if (!rb) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-20 text-center">
+          <h1 className="text-2xl font-semibold">Aucun roadbook à afficher</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Créez-en un nouveau pour générer un programme de voyage.
+          </p>
+          <Link to="/new" className="mt-6">
+            <Button>Créer un nouveau roadbook</Button>
+          </Link>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
