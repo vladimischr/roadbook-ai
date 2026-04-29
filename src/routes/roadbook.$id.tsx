@@ -1072,6 +1072,51 @@ function DaysTableSection({
   );
 }
 
+/* ---------- Insert row (inline autocomplete inside the days table) ---------- */
+
+function InsertRow({
+  label,
+  regionBias,
+  onCancel,
+  onSelect,
+}: {
+  label: string;
+  regionBias?: string;
+  onCancel: () => void;
+  onSelect: (p: PlaceSelection) => void;
+}) {
+  const [query, setQuery] = useState("");
+  return (
+    <tr className="bg-primary/5">
+      <td colSpan={10} className="p-0">
+        <div className="animate-in fade-in slide-in-from-top-1 duration-200 border-y-2 border-primary/40 px-4 py-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-sm font-medium text-foreground">{label}</div>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Annuler
+            </button>
+          </div>
+          <PlacesAutocompleteInput
+            value={query}
+            onChange={setQuery}
+            onSelect={onSelect}
+            regionBias={regionBias}
+            placeholder="Tape un lieu : Etosha National Park, Swakopmund…"
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Sélectionne une suggestion : la nouvelle étape apparaîtra
+            immédiatement sur la carte avec son tracé.
+          </p>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 /* ---------- Accommodations ---------- */
 
 function AccommodationsSection({
