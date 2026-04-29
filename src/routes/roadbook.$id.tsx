@@ -222,7 +222,7 @@ function RoadbookPage() {
     }
     supabase
       .from("roadbooks")
-      .select("content,destination")
+      .select("content,destination,status")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -236,6 +236,7 @@ function RoadbookPage() {
           content.destination = data.destination;
         }
         setRb(content);
+        setStatus(normalizeStatus(data.status));
         setLoading(false);
       });
   }, [id, user, authLoading, navigate]);
