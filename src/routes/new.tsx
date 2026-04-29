@@ -96,18 +96,18 @@ function NewRoadbook() {
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
-        <h1 className="text-3xl font-semibold tracking-tight">New roadbook</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Nouveau roadbook</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Tell us about the trip — we'll do the rest.
+          Renseignez le voyage — nous préparons la trame du programme.
         </p>
 
         <form onSubmit={onGenerate} className="mt-8 space-y-8">
-          <Section title="Client & destination">
-            <Field label="Client name">
+          <Section title="Client et destination">
+            <Field label="Nom du client">
               <Input
                 value={form.client_name}
                 onChange={(e) => update("client_name", e.target.value)}
-                placeholder="Marie & Julien Dupont"
+                placeholder="Marie et Julien Dupont"
                 required
               />
             </Field>
@@ -127,7 +127,7 @@ function NewRoadbook() {
                   onChange={(e) => update("start_date", e.target.value)}
                 />
               </Field>
-              <Field label="End date">
+              <Field label="Date de fin">
                 <Input
                   type="date"
                   value={form.end_date}
@@ -137,9 +137,9 @@ function NewRoadbook() {
             </div>
           </Section>
 
-          <Section title="Travelers">
+          <Section title="Voyageurs">
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Number of travelers">
+              <Field label="Nombre de voyageurs">
                 <Input
                   type="number"
                   min={1}
@@ -156,14 +156,14 @@ function NewRoadbook() {
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Theme">
+              <Field label="Thème">
                 <SelectField
                   value={form.theme}
                   onChange={(v) => update("theme", v)}
                   options={THEMES}
                 />
               </Field>
-              <Field label="Budget range">
+              <Field label="Budget">
                 <SelectField
                   value={form.budget_range}
                   onChange={(v) => update("budget_range", v)}
