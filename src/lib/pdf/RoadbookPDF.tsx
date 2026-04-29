@@ -667,7 +667,7 @@ export function RoadbookPDF({
           ) : null}
         </View>
 
-        <View style={styles.pageNumber} fixed render={({ pageNumber, totalPages }) => (
+        <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
           <>
             <Text>{pageMeta}</Text>
             <Text>{`${pageNumber} / ${totalPages}`}</Text>
@@ -689,7 +689,7 @@ export function RoadbookPDF({
           <Text style={styles.mapCaption}>
             Carte schématique des étapes principales — distances et tracés indicatifs.
           </Text>
-          <View style={styles.pageNumber} fixed render={({ pageNumber, totalPages }) => (
+          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
               <Text>{`${pageNumber} / ${totalPages}`}</Text>
@@ -746,7 +746,7 @@ export function RoadbookPDF({
             </View>
           ))}
 
-          <View style={styles.pageNumber} fixed render={({ pageNumber, totalPages }) => (
+          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
               <Text>{`${pageNumber} / ${totalPages}`}</Text>
@@ -785,7 +785,7 @@ export function RoadbookPDF({
               </View>
             ))}
           </View>
-          <View style={styles.pageNumber} fixed render={({ pageNumber, totalPages }) => (
+          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
               <Text>{`${pageNumber} / ${totalPages}`}</Text>
@@ -814,7 +814,7 @@ export function RoadbookPDF({
               ) : null}
             </View>
           ))}
-          <View style={styles.pageNumber} fixed render={({ pageNumber, totalPages }) => (
+          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
               <Text>{`${pageNumber} / ${totalPages}`}</Text>
@@ -839,7 +839,7 @@ export function RoadbookPDF({
               <Text style={styles.tipText}>{t}</Text>
             </View>
           ))}
-          <View style={styles.pageNumber} fixed render={({ pageNumber, totalPages }) => (
+          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
               <Text>{`${pageNumber} / ${totalPages}`}</Text>
