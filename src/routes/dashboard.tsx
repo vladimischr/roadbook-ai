@@ -130,9 +130,9 @@ function Dashboard() {
         ) : roadbooks.length === 0 ? (
           <EmptyState />
         ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {roadbooks.map((rb) => (
-              <RoadbookCard key={rb.id} rb={rb} onDelete={() => setToDelete(rb)} />
+          <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {roadbooks.map((rb, i) => (
+              <RoadbookCard key={rb.id} rb={rb} index={i} onDelete={() => setToDelete(rb)} />
             ))}
           </ul>
         )}
