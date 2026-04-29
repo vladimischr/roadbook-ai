@@ -329,20 +329,25 @@ function SelectField({
   value,
   onChange,
   options,
+  placeholder = "Choisir…",
 }: {
   value?: string;
   onChange: (v: string) => void;
-  options: string[];
+  options: (string | { value: string; label: string })[];
+  placeholder?: string;
 }) {
+  const normalized = options.map((o) =>
+    typeof o === "string" ? { value: o, label: o } : o,
+  );
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
-        <SelectValue />
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {options.map((o) => (
-          <SelectItem key={o} value={o}>
-            {o}
+        {normalized.map((o) => (
+          <SelectItem key={o.value} value={o.value}>
+            {o.label}
           </SelectItem>
         ))}
       </SelectContent>
