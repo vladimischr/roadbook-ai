@@ -81,7 +81,10 @@ export const Route = createFileRoute("/api/generate-roadbook")({
               model: "claude-haiku-4-5",
               max_tokens: 4000,
               system: ROADBOOK_SYSTEM_PROMPT,
-              messages: [{ role: "user", content: userMessage }],
+              messages: [
+                { role: "user", content: userMessage },
+                { role: "assistant", content: "{" },
+              ],
             }),
           });
           console.log(
@@ -108,33 +111,59 @@ export const Route = createFileRoute("/api/generate-roadbook")({
 
           console.log("[generate-roadbook] Réponse Claude reçue, parsing...");
           const data = await resp.json();
-          const text =
+          let rawText: string =
             data?.content?.[0]?.text ??
             data?.content?.map?.((c: any) => c.text).join("\n") ??
             "";
           console.log(
             "[generate-roadbook] Texte brut Claude (300 premiers chars):",
-            text.substring(0, 300),
+            rawText.substring(0, 300),
           );
 
-          let parsed: unknown;
+          // Prefill assistant "{" : Claude continue depuis là, on le re-préfixe.
+          rawText = "{" + rawText.trim();
+
+          // Strip markdown code fences si Claude en a quand même mis.
+          if (rawText.startsWith("```")) {
+            rawText = rawText.replace(/^```(?:json)?\s*\n?/, "");
+            rawText = rawText.replace(/\n?```\s*$/, "");
+          }
+
+          // Extraire le bloc JSON principal { ... } si du texte traîne autour.
+          const firstBrace = rawText.indexOf("{");
+          const lastBrace = rawText.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            rawText = rawText.substring(firstBrace, lastBrace + 1);
+          }
+          rawText = rawText.trim();
+
+          console.log(
+            "[generate-roadbook] Texte nettoyé prêt à parser (200 premiers chars):",
+            rawText.substring(0, 200),
+          );
+
+          let roadbook: unknown;
           try {
-            parsed = extractJson(text);
-          } catch (e) {
-            console.error("[generate-roadbook] Erreur parsing JSON:", e);
+            roadbook = JSON.parse(rawText);
+          } catch (e: any) {
+            console.error("[generate-roadbook] Parsing JSON échoué:", e);
             console.error(
-              "[generate-roadbook] Texte qui n'a pas pu être parsé:",
-              text,
+              "[generate-roadbook] Texte complet qui a échoué:",
+              rawText,
             );
             return new Response(
               JSON.stringify({
-                error: "Réponse Claude non-JSON: " + text.substring(0, 300),
+                error:
+                  "JSON invalide après nettoyage: " +
+                  e.message +
+                  ". Texte: " +
+                  rawText.substring(0, 300),
               }),
               { status: 500, headers: { "Content-Type": "application/json" } },
             );
           }
 
-          return new Response(JSON.stringify(parsed), {
+          return new Response(JSON.stringify(roadbook), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
