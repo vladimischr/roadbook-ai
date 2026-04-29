@@ -161,13 +161,15 @@ function NewRoadbook() {
   if (submitting) {
     return (
       <AppShell>
-        <div className="grid min-h-[60vh] place-items-center text-center">
-          <div>
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <h2 className="mt-6 text-xl font-semibold">Création du roadbook…</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Construction de l’itinéraire, réglage du rythme, mise en forme du récit.
-            </p>
+        <div className="container-editorial px-6 sm:px-10 lg:px-14">
+          <div className="grid min-h-[60vh] place-items-center text-center">
+            <div>
+              <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
+              <h2 className="mt-6 text-xl font-semibold">Création du roadbook…</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Construction de l'itinéraire, réglage du rythme, mise en forme du récit.
+              </p>
+            </div>
           </div>
         </div>
       </AppShell>
