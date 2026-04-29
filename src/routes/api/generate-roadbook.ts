@@ -86,13 +86,12 @@ export const Route = createFileRoute("/api/generate-roadbook")({
 
           if (!resp.ok) {
             const errText = await resp.text();
-            console.error("Anthropic error:", resp.status, errText);
+            console.error("[generate-roadbook] Anthropic error:", resp.status, errText);
             return new Response(
               JSON.stringify({
-                error: `Erreur Anthropic (${resp.status})`,
-                detail: errText.slice(0, 500),
+                error: `Erreur Anthropic (${resp.status}): ${errText.slice(0, 300)}`,
               }),
-              { status: 502, headers: { "Content-Type": "application/json" } },
+              { status: 500, headers: { "Content-Type": "application/json" } },
             );
           }
 
@@ -106,13 +105,13 @@ export const Route = createFileRoute("/api/generate-roadbook")({
           try {
             parsed = extractJson(text);
           } catch (e) {
-            console.error("Parse JSON failed:", e, "raw:", text.slice(0, 1000));
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error("[generate-roadbook] Parse JSON failed:", msg, "raw:", text.slice(0, 1000));
             return new Response(
               JSON.stringify({
-                error: "La réponse de Claude n'était pas un JSON valide.",
-                raw: text.slice(0, 2000),
+                error: `La réponse de Claude n'était pas un JSON valide: ${msg}`,
               }),
-              { status: 502, headers: { "Content-Type": "application/json" } },
+              { status: 500, headers: { "Content-Type": "application/json" } },
             );
           }
 
