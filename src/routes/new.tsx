@@ -1,18 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Loader2, Plus, Trash2, Sparkles, PenLine } from "lucide-react";
+import { Loader2, Plus, Trash2, Sparkles, PenLine, ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { RoadbookFormData } from "@/lib/mockGenerator";
 import { toast } from "sonner";
 
@@ -60,10 +53,10 @@ function NewRoadbook() {
     destination: "",
     start_date: "",
     end_date: "",
-    travelers_count: undefined as unknown as number,
-    traveler_profile: undefined,
-    theme: undefined,
-    budget_range: undefined,
+    travelers_count: 0,
+    traveler_profile: "",
+    theme: "",
+    budget_range: "",
     generation_mode: "ai",
     agent_notes: "",
     manual_steps: [{ location: "", nights: 2, activities: "" }],
@@ -168,8 +161,8 @@ function NewRoadbook() {
               <Field label="Nombre de voyageurs">
                 <SelectField
                   value={
-                    form.travelers_count === undefined || form.travelers_count === null
-                      ? undefined
+                    !form.travelers_count
+                      ? ""
                       : form.travelers_count >= 8
                         ? "8plus"
                         : String(form.travelers_count)
@@ -183,7 +176,7 @@ function NewRoadbook() {
               </Field>
               <Field label="Profil">
                 <SelectField
-                  value={form.traveler_profile}
+                  value={form.traveler_profile ?? ""}
                   onChange={(v) => update("traveler_profile", v)}
                   options={PROFILES}
                   placeholder="Choisir un profil"
@@ -193,7 +186,7 @@ function NewRoadbook() {
             <div className="grid grid-cols-2 gap-4">
               <Field label="Thème">
                 <SelectField
-                  value={form.theme}
+                  value={form.theme ?? ""}
                   onChange={(v) => update("theme", v)}
                   options={THEMES}
                   placeholder="Choisir un thème"
@@ -201,7 +194,7 @@ function NewRoadbook() {
               </Field>
               <Field label="Gamme de budget">
                 <SelectField
-                  value={form.budget_range}
+                  value={form.budget_range ?? ""}
                   onChange={(v) => update("budget_range", v)}
                   options={BUDGETS}
                   placeholder="Choisir un budget"
@@ -340,18 +333,19 @@ function SelectField({
     typeof o === "string" ? { value: o, label: o } : o,
   );
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
+    <div className="relative">
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="flex h-9 w-full appearance-none items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 pr-10 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <option value="" disabled>{placeholder}</option>
         {normalized.map((o) => (
-          <SelectItem key={o.value} value={o.value}>
-            {o.label}
-          </SelectItem>
+          <option key={o.value} value={o.value}>{o.label}</option>
         ))}
-      </SelectContent>
-    </Select>
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-50" />
+    </div>
   );
 }
 
