@@ -105,7 +105,7 @@ function PreviewMockPage() {
   const [rb, setRb] = useState<Roadbook>(MOCK);
 
   const exportPDF = () => {
-    toast.info("Export PDF bientôt disponible.");
+    toast.info("L’exportation PDF sera bientôt disponible.");
   };
 
   return (
@@ -193,7 +193,7 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
           <div className="flex items-center gap-1">
             <Button size="sm" variant="ghost"
               onClick={() => { setDraft(cover); setEditing(false); }}
-              className="gap-1.5 text-primary-foreground/90 hover:bg-white/15 hover:text-primary-foreground">
+               className="gap-1.5 text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground">
               <X className="h-3.5 w-3.5" /> Annuler
             </Button>
             <Button size="sm" onClick={() => { onSave(draft); setEditing(false); }}
@@ -203,7 +203,7 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
           </div>
         ) : (
           <Button size="sm" variant="ghost" onClick={() => setEditing(true)}
-            className="gap-1.5 text-primary-foreground/90 hover:bg-white/15 hover:text-primary-foreground">
+            className="gap-1.5 text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground">
             <Pencil className="h-3.5 w-3.5" /> Modifier
           </Button>
         )}
@@ -215,13 +215,13 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
         {editing ? (
           <div className="mt-8 space-y-3 text-left">
             <Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60 text-2xl font-bold" />
+              className="border-primary-foreground/30 bg-primary-foreground/15 text-2xl font-bold text-primary-foreground placeholder:text-primary-foreground/60" />
             <Input value={draft.subtitle} onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60" />
+              className="border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/60" />
             <Input value={draft.tagline} onChange={(e) => setDraft({ ...draft, tagline: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60" />
+              className="border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/60" />
             <Input value={draft.dates_label} onChange={(e) => setDraft({ ...draft, dates_label: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60" />
+              className="border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/60" />
           </div>
         ) : (
           <>
