@@ -563,6 +563,60 @@ function RoadbookPage() {
           </div>
         </article>
       </main>
+
+      <Dialog open={recomputeOpen} onOpenChange={setRecomputeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recalculer le roadbook ?</DialogTitle>
+            <DialogDescription className="pt-2">
+              L'IA va régénérer les narratives, ajuster les dates et lisser les
+              transitions à partir des étapes que tu as définies. Tes étapes
+              (lieux, hébergements, types) seront préservées. Les narratives et
+              conseils peuvent être réécrits.
+            </DialogDescription>
+          </DialogHeader>
+          <label className="flex items-start gap-3 rounded-md border border-border bg-secondary/30 p-3 text-sm">
+            <Checkbox
+              checked={preserveModified}
+              onCheckedChange={(v) => setPreserveModified(v === true)}
+              className="mt-0.5"
+            />
+            <span className="text-foreground/85">
+              Préserver les narratives que j'ai modifiées manuellement
+            </span>
+          </label>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRecomputeOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button onClick={runRecompute} className="gap-2">
+              <Sparkles className="h-4 w-4" /> Recalculer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {recomputing && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm">
+          <div className="flex max-w-sm flex-col items-center gap-4 rounded-xl border border-border bg-card px-8 py-8 text-center shadow-lg">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div>
+              <p className="font-medium text-foreground">
+                Recalcul en cours…
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                L'IA ajuste les narratives, dates et transitions.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Durée estimée : 30 à 60 secondes.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
