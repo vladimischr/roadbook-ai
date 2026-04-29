@@ -451,6 +451,25 @@ function RoadbookPage() {
               <Pencil className="h-3.5 w-3.5" />
               {globalEdit ? "Quitter l'édition" : "Tout modifier"}
             </Button>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setRecomputeOpen(true)}
+                    className="gap-2"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Recalculer avec l'IA
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  Régénère les narratives, dates et transitions en fonction de
+                  tes modifications. Tes étapes restent intactes.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               size="sm"
               onClick={() => {
