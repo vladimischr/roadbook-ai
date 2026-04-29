@@ -42,26 +42,24 @@ export type GeneratedRoadbook = Record<string, any>;
 export async function callClaudeAPI(
   form: RoadbookFormData,
 ): Promise<GeneratedRoadbook> {
-  const resp = await fetch("/api/generate-roadbook", {
+  const res = await fetch("/api/generate-roadbook", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(form),
   });
 
-  if (!resp.ok) {
-    let message = "Erreur génération roadbook";
-    try {
-      const j = await resp.json();
-      if (j?.error) message = j.error;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(message);
+  const text = await res.text();
+  console.log("Réponse serveur brute:", text, "Status:", res.status);
+
+  if (!res.ok) {
+    throw new Error(
+      "Serveur a retourné " + res.status + ": " + text.substring(0, 500),
+    );
   }
 
   try {
-    return (await resp.json()) as GeneratedRoadbook;
+    return JSON.parse(text) as GeneratedRoadbook;
   } catch {
-    throw new Error("Réponse invalide de l'IA, réessaie");
+    throw new Error("JSON invalide reçu: " + text.substring(0, 500));
   }
 }

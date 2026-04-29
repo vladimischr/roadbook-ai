@@ -96,16 +96,16 @@ function NewRoadbook() {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("roadbook:last", JSON.stringify(roadbook));
       }
-      toast.success("Roadbook généré");
       navigate({ to: "/roadbook/preview-mock" });
-    } catch (err) {
-      console.error(err);
-      toast.error(
-        err instanceof Error
-          ? `Échec de la génération : ${err.message}`
-          : "Échec de la génération du roadbook.",
-      );
+    } catch (error: any) {
       setSubmitting(false);
+      alert(
+        "ERREUR DE GÉNÉRATION :\n\n" +
+          (error?.message || "Erreur inconnue") +
+          "\n\n" +
+          (error?.stack || ""),
+      );
+      console.error("Erreur génération:", error);
     }
   };
 
