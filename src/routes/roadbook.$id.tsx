@@ -329,16 +329,52 @@ function Editable({
   className?: string;
   multiline?: boolean;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
   const Tag = as as React.ElementType;
+
+  if (editing) {
+    const commit = () => {
+      if (draft !== value) onChange(draft);
+      setEditing(false);
+    };
+    if (multiline) {
+      return (
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          rows={4}
+          className={`w-full rounded border border-primary/30 bg-primary-soft/40 px-1 outline-none focus:ring-1 focus:ring-primary/30 ${className}`}
+        />
+      );
+    }
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") {
+            setDraft(value);
+            setEditing(false);
+          }
+        }}
+        className={`w-full rounded border border-primary/30 bg-primary-soft/40 px-1 outline-none focus:ring-1 focus:ring-primary/30 ${className}`}
+      />
+    );
+  }
+
   return (
     <Tag
-      contentEditable
-      suppressContentEditableWarning
-      onBlur={(e: React.FocusEvent<HTMLElement>) => {
-        const text = multiline ? e.currentTarget.innerText : e.currentTarget.textContent || "";
-        if (text !== value) onChange(text);
+      onClick={() => {
+        setDraft(value);
+        setEditing(true);
       }}
-      className={`outline-none rounded px-0.5 -mx-0.5 hover:bg-primary-soft/40 focus:bg-primary-soft/60 focus:ring-1 focus:ring-primary/30 ${className}`}
+      className={`cursor-text rounded px-0.5 -mx-0.5 hover:bg-primary-soft/40 ${className}`}
     >
       {value}
     </Tag>

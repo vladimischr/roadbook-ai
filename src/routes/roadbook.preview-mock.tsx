@@ -244,8 +244,11 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
           </div>
         ) : (
           <>
-            <h1 className="mt-6 break-words text-[64px] font-semibold leading-[1.05] tracking-tight sm:text-[72px]">
-              {cover.title}
+            <h1
+              className="mt-6 block text-[64px] font-semibold leading-[1.05] tracking-tight sm:text-[72px]"
+              style={{ wordBreak: "normal", overflowWrap: "normal" }}
+            >
+              {String(cover.title ?? "")}
             </h1>
             <p className="mt-6 text-xl opacity-95 sm:text-2xl">{cover.subtitle}</p>
             <p className="mt-3 text-base italic opacity-85">{cover.tagline}</p>
