@@ -269,6 +269,15 @@ function RoadbookPage() {
     persistSilent({ ...cur, directions_segments: segs });
   };
 
+  // Invalide le cache directions_segments après une mutation structurelle des
+  // jours (insert / remove / reorder / changement d'adresse). Comme les
+  // segments sont keyés par numéro de jour et que la renumérotation réutilise
+  // les mêmes numéros pour des étapes différentes, on purge tout le cache
+  // touché. RouteRenderer recalculera via Directions API.
+  const invalidateDirectionsCache = (rb: Roadbook): Roadbook => {
+    return { ...rb, directions_segments: [] };
+  };
+
   // Ajouter une étape depuis un PlaceSelection (autocomplete ou recherche carte).
   // Sauvegarde IMMÉDIATE en base — pas d'attente du bouton "Enregistrer".
   const addDayFromPlace = async (place: PlaceSelection, position: number | null) => {
@@ -288,8 +297,15 @@ function RoadbookPage() {
       newDay,
       ...list.slice(insertIdx),
     ]);
-    const next = { ...cur, days: nextDays };
+    const next = invalidateDirectionsCache({ ...cur, days: nextDays });
     setRb(next);
+    // Annule tout auto-save en attente pour ne pas écraser la mutation
+    // qu'on vient de faire avec un draft obsolète.
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    dirtyRef.current = null;
     const { error } = await supabase
       .from("roadbooks")
       .update({ content: next as never })
@@ -306,8 +322,13 @@ function RoadbookPage() {
     const cur = rbRef.current;
     if (!cur) return;
     const nextDays = renumberDays((cur.days || []).filter((d) => d.day !== dayNumber));
-    const next = { ...cur, days: nextDays };
+    const next = invalidateDirectionsCache({ ...cur, days: nextDays });
     setRb(next);
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    dirtyRef.current = null;
     const { error } = await supabase
       .from("roadbooks")
       .update({ content: next as never })
