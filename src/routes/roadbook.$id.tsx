@@ -710,6 +710,12 @@ function RoadbookPage() {
                             .replace(/^-+|-+$/g, "");
                         const content = { ...rb };
                         const blob = await pdf(
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          <RoadbookPDF
+                            roadbook={content as any}
+                            mapsApiKey={apiKey || undefined}
+                          />,
+                        ).toBlob();
                           <RoadbookPDF
                             roadbook={content}
                             mapsApiKey={apiKey || undefined}
