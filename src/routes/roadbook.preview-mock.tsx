@@ -40,6 +40,15 @@ interface Contact {
   email?: string;
 }
 interface Roadbook {
+  client_name: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  duration_days: number;
+  travelers: number;
+  profile: string;
+  theme: string;
+  budget_range: string;
   cover: Cover;
   overview: string;
   days: Day[];
@@ -49,6 +58,15 @@ interface Roadbook {
 }
 
 const MOCK: Roadbook = {
+  client_name: "Sophie et Marc Lambert",
+  destination: "Namibie - Du désert à la faune",
+  start_date: "2026-09-15",
+  end_date: "2026-09-26",
+  duration_days: 12,
+  travelers: 2,
+  profile: "Couple",
+  theme: "Désert et faune",
+  budget_range: "8 à 12 k€",
   cover: {
     title: "Namibie",
     subtitle: "Du désert du Namib aux plaines d'Etosha",
