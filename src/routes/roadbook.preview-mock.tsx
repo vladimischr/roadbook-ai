@@ -344,6 +344,11 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
                     ? <Input value={d.type} onChange={(e) => update(i, { type: e.target.value })} className="h-8" />
                     : d.type}
                 </td>
+                <td className="px-3 py-3 text-muted-foreground">
+                  {editing
+                    ? <Input value={d.flight} onChange={(e) => update(i, { flight: e.target.value })} className="h-8" />
+                    : d.flight}
+                </td>
                 <td className="px-3 py-3 text-right tabular-nums">
                   {editing ? (
                     <Input type="number" value={d.distance_km}
