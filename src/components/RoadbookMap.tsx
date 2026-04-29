@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AdvancedMarker,
   InfoWindow,
-  Map,
+  Map as GMap,
   useMap,
 } from "@vis.gl/react-google-maps";
 import { getDirectionsSegment } from "@/server/maps.functions";
@@ -136,7 +136,7 @@ export function RoadbookMap({ days, segments, onSegmentsChange }: Props) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-border">
-      <Map
+      <GMap
         mapId="roadbook-map"
         style={{ width: "100%", height: "450px" }}
         defaultCenter={center}
