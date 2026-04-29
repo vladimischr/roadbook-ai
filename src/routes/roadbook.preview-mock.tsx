@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft, Download, Pencil, Check, X, MapPin, Bed, Utensils, Phone, Lightbulb } from "lucide-react";
+import { Fragment, useState } from "react";
+import { ArrowLeft, Download, Pencil, Check, X, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,75 +11,93 @@ export const Route = createFileRoute("/roadbook/preview-mock")({
   head: () => ({ meta: [{ title: "Aperçu du roadbook — Roadbook.ai" }] }),
 });
 
+interface Cover {
+  title: string;
+  subtitle: string;
+  tagline: string;
+  dates_label: string;
+}
 interface Day {
   day: number;
-  title: string;
-  location: string;
-  narrative: string;
+  date: string;
+  stage: string;
   accommodation: string;
-  meals: string;
+  type: string;
+  distance_km: number;
+  drive_hours: number;
+  narrative: string;
 }
-interface Accommodation { name: string; nights: number; type: string; }
-interface Contact { role: string; name: string; phone: string; }
-interface Cover { title: string; subtitle: string; tagline: string; }
+interface AccommodationSummary {
+  name: string;
+  location: string;
+  nights: number;
+  type: string;
+}
+interface Contact {
+  role: string;
+  name: string;
+  phone: string;
+  email?: string;
+}
 interface Roadbook {
-  client_name: string;
-  destination: string;
-  start_date: string;
-  end_date: string;
-  travelers: number;
-  profile: string;
-  theme: string;
-  budget_range: string;
   cover: Cover;
   overview: string;
   days: Day[];
-  accommodations: Accommodation[];
+  accommodations_summary: AccommodationSummary[];
   contacts: Contact[];
   tips: string[];
 }
 
 const MOCK: Roadbook = {
-  client_name: "Marie et Julien Dupont",
-  destination: "Tanzanie - Circuit Nord",
-  start_date: "2026-09-15",
-  end_date: "2026-09-26",
-  travelers: 2,
-  profile: "Couple",
-  theme: "Safari et culture",
-  budget_range: "5 à 8 k€",
   cover: {
-    title: "Tanzanie, sur la route des grands espaces",
-    subtitle: "11 jours sur le circuit Nord — Marie et Julien Dupont",
-    tagline: "Un voyage entre savane, peuples Massaïs et nuits sous les étoiles.",
+    title: "Namibie",
+    subtitle: "Du désert du Namib aux plaines d'Etosha",
+    tagline: "12 jours en autotour 4x4 — Sophie et Marc Lambert",
+    dates_label: "15 au 26 septembre 2026",
   },
   overview:
-    "11 jours en Tanzanie, alliant safaris dans le Serengeti et le Ngorongoro, rencontre avec les communautés Massaïs et nuits dans des lodges d'exception. Un itinéraire conçu pour des voyageurs amoureux de nature et de culture.",
+    "Douze jours pour traverser la Namibie d'ouest en est, en autotour 4x4. Des dunes orangées du Sossusvlei aux brumes côtières de Swakopmund, des peintures rupestres du Twyfelfontein aux safaris au lever du jour à Etosha. Un itinéraire conçu pour un couple amoureux de paysages bruts et de nuits étoilées.",
   days: [
-    { day: 1, title: "Arrivée à Arusha", location: "Arusha", narrative: "Accueil à l'aéroport...", accommodation: "Arusha Coffee Lodge", meals: "Dîner inclus" },
-    { day: 2, title: "Tarangire — premiers éléphants", location: "Tarangire NP", narrative: "Safari toute la journée...", accommodation: "Tarangire Treetops", meals: "Petit-déj, déjeuner, dîner" },
-    { day: 3, title: "Du cratère Ngorongoro", location: "Ngorongoro", narrative: "...", accommodation: "Ngorongoro Crater Lodge", meals: "PC" },
+    { day: 1, date: "2026-09-15", stage: "Arrivée Windhoek", accommodation: "Hartmann Suites Apartments", type: "Appartement", distance_km: 50, drive_hours: 1, narrative: "Arrivée en fin de matinée. Prise du véhicule 4x4 et nuit à Windhoek pour récupérer du voyage." },
+    { day: 2, date: "2026-09-16", stage: "Windhoek → Naukluft", accommodation: "Camp Gecko", type: "Camp", distance_km: 280, drive_hours: 4, narrative: "Route plein sud vers les plateaux du Naukluft. Première nuit en camp, sous les étoiles." },
+    { day: 3, date: "2026-09-17", stage: "Sesriem - dunes du Sossusvlei", accommodation: "Sesriem Campsite", type: "Camp", distance_km: 150, drive_hours: 2, narrative: "Lever de soleil sur Dune 45 puis marche jusqu'à Deadvlei. Retour au camp en fin d'après-midi." },
+    { day: 4, date: "2026-09-18", stage: "Sesriem - Sesriem Canyon", accommodation: "Sesriem Campsite", type: "Camp", distance_km: 30, drive_hours: 1, narrative: "Matinée au Sesriem Canyon. Après-midi libre pour profiter de la piscine du camp avant la soirée." },
+    { day: 5, date: "2026-09-19", stage: "Sesriem → Swakopmund", accommodation: "Bruckendorf Apartment", type: "Appartement", distance_km: 350, drive_hours: 5, narrative: "Traversée du désert vers la côte. Arrivée à Swakopmund en fin de journée. Dîner au restaurant The Tug." },
+    { day: 6, date: "2026-09-20", stage: "Swakopmund - excursion Sandwich Harbour", accommodation: "Bruckendorf Apartment", type: "Appartement", distance_km: 100, drive_hours: 4, narrative: "Excursion guidée à Sandwich Harbour : dunes plongeant dans l'océan, otaries, flamants roses." },
+    { day: 7, date: "2026-09-21", stage: "Swakopmund → Brandberg", accommodation: "Brandberg White Lady Lodge", type: "Lodge", distance_km: 240, drive_hours: 3, narrative: "Route par Henties Bay et la Skeleton Coast jusqu'au pied du Brandberg, plus haut sommet de Namibie." },
+    { day: 8, date: "2026-09-22", stage: "Brandberg - peintures rupestres", accommodation: "Brandberg White Lady Lodge", type: "Lodge", distance_km: 0, drive_hours: 0, narrative: "Marche guidée jusqu'à la White Lady, peinture rupestre vieille de 2000 ans. Après-midi détente." },
+    { day: 9, date: "2026-09-23", stage: "Brandberg → Twyfelfontein → Khowarib", accommodation: "Khowarib Lodge", type: "Lodge", distance_km: 220, drive_hours: 4, narrative: "Visite du site UNESCO de Twyfelfontein, gravures rupestres dans le grès rouge." },
+    { day: 10, date: "2026-09-24", stage: "Khowarib → Etosha (porte sud)", accommodation: "Etosha Safari Lodge", type: "Lodge", distance_km: 280, drive_hours: 4, narrative: "Route vers Etosha. Premier game drive en fin d'après-midi autour des points d'eau." },
+    { day: 11, date: "2026-09-25", stage: "Etosha - safari journée pleine", accommodation: "Etosha Safari Lodge", type: "Lodge", distance_km: 180, drive_hours: 6, narrative: "Safari toute la journée dans le parc. Pause pique-nique à Halali. Retour en lodge au coucher du soleil." },
+    { day: 12, date: "2026-09-26", stage: "Etosha → Windhoek - vol retour", accommodation: "Vol", type: "Vol", distance_km: 480, drive_hours: 6, narrative: "Retour à Windhoek. Restitution du véhicule. Vol international en fin de journée." },
   ],
-  accommodations: [
-    { name: "Arusha Coffee Lodge", nights: 1, type: "Lodge boutique" },
-    { name: "Tarangire Treetops", nights: 1, type: "Lodge sur pilotis" },
-    { name: "Ngorongoro Crater Lodge", nights: 2, type: "Lodge de luxe" },
+  accommodations_summary: [
+    { name: "Hartmann Suites Apartments", location: "Windhoek", nights: 1, type: "Appartement" },
+    { name: "Camp Gecko", location: "Naukluft", nights: 1, type: "Camp" },
+    { name: "Sesriem Campsite", location: "Sesriem", nights: 2, type: "Camp" },
+    { name: "Bruckendorf Apartment", location: "Swakopmund", nights: 2, type: "Appartement" },
+    { name: "Brandberg White Lady Lodge", location: "Brandberg", nights: 2, type: "Lodge" },
+    { name: "Khowarib Lodge", location: "Khowarib", nights: 1, type: "Lodge" },
+    { name: "Etosha Safari Lodge", location: "Etosha", nights: 2, type: "Lodge" },
   ],
   contacts: [
-    { role: "Guide local", name: "Joseph M.", phone: "+255 ..." },
-    { role: "Lodge contact", name: "Reception Arusha CL", phone: "+255 ..." },
+    { role: "Loueur 4x4", name: "Asco Car Hire - Windhoek", phone: "+264 61 377 200", email: "info@ascocarhire.com" },
+    { role: "Guide local Sandwich Harbour", name: "Sandwich Harbour 4x4", phone: "+264 64 405 080" },
+    { role: "Réception Brandberg WL Lodge", name: "Brandberg WL Lodge", phone: "+264 67 290 822" },
+    { role: "Urgence Namibie", name: "Police 24/7", phone: "10111" },
   ],
   tips: [
-    "Pensez à prévoir des vêtements neutres (kaki, beige) pour les safaris.",
-    "L'altitude au Ngorongoro peut surprendre la première nuit — restez hydratés.",
-    "Pourboires : ~10 USD/jour pour le guide, ~5 USD/jour pour le chauffeur.",
+    "Conduite à gauche en Namibie. Permis international obligatoire.",
+    "Faire le plein dès qu'une station est disponible — les distances entre stations peuvent dépasser 200 km.",
+    "Pour les excursions à Sossusvlei, partir avant 6h pour profiter du lever de soleil sur les dunes.",
+    "Prévoir des vêtements chauds : nuits fraîches dans le désert (5-10°C), chaudes en journée (25-30°C).",
+    "Eau potable : préférer l'eau en bouteille ou filtrée. Pas de risque sanitaire majeur.",
+    "Pourboires : 50-100 NAD par jour pour les guides, 10-20 NAD pour les services lodges.",
   ],
 };
 
-function formatDateRange(start: string, end: string) {
-  const fmt = (d: string) =>
-    new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-  return `${fmt(start)} → ${fmt(end)}`;
+function formatShortDate(iso: string) {
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
 function PreviewMockPage() {
@@ -91,12 +109,11 @@ function PreviewMockPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sticky toolbar */}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
           <Link to="/dashboard">
             <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" /> Retour au dashboard
+              <ArrowLeft className="h-4 w-4" /> Retour au tableau de bord
             </Button>
           </Link>
           <Button size="sm" onClick={exportPDF} className="gap-2">
@@ -107,44 +124,28 @@ function PreviewMockPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-12">
         <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          {/* 1. Cover */}
-          <CoverSection
-            cover={rb.cover}
-            dateRange={formatDateRange(rb.start_date, rb.end_date)}
-            onSave={(cover) => setRb({ ...rb, cover })}
-          />
+          <CoverSection cover={rb.cover} onSave={(cover) => setRb({ ...rb, cover })} />
 
           <div className="space-y-14 px-8 py-12 sm:px-14">
-            {/* 2. Overview */}
             <EditableTextSection
-              label="Aperçu du voyage"
+              label="Vue d'ensemble"
               value={rb.overview}
               onSave={(overview) => setRb({ ...rb, overview })}
             />
 
-            {/* 3. Days */}
-            <DaysSection
-              days={rb.days}
-              onSave={(days) => setRb({ ...rb, days })}
-            />
+            <DaysTableSection days={rb.days} onSave={(days) => setRb({ ...rb, days })} />
 
-            {/* 4. Accommodations */}
             <AccommodationsSection
-              accommodations={rb.accommodations}
-              onSave={(accommodations) => setRb({ ...rb, accommodations })}
+              items={rb.accommodations_summary}
+              onSave={(accommodations_summary) => setRb({ ...rb, accommodations_summary })}
             />
 
-            {/* 5. Contacts */}
             <ContactsSection
               contacts={rb.contacts}
               onSave={(contacts) => setRb({ ...rb, contacts })}
             />
 
-            {/* 6. Tips */}
-            <TipsSection
-              tips={rb.tips}
-              onSave={(tips) => setRb({ ...rb, tips })}
-            />
+            <TipsSection tips={rb.tips} onSave={(tips) => setRb({ ...rb, tips })} />
           </div>
         </article>
       </main>
@@ -152,21 +153,11 @@ function PreviewMockPage() {
   );
 }
 
-/* ---------- Section primitives ---------- */
+/* ---------- Section header ---------- */
 
 function SectionHeader({
-  label,
-  editing,
-  onEdit,
-  onSave,
-  onCancel,
-}: {
-  label: string;
-  editing: boolean;
-  onEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
-}) {
+  label, editing, onEdit, onSave, onCancel,
+}: { label: string; editing: boolean; onEdit: () => void; onSave: () => void; onCancel: () => void }) {
   return (
     <div className="mb-5 flex items-center justify-between">
       <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">{label}</h2>
@@ -188,22 +179,19 @@ function SectionHeader({
   );
 }
 
-/* ---------- 1. Cover ---------- */
+/* ---------- Cover ---------- */
 
-function CoverSection({
-  cover,
-  dateRange,
-  onSave,
-}: { cover: Cover; dateRange: string; onSave: (c: Cover) => void }) {
+function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(cover);
 
   return (
-    <div className="relative bg-gradient-to-br from-primary to-primary-light px-8 py-20 text-primary-foreground sm:px-14 sm:py-24">
+    <div className="relative bg-gradient-to-br from-primary to-primary-light px-8 py-20 text-primary-foreground sm:px-14 sm:py-28">
       <div className="absolute right-6 top-6">
         {editing ? (
           <div className="flex items-center gap-1">
-            <Button size="sm" variant="ghost" onClick={() => { setDraft(cover); setEditing(false); }}
+            <Button size="sm" variant="ghost"
+              onClick={() => { setDraft(cover); setEditing(false); }}
               className="gap-1.5 text-primary-foreground/90 hover:bg-white/15 hover:text-primary-foreground">
               <X className="h-3.5 w-3.5" /> Annuler
             </Button>
@@ -224,40 +212,32 @@ function CoverSection({
         <div className="text-[11px] font-medium uppercase tracking-[0.3em] opacity-80">Roadbook</div>
 
         {editing ? (
-          <div className="mt-6 space-y-3 text-left">
-            <Input
-              value={draft.title}
-              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60 text-2xl font-bold"
-            />
-            <Input
-              value={draft.subtitle}
-              onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60"
-            />
-            <Input
-              value={draft.tagline}
-              onChange={(e) => setDraft({ ...draft, tagline: e.target.value })}
-              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60"
-            />
+          <div className="mt-8 space-y-3 text-left">
+            <Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60 text-2xl font-bold" />
+            <Input value={draft.subtitle} onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
+              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60" />
+            <Input value={draft.tagline} onChange={(e) => setDraft({ ...draft, tagline: e.target.value })}
+              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60" />
+            <Input value={draft.dates_label} onChange={(e) => setDraft({ ...draft, dates_label: e.target.value })}
+              className="bg-white/15 border-white/30 text-primary-foreground placeholder:text-primary-foreground/60" />
           </div>
         ) : (
           <>
-            <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">{cover.title}</h1>
-            <p className="mt-4 text-lg opacity-95 sm:text-xl">{cover.subtitle}</p>
-            <p className="mt-3 text-sm italic opacity-85 sm:text-base">{cover.tagline}</p>
+            <h1 className="mt-6 text-5xl font-bold tracking-tight sm:text-6xl">{cover.title}</h1>
+            <p className="mt-6 text-xl opacity-95 sm:text-2xl">{cover.subtitle}</p>
+            <p className="mt-3 text-base italic opacity-85">{cover.tagline}</p>
+            <div className="mt-10 inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-2 text-sm font-medium tracking-wide backdrop-blur">
+              {cover.dates_label}
+            </div>
           </>
         )}
-
-        <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-medium tracking-wide backdrop-blur">
-          {dateRange}
-        </div>
       </div>
     </div>
   );
 }
 
-/* ---------- 2 & generic plain-text section ---------- */
+/* ---------- Editable plain text ---------- */
 
 function EditableTextSection({
   label, value, onSave,
@@ -283,129 +263,159 @@ function EditableTextSection({
   );
 }
 
-/* ---------- 3. Days ---------- */
+/* ---------- Days table ---------- */
 
-function DaysSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) => void }) {
+function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(days);
 
-  const updateDay = (i: number, patch: Partial<Day>) =>
+  const update = (i: number, patch: Partial<Day>) =>
     setDraft((d) => d.map((day, idx) => (idx === i ? { ...day, ...patch } : day)));
+
+  const list = editing ? draft : days;
 
   return (
     <section>
       <SectionHeader
-        label="Jour par jour"
+        label="Itinéraire jour par jour"
         editing={editing}
         onEdit={() => { setDraft(days); setEditing(true); }}
         onSave={() => { onSave(draft); setEditing(false); }}
         onCancel={() => setEditing(false)}
       />
 
-      <ol className="space-y-5">
-        {(editing ? draft : days).map((d, i) => (
-          <li key={i} className="rounded-xl border border-border bg-secondary/30 p-5">
-            <div className="flex items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                {d.day}
-              </span>
-              <div className="flex-1 min-w-0">
-                {editing ? (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Input value={d.title} onChange={(e) => updateDay(i, { title: e.target.value })} placeholder="Titre" />
-                    <Input value={d.location} onChange={(e) => updateDay(i, { location: e.target.value })} placeholder="Lieu" />
-                  </div>
-                ) : (
-                  <>
-                    <h3 className="text-lg font-semibold leading-tight">{d.title}</h3>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-primary">
-                      <MapPin className="h-3 w-3" /> {d.location}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {editing ? (
-              <Textarea
-                rows={3}
-                className="mt-3"
-                value={d.narrative}
-                onChange={(e) => updateDay(i, { narrative: e.target.value })}
-                placeholder="Narratif"
-              />
-            ) : (
-              <p className="mt-3 text-sm leading-relaxed text-foreground/80">{d.narrative}</p>
-            )}
-
-            <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-              <div className="flex items-start gap-2 text-foreground/85">
-                <Bed className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                {editing ? (
-                  <Input value={d.accommodation} onChange={(e) => updateDay(i, { accommodation: e.target.value })} placeholder="Hébergement" />
-                ) : (
-                  <span><span className="text-muted-foreground">Hébergement : </span>{d.accommodation}</span>
-                )}
-              </div>
-              <div className="flex items-start gap-2 text-foreground/85">
-                <Utensils className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                {editing ? (
-                  <Input value={d.meals} onChange={(e) => updateDay(i, { meals: e.target.value })} placeholder="Repas" />
-                ) : (
-                  <span><span className="text-muted-foreground">Repas : </span>{d.meals}</span>
-                )}
-              </div>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <div className="overflow-hidden rounded-xl border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-3 py-3 w-12">Jour</th>
+              <th className="px-3 py-3 w-20">Date</th>
+              <th className="px-3 py-3">Étape</th>
+              <th className="px-3 py-3">Hébergement</th>
+              <th className="px-3 py-3 w-24">Type</th>
+              <th className="px-3 py-3 w-24 text-right">Distance</th>
+              <th className="px-3 py-3 w-20 text-right">Route</th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((d, i) => (
+              <Fragment key={i}>
+                <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+                  <td className="px-3 py-3 font-semibold text-primary">J{d.day}</td>
+                  <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
+                    {editing
+                      ? <Input value={d.date} onChange={(e) => update(i, { date: e.target.value })} className="h-8" />
+                      : formatShortDate(d.date)}
+                  </td>
+                  <td className="px-3 py-3 font-medium">
+                    {editing
+                      ? <Input value={d.stage} onChange={(e) => update(i, { stage: e.target.value })} className="h-8" />
+                      : d.stage}
+                  </td>
+                  <td className="px-3 py-3">
+                    {editing
+                      ? <Input value={d.accommodation} onChange={(e) => update(i, { accommodation: e.target.value })} className="h-8" />
+                      : d.accommodation}
+                  </td>
+                  <td className="px-3 py-3 text-muted-foreground">
+                    {editing
+                      ? <Input value={d.type} onChange={(e) => update(i, { type: e.target.value })} className="h-8" />
+                      : d.type}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums">
+                    {editing ? (
+                      <Input type="number" value={d.distance_km}
+                        onChange={(e) => update(i, { distance_km: parseInt(e.target.value) || 0 })}
+                        className="h-8 w-20 ml-auto text-right" />
+                    ) : (
+                      <span>{d.distance_km} km</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums">
+                    {editing ? (
+                      <Input type="number" value={d.drive_hours}
+                        onChange={(e) => update(i, { drive_hours: parseInt(e.target.value) || 0 })}
+                        className="h-8 w-16 ml-auto text-right" />
+                    ) : (
+                      <span>{d.drive_hours} h</span>
+                    )}
+                  </td>
+                </tr>
+                <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+                  <td colSpan={7} className="px-3 pb-4 pt-0 italic text-foreground/70">
+                    {editing ? (
+                      <Textarea rows={2} value={d.narrative}
+                        onChange={(e) => update(i, { narrative: e.target.value })}
+                        className="italic" />
+                    ) : (
+                      d.narrative
+                    )}
+                  </td>
+                </tr>
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
 
-/* ---------- 4. Accommodations ---------- */
+/* ---------- Accommodations ---------- */
 
 function AccommodationsSection({
-  accommodations, onSave,
-}: { accommodations: Accommodation[]; onSave: (a: Accommodation[]) => void }) {
+  items, onSave,
+}: { items: AccommodationSummary[]; onSave: (a: AccommodationSummary[]) => void }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(accommodations);
-  const update = (i: number, patch: Partial<Accommodation>) =>
+  const [draft, setDraft] = useState(items);
+  const update = (i: number, patch: Partial<AccommodationSummary>) =>
     setDraft((d) => d.map((a, idx) => (idx === i ? { ...a, ...patch } : a)));
+
+  const list = editing ? draft : items;
 
   return (
     <section>
       <SectionHeader
         label="Hébergements"
         editing={editing}
-        onEdit={() => { setDraft(accommodations); setEditing(true); }}
+        onEdit={() => { setDraft(items); setEditing(true); }}
         onSave={() => { onSave(draft); setEditing(false); }}
         onCancel={() => setEditing(false)}
       />
 
       <div className="overflow-hidden rounded-xl border border-border">
         <table className="w-full text-sm">
-          <thead className="bg-secondary/60 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Nom</th>
+              <th className="px-4 py-3">Lodge / Camp</th>
+              <th className="px-4 py-3">Localisation</th>
               <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3 text-right">Nuits</th>
+              <th className="px-4 py-3 text-right w-20">Nuits</th>
             </tr>
           </thead>
           <tbody>
-            {(editing ? draft : accommodations).map((a, i) => (
-              <tr key={i} className="border-t border-border">
+            {list.map((a, i) => (
+              <tr key={i} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
                 <td className="px-4 py-3 font-medium">
-                  {editing ? <Input value={a.name} onChange={(e) => update(i, { name: e.target.value })} /> : a.name}
+                  {editing
+                    ? <Input value={a.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8" />
+                    : a.name}
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
-                  {editing ? <Input value={a.type} onChange={(e) => update(i, { type: e.target.value })} /> : a.type}
+                  {editing
+                    ? <Input value={a.location} onChange={(e) => update(i, { location: e.target.value })} className="h-8" />
+                    : a.location}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-muted-foreground">
+                  {editing
+                    ? <Input value={a.type} onChange={(e) => update(i, { type: e.target.value })} className="h-8" />
+                    : a.type}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">
                   {editing ? (
                     <Input type="number" min={1} value={a.nights}
                       onChange={(e) => update(i, { nights: parseInt(e.target.value) || 1 })}
-                      className="w-20 ml-auto" />
+                      className="h-8 w-16 ml-auto text-right" />
                   ) : a.nights}
                 </td>
               </tr>
@@ -417,7 +427,7 @@ function AccommodationsSection({
   );
 }
 
-/* ---------- 5. Contacts ---------- */
+/* ---------- Contacts ---------- */
 
 function ContactsSection({
   contacts, onSave,
@@ -427,43 +437,61 @@ function ContactsSection({
   const update = (i: number, patch: Partial<Contact>) =>
     setDraft((d) => d.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
 
+  const list = editing ? draft : contacts;
+
   return (
     <section>
       <SectionHeader
-        label="Contacts utiles"
+        label="Contacts pratiques"
         editing={editing}
         onEdit={() => { setDraft(contacts); setEditing(true); }}
         onSave={() => { onSave(draft); setEditing(false); }}
         onCancel={() => setEditing(false)}
       />
 
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {(editing ? draft : contacts).map((c, i) => (
-          <li key={i} className="rounded-xl border border-border p-4">
-            {editing ? (
-              <div className="space-y-2">
-                <Input value={c.role} onChange={(e) => update(i, { role: e.target.value })} placeholder="Rôle" />
-                <Input value={c.name} onChange={(e) => update(i, { name: e.target.value })} placeholder="Nom" />
-                <Input value={c.phone} onChange={(e) => update(i, { phone: e.target.value })} placeholder="Téléphone" />
-              </div>
-            ) : (
-              <>
-                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{c.role}</div>
-                <div className="mt-1 font-medium">{c.name}</div>
-                <div className="mt-1 flex items-center gap-1.5 text-sm text-foreground/80">
-                  <Phone className="h-3.5 w-3.5 text-primary" />
-                  {c.phone}
-                </div>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className="overflow-hidden rounded-xl border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">Rôle</th>
+              <th className="px-4 py-3">Nom</th>
+              <th className="px-4 py-3">Téléphone</th>
+              <th className="px-4 py-3">Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((c, i) => (
+              <tr key={i} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {editing
+                    ? <Input value={c.role} onChange={(e) => update(i, { role: e.target.value })} className="h-8" />
+                    : c.role}
+                </td>
+                <td className="px-4 py-3 font-medium">
+                  {editing
+                    ? <Input value={c.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8" />
+                    : c.name}
+                </td>
+                <td className="px-4 py-3 tabular-nums">
+                  {editing
+                    ? <Input value={c.phone} onChange={(e) => update(i, { phone: e.target.value })} className="h-8" />
+                    : c.phone}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {editing
+                    ? <Input value={c.email ?? ""} onChange={(e) => update(i, { email: e.target.value })} className="h-8" />
+                    : (c.email || "—")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
 
-/* ---------- 6. Tips ---------- */
+/* ---------- Tips ---------- */
 
 function TipsSection({ tips, onSave }: { tips: string[]; onSave: (t: string[]) => void }) {
   const [editing, setEditing] = useState(false);
@@ -484,7 +512,7 @@ function TipsSection({ tips, onSave }: { tips: string[]; onSave: (t: string[]) =
 
       {editing ? (
         <>
-          <Textarea rows={6} value={draft} onChange={(e) => setDraft(e.target.value)} />
+          <Textarea rows={7} value={draft} onChange={(e) => setDraft(e.target.value)} />
           <p className="mt-2 text-xs text-muted-foreground">Un conseil par ligne.</p>
         </>
       ) : (
