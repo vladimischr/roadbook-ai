@@ -186,6 +186,7 @@ function NewRoadbook() {
                   value={form.traveler_profile}
                   onChange={(v) => update("traveler_profile", v)}
                   options={PROFILES}
+                  placeholder="Choisir un profil"
                 />
               </Field>
             </div>
@@ -195,13 +196,15 @@ function NewRoadbook() {
                   value={form.theme}
                   onChange={(v) => update("theme", v)}
                   options={THEMES}
+                  placeholder="Choisir un thème"
                 />
               </Field>
-              <Field label="Budget">
+              <Field label="Gamme de budget">
                 <SelectField
                   value={form.budget_range}
                   onChange={(v) => update("budget_range", v)}
                   options={BUDGETS}
+                  placeholder="Choisir un budget"
                 />
               </Field>
             </div>
