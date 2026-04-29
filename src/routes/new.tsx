@@ -177,12 +177,15 @@ function NewRoadbook() {
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
-        <h1 className="text-3xl font-semibold tracking-tight">Nouveau roadbook</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="eyebrow mb-3">Nouveau voyage</p>
+        <h1 className="font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
+          Créer un nouveau roadbook
+        </h1>
+        <p className="mt-3 max-w-xl text-base text-muted-foreground">
           Renseignez le voyage — nous préparons la trame du programme.
         </p>
 
-        <form onSubmit={onGenerate} className="mt-8 space-y-8">
+        <form onSubmit={onGenerate} className="mt-10 space-y-10">
           <Section title="Client et destination">
             <Field label="Nom du client">
               <Input
@@ -370,11 +373,13 @@ function NewRoadbook() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+    <section className="space-y-5">
+      <h2 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
         {title}
       </h2>
-      <div className="space-y-4">{children}</div>
+      <div className="space-y-4 rounded-2xl border border-border bg-surface p-6 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+        {children}
+      </div>
     </section>
   );
 }

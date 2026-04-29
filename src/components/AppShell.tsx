@@ -22,16 +22,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+    <div className="min-h-screen bg-canvas">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-canvas/85 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Logo />
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground sm:inline">{user.email}</span>
             <Button
               variant="ghost"
               size="sm"
-              className="gap-2"
+              className="gap-2 transition-smooth"
               onClick={async () => {
                 await signOut();
                 navigate({ to: "/" });
@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
+      <main className="mx-auto max-w-6xl px-6 py-12 sm:py-16">{children}</main>
     </div>
   );
 }
