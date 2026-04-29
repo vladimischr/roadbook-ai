@@ -180,6 +180,9 @@ function RoadbookPage() {
   const [recomputeOpen, setRecomputeOpen] = useState(false);
   const [preserveModified, setPreserveModified] = useState(true);
   const [recomputing, setRecomputing] = useState(false);
+  const [status, setStatus] = useState<RoadbookStatus>("draft");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [savingState, setSavingState] = useState<"idle" | "saving">("idle");
   const { apiKey } = useGoogleMapsKey();
   const rbRef = useRef<Roadbook | null>(null);
   rbRef.current = rb;
