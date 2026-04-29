@@ -140,6 +140,9 @@
   * {
     border-color: var(--color-border);
   }
+  html {
+    scroll-behavior: smooth;
+  }
   html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -147,6 +150,16 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "ss01", "cv11";
+  }
+  ::selection {
+    background-color: var(--color-accent-warm-soft);
+    color: var(--color-foreground);
+  }
+  button, [role="button"], a {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
   }
   h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.015em;
