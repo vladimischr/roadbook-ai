@@ -68,9 +68,31 @@ export const Route = createFileRoute("/api/generate-roadbook")({
           );
           const inputs = { ...formData, duration_days };
 
-          const userMessage =
-            "Voici les paramètres du voyage à mettre en forme :\n\n" +
-            JSON.stringify(inputs, null, 2);
+          const userMessage = `# CONSIGNE STRICTE
+
+Tu DOIS reprendre tels quels et sans aucune modification ces champs dans ta réponse JSON :
+
+- client_name : "${formData.client_name}"
+- destination : "${formData.destination}"
+- start_date : "${formData.start_date}"  (format YYYY-MM-DD, à reproduire à l'identique)
+- end_date : "${formData.end_date}"  (format YYYY-MM-DD, à reproduire à l'identique)
+- travelers : ${formData.travelers_count}
+- profile : "${formData.traveler_profile}"
+- theme : "${formData.theme}"
+- budget_range : "${formData.budget_range}"
+
+Calcule duration_days = nombre de jours entre start_date et end_date inclus.
+
+# CONTEXTE COMPLÉMENTAIRE
+
+- Mode de génération : ${formData.generation_mode}
+- Notes de l'agent : ${formData.agent_notes || "(aucune)"}
+${formData.generation_mode === "manual" && formData.manual_steps ? `- Étapes imposées par l'agent : ${JSON.stringify(formData.manual_steps)}` : ""}
+
+# TÂCHE
+
+Génère le roadbook complet en JSON conforme à la structure définie dans ton system prompt. Réponds UNIQUEMENT avec le JSON, démarrant directement par {.`;
+          void inputs;
 
           console.log(
             "[generate-roadbook] System prompt longueur:",
