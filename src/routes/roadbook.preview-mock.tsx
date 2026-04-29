@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, Download, Pencil, Check, X, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -298,62 +298,60 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
             </tr>
           </thead>
           <tbody>
-            {list.map((d, i) => (
-              <Fragment key={i}>
-                <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
-                  <td className="px-3 py-3 font-semibold text-primary">J{d.day}</td>
-                  <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
-                    {editing
-                      ? <Input value={d.date} onChange={(e) => update(i, { date: e.target.value })} className="h-8" />
-                      : formatShortDate(d.date)}
-                  </td>
-                  <td className="px-3 py-3 font-medium">
-                    {editing
-                      ? <Input value={d.stage} onChange={(e) => update(i, { stage: e.target.value })} className="h-8" />
-                      : d.stage}
-                  </td>
-                  <td className="px-3 py-3">
-                    {editing
-                      ? <Input value={d.accommodation} onChange={(e) => update(i, { accommodation: e.target.value })} className="h-8" />
-                      : d.accommodation}
-                  </td>
-                  <td className="px-3 py-3 text-muted-foreground">
-                    {editing
-                      ? <Input value={d.type} onChange={(e) => update(i, { type: e.target.value })} className="h-8" />
-                      : d.type}
-                  </td>
-                  <td className="px-3 py-3 text-right tabular-nums">
-                    {editing ? (
-                      <Input type="number" value={d.distance_km}
-                        onChange={(e) => update(i, { distance_km: parseInt(e.target.value) || 0 })}
-                        className="h-8 w-20 ml-auto text-right" />
-                    ) : (
-                      <span>{d.distance_km} km</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-3 text-right tabular-nums">
-                    {editing ? (
-                      <Input type="number" value={d.drive_hours}
-                        onChange={(e) => update(i, { drive_hours: parseInt(e.target.value) || 0 })}
-                        className="h-8 w-16 ml-auto text-right" />
-                    ) : (
-                      <span>{d.drive_hours} h</span>
-                    )}
-                  </td>
-                </tr>
-                <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
-                  <td colSpan={7} className="px-3 pb-4 pt-0 italic text-foreground/70">
-                    {editing ? (
-                      <Textarea rows={2} value={d.narrative}
-                        onChange={(e) => update(i, { narrative: e.target.value })}
-                        className="italic" />
-                    ) : (
-                      d.narrative
-                    )}
-                  </td>
-                </tr>
-              </Fragment>
-            ))}
+            {list.flatMap((d, i) => [
+              <tr key={`r-${i}`} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+                <td className="px-3 py-3 font-semibold text-primary">J{d.day}</td>
+                <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
+                  {editing
+                    ? <Input value={d.date} onChange={(e) => update(i, { date: e.target.value })} className="h-8" />
+                    : formatShortDate(d.date)}
+                </td>
+                <td className="px-3 py-3 font-medium">
+                  {editing
+                    ? <Input value={d.stage} onChange={(e) => update(i, { stage: e.target.value })} className="h-8" />
+                    : d.stage}
+                </td>
+                <td className="px-3 py-3">
+                  {editing
+                    ? <Input value={d.accommodation} onChange={(e) => update(i, { accommodation: e.target.value })} className="h-8" />
+                    : d.accommodation}
+                </td>
+                <td className="px-3 py-3 text-muted-foreground">
+                  {editing
+                    ? <Input value={d.type} onChange={(e) => update(i, { type: e.target.value })} className="h-8" />
+                    : d.type}
+                </td>
+                <td className="px-3 py-3 text-right tabular-nums">
+                  {editing ? (
+                    <Input type="number" value={d.distance_km}
+                      onChange={(e) => update(i, { distance_km: parseInt(e.target.value) || 0 })}
+                      className="h-8 w-20 ml-auto text-right" />
+                  ) : (
+                    <span>{d.distance_km} km</span>
+                  )}
+                </td>
+                <td className="px-3 py-3 text-right tabular-nums">
+                  {editing ? (
+                    <Input type="number" value={d.drive_hours}
+                      onChange={(e) => update(i, { drive_hours: parseInt(e.target.value) || 0 })}
+                      className="h-8 w-16 ml-auto text-right" />
+                  ) : (
+                    <span>{d.drive_hours} h</span>
+                  )}
+                </td>
+              </tr>,
+              <tr key={`n-${i}`} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+                <td colSpan={7} className="px-3 pb-4 pt-0 italic text-foreground/70">
+                  {editing ? (
+                    <Textarea rows={2} value={d.narrative}
+                      onChange={(e) => update(i, { narrative: e.target.value })}
+                      className="italic" />
+                  ) : (
+                    d.narrative
+                  )}
+                </td>
+              </tr>,
+            ])}
           </tbody>
         </table>
       </div>
