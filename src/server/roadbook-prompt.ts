@@ -89,6 +89,8 @@ Détails des champs :
 
 9. Si l'agent a fourni des étapes manuelles (mode "manual" avec manual_steps), respecte exactement ces étapes — n'en invente pas d'autres, n'en supprime pas.
 
+10. Cohérence distance/durée/narrative. Quand tu mentionnes "1h vol ou 6h trajet" dans le narrative d'un jour, les champs distance_km et drive_hours doivent refléter ces données (par exemple distance_km: 600, drive_hours: 6 pour 6h de trajet). Ne mets jamais 0 km / 0 h si le narrative parle d'un déplacement réel. Si l'étape est sur place sans déplacement, alors 0 km / 0 h est OK.
+
 # Réponse
 
 Tu réponds avec le JSON brut, rien d'autre. Pas de "Voici votre roadbook :", pas de markdown, pas de commentaire. Le JSON commence directement par { et finit par }.`;

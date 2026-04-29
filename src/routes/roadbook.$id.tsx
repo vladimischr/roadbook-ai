@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Download,
@@ -17,6 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { APIProvider } from "@vis.gl/react-google-maps";
+import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
+import { RoadbookMap } from "@/components/RoadbookMap";
+import { PlacesAutocompleteInput } from "@/components/PlacesAutocompleteInput";
+import { geocodePlace } from "@/server/maps.functions";
 
 export const Route = createFileRoute("/roadbook/$id")({
   component: RoadbookPage,
@@ -39,6 +44,8 @@ interface Day {
   drive_hours: number;
   flight: string;
   narrative: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 interface AccommodationSummary {
   name: string;
@@ -106,6 +113,9 @@ function RoadbookPage() {
   const { user, loading: authLoading } = useAuth();
   const [rb, setRb] = useState<Roadbook | null>(null);
   const [loading, setLoading] = useState(true);
+  const { apiKey } = useGoogleMapsKey();
+  const rbRef = useRef<Roadbook | null>(null);
+  rbRef.current = rb;
 
   useEffect(() => {
     if (authLoading) return;
@@ -115,7 +125,7 @@ function RoadbookPage() {
     }
     supabase
       .from("roadbooks")
-      .select("content")
+      .select("content,destination")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -124,7 +134,12 @@ function RoadbookPage() {
           navigate({ to: "/dashboard" });
           return;
         }
-        setRb(data.content as unknown as Roadbook);
+        const content = data.content as unknown as Roadbook;
+        // Garantit que la destination est dans l'objet pour le bias géo
+        if (!content.destination && data.destination) {
+          content.destination = data.destination;
+        }
+        setRb(content);
         setLoading(false);
       });
   }, [id, user, authLoading, navigate]);
@@ -142,6 +157,65 @@ function RoadbookPage() {
     }
   };
 
+  // Persistance silencieuse (sans toast) pour le géocodage rétroactif
+  const persistSilent = async (next: Roadbook) => {
+    setRb(next);
+    const { error } = await supabase
+      .from("roadbooks")
+      .update({ content: next as any })
+      .eq("id", id);
+    if (error) console.error("Geocode persist failed:", error.message);
+  };
+
+  // Géocodage rétroactif des jours sans lat/lng
+  useEffect(() => {
+    if (!rb) return;
+    const days = rb.days || [];
+    const missing = days
+      .map((d, idx) => ({ d, idx }))
+      .filter(({ d }) => typeof d.lat !== "number" || typeof d.lng !== "number")
+      .filter(({ d }) => (d.stage || d.accommodation || "").trim().length > 0);
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      let working = rbRef.current;
+      if (!working) return;
+      for (const { idx } of missing) {
+        if (cancelled) return;
+        const day = working.days[idx];
+        if (!day) continue;
+        if (typeof day.lat === "number" && typeof day.lng === "number") continue;
+        const query = (day.stage || day.accommodation || "").trim();
+        if (!query) continue;
+        try {
+          const res = await geocodePlace({
+            data: { query, region: working.destination },
+          });
+          if (cancelled) return;
+          if (res.lat == null || res.lng == null) {
+            console.warn(
+              `[map] Géocodage impossible pour J${day.day} : "${query}"`,
+            );
+            continue;
+          }
+          const nextDays: Day[] = working.days.map((d, i) =>
+            i === idx ? { ...d, lat: res.lat, lng: res.lng } : d,
+          );
+          working = { ...working, days: nextDays };
+          await persistSilent(working);
+        } catch (e) {
+          console.error("Geocode error:", e);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rb?.days?.length, id]);
+
   if (authLoading || loading || !rb) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
@@ -150,7 +224,7 @@ function RoadbookPage() {
     );
   }
 
-  return (
+  const content = (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
@@ -184,13 +258,28 @@ function RoadbookPage() {
               onSave={(overview) => persist({ ...rb, overview })}
             />
 
+            <section>
+              <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                Tracé du voyage
+              </h2>
+              {apiKey ? (
+                <RoadbookMap days={rb.days || []} />
+              ) : (
+                <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
+                  Chargement de la carte…
+                </div>
+              )}
+            </section>
+
             <DaysTableSection
               days={rb.days || []}
+              regionBias={rb.destination}
               onSave={(days) => persist({ ...rb, days })}
             />
 
             <AccommodationsSection
               items={rb.accommodations_summary || []}
+              regionBias={rb.destination}
               onSave={(accommodations_summary) =>
                 persist({ ...rb, accommodations_summary })
               }
@@ -198,6 +287,7 @@ function RoadbookPage() {
 
             <ContactsSection
               contacts={rb.contacts || []}
+              regionBias={rb.destination}
               onSave={(contacts) => persist({ ...rb, contacts })}
             />
 
@@ -206,6 +296,13 @@ function RoadbookPage() {
         </article>
       </main>
     </div>
+  );
+
+  if (!apiKey) return content;
+  return (
+    <APIProvider apiKey={apiKey} libraries={["places", "marker"]}>
+      {content}
+    </APIProvider>
   );
 }
 
@@ -372,7 +469,15 @@ function renumberDays(list: Day[]): Day[] {
   return list.map((d, i) => ({ ...d, day: i + 1 }));
 }
 
-function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) => void }) {
+function DaysTableSection({
+  days,
+  onSave,
+  regionBias,
+}: {
+  days: Day[];
+  onSave: (d: Day[]) => void;
+  regionBias?: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(days);
 
@@ -432,14 +537,41 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
                   </td>
                   <td className="px-3 py-3 font-medium">
                     {editing ? (
-                      <Input value={d.stage} onChange={(e) => update(i, { stage: e.target.value })} className="h-8" />
+                      <PlacesAutocompleteInput
+                        value={d.stage}
+                        onChange={(v) => update(i, { stage: v })}
+                        onSelect={(p) =>
+                          update(i, {
+                            stage: p.name,
+                            lat: p.lat,
+                            lng: p.lng,
+                          })
+                        }
+                        regionBias={regionBias}
+                        className="h-8"
+                      />
                     ) : (
                       d.stage
                     )}
                   </td>
                   <td className="px-3 py-3">
                     {editing ? (
-                      <Input value={d.accommodation} onChange={(e) => update(i, { accommodation: e.target.value })} className="h-8" />
+                      <PlacesAutocompleteInput
+                        value={d.accommodation}
+                        onChange={(v) => update(i, { accommodation: v })}
+                        onSelect={(p) =>
+                          update(i, {
+                            accommodation: p.name,
+                            // Si l'étape n'a pas encore de coords, on les hérite de l'hébergement
+                            ...(typeof d.lat !== "number" && p.lat != null
+                              ? { lat: p.lat, lng: p.lng }
+                              : {}),
+                          })
+                        }
+                        regionBias={regionBias}
+                        types={["establishment"]}
+                        className="h-8"
+                      />
                     ) : (
                       d.accommodation
                     )}
@@ -529,9 +661,11 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
 function AccommodationsSection({
   items,
   onSave,
+  regionBias,
 }: {
   items: AccommodationSummary[];
   onSave: (a: AccommodationSummary[]) => void;
+  regionBias?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(items);
@@ -574,14 +708,34 @@ function AccommodationsSection({
               <tr key={i} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
                 <td className="px-4 py-3 font-medium">
                   {editing ? (
-                    <Input value={a.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8" />
+                    <PlacesAutocompleteInput
+                      value={a.name}
+                      onChange={(v) => update(i, { name: v })}
+                      onSelect={(p) =>
+                        update(i, {
+                          name: p.name,
+                          ...(p.formatted && !a.location
+                            ? { location: p.formatted }
+                            : {}),
+                        })
+                      }
+                      regionBias={regionBias}
+                      types={["establishment"]}
+                      className="h-8"
+                    />
                   ) : (
                     a.name
                   )}
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {editing ? (
-                    <Input value={a.location} onChange={(e) => update(i, { location: e.target.value })} className="h-8" />
+                    <PlacesAutocompleteInput
+                      value={a.location}
+                      onChange={(v) => update(i, { location: v })}
+                      onSelect={(p) => update(i, { location: p.name })}
+                      regionBias={regionBias}
+                      className="h-8"
+                    />
                   ) : (
                     a.location
                   )}
@@ -638,9 +792,11 @@ function AccommodationsSection({
 function ContactsSection({
   contacts,
   onSave,
+  regionBias,
 }: {
   contacts: Contact[];
   onSave: (c: Contact[]) => void;
+  regionBias?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(contacts);
@@ -690,7 +846,14 @@ function ContactsSection({
                 </td>
                 <td className="px-4 py-3 font-medium">
                   {editing ? (
-                    <Input value={c.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8" />
+                    <PlacesAutocompleteInput
+                      value={c.name}
+                      onChange={(v) => update(i, { name: v })}
+                      onSelect={(p) => update(i, { name: p.name })}
+                      regionBias={regionBias}
+                      types={["establishment"]}
+                      className="h-8"
+                    />
                   ) : (
                     c.name
                   )}
