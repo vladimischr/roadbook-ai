@@ -295,7 +295,7 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
               <th className="px-3 py-3">Hébergement</th>
               <th className="px-3 py-3 w-24">Type</th>
               <th className="px-3 py-3 w-24 text-right">Distance</th>
-              <th className="px-3 py-3 w-20 text-right">Route</th>
+              <th className="px-3 py-3 w-20 text-right">Itinéraire</th>
             </tr>
           </thead>
           <tbody>
@@ -455,7 +455,7 @@ function ContactsSection({
               <th className="px-4 py-3">Rôle</th>
               <th className="px-4 py-3">Nom</th>
               <th className="px-4 py-3">Téléphone</th>
-              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Courriel</th>
             </tr>
           </thead>
           <tbody>
