@@ -45,6 +45,17 @@ const BUDGETS = [
   "12 à 20 k€",
   "Plus de 20 k€",
 ];
+const MODES = [
+  "Autotour 4x4",
+  "Autotour voiture",
+  "Backpack / routard",
+  "Voyage organisé",
+  "Trek / randonnée",
+  "Croisière",
+  "Vélo / cyclotourisme",
+  "Combiné multi-transports",
+  "Sur-mesure libre",
+];
 
 function NewRoadbook() {
   const navigate = useNavigate();
@@ -60,6 +71,7 @@ function NewRoadbook() {
     traveler_profile: "",
     theme: "",
     budget_range: "",
+    travel_mode: "",
     generation_mode: "ai",
     agent_notes: "",
     manual_steps: [{ location: "", nights: 2, activities: "" }],
@@ -246,6 +258,14 @@ function NewRoadbook() {
                 />
               </Field>
             </div>
+            <Field label="Modalité de voyage">
+              <SelectField
+                value={form.travel_mode ?? ""}
+                onChange={(v) => update("travel_mode", v)}
+                options={MODES}
+                placeholder="Choisir une modalité"
+              />
+            </Field>
           </Section>
 
           <Section title="Mode d’itinéraire">
