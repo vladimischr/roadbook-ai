@@ -120,11 +120,10 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             headers: { "Content-Type": "application/json" },
           });
         } catch (e) {
-          console.error("generate-roadbook error:", e);
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error("[generate-roadbook] fatal error:", msg, e);
           return new Response(
-            JSON.stringify({
-              error: e instanceof Error ? e.message : "Erreur inconnue",
-            }),
+            JSON.stringify({ error: msg || "Erreur inconnue" }),
             { status: 500, headers: { "Content-Type": "application/json" } },
           );
         }
