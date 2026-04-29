@@ -80,12 +80,14 @@ Tu DOIS reprendre tels quels et sans aucune modification ces champs dans ta rép
 - profile : "${formData.traveler_profile}"
 - theme : "${formData.theme}"
 - budget_range : "${formData.budget_range}"
+- travel_mode : "${formData.travel_mode || ""}"
 
 Calcule duration_days = nombre de jours entre start_date et end_date inclus.
 
 # CONTEXTE COMPLÉMENTAIRE
 
 - Mode de génération : ${formData.generation_mode}
+- Modalité de voyage : ${formData.travel_mode || "(non précisée)"} — adapte le ton, le rythme, le type d'hébergements et de transports en conséquence (voir règle 11 du system prompt).
 - Notes de l'agent : ${formData.agent_notes || "(aucune)"}
 ${formData.generation_mode === "manual" && formData.manual_steps ? `- Étapes imposées par l'agent : ${JSON.stringify(formData.manual_steps)}` : ""}
 
