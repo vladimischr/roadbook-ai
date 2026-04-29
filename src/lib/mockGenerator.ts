@@ -13,13 +13,35 @@ export interface RoadbookFormData {
   manual_steps?: { location: string; nights: number; activities: string }[];
 }
 
-// Loose typing — the real shape is enforced by the system prompt and
-// consumed by the preview page.
-export type RoadbookContent = Record<string, any>;
+// Legacy structured type — preserved for pdfExport / roadbook.$id consumers.
+export interface RoadbookContent {
+  cover: { title: string; subtitle: string; tagline: string };
+  overview: string;
+  days: {
+    day: number;
+    date?: string;
+    location: string;
+    title: string;
+    description: string;
+    activities: string[];
+  }[];
+  accommodations: {
+    name: string;
+    location: string;
+    nights: number;
+    notes: string;
+  }[];
+  contacts: { label: string; value: string }[];
+  tips: string[];
+}
+
+// The shape returned by Claude is enforced by the system prompt and consumed
+// directly by the preview page. We keep it loose here.
+export type GeneratedRoadbook = Record<string, any>;
 
 export async function callClaudeAPI(
   form: RoadbookFormData,
-): Promise<RoadbookContent> {
+): Promise<GeneratedRoadbook> {
   const resp = await fetch("/api/generate-roadbook", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -37,5 +59,5 @@ export async function callClaudeAPI(
     throw new Error(message);
   }
 
-  return (await resp.json()) as RoadbookContent;
+  return (await resp.json()) as GeneratedRoadbook;
 }
