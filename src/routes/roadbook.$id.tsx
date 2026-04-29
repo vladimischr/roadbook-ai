@@ -505,8 +505,6 @@ function RoadbookPage() {
 
   // Recalcul IA — régénère narratives, dates, transitions
   const runRecompute = async () => {
-    const cur = rbRef.current;
-    if (!cur) return;
     setRecomputeOpen(false);
     setRecomputing(true);
     // Flush any pending auto-save
@@ -514,8 +512,47 @@ function RoadbookPage() {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
+    // Si une auto-save est en attente, persiste-la d'abord pour garantir
+    // que la DB reflète les derniers ajouts.
+    const pending = dirtyRef.current;
     dirtyRef.current = null;
+    if (pending) {
+      const { error: pendErr } = await supabase
+        .from("roadbooks")
+        .update({ content: pending as never })
+        .eq("id", id);
+      if (pendErr) {
+        toast.error("Sauvegarde préalable échouée : " + pendErr.message);
+        setRecomputing(false);
+        return;
+      }
+    }
+
     try {
+      // CAUSE A FIX — relire le roadbook le plus à jour depuis Supabase
+      // pour s'assurer que tous les ajouts d'étapes sont bien présents
+      // dans le payload envoyé à Claude.
+      const { data: fresh, error: fetchErr } = await supabase
+        .from("roadbooks")
+        .select("content")
+        .eq("id", id)
+        .maybeSingle();
+      if (fetchErr || !fresh?.content) {
+        toast.error(
+          "Impossible de relire le roadbook : " + (fetchErr?.message || "vide"),
+        );
+        setRecomputing(false);
+        return;
+      }
+      const cur = fresh.content as unknown as Roadbook;
+      const inputDaysCount = Array.isArray(cur.days) ? cur.days.length : 0;
+      console.log(
+        "[runRecompute] Envoi à Claude — days:",
+        inputDaysCount,
+        "stages:",
+        (cur.days || []).map((d) => d.stage),
+      );
+
       const res = await fetch("/api/recompute-roadbook", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -534,21 +571,58 @@ function RoadbookPage() {
         return;
       }
       const recomputed = JSON.parse(text) as Roadbook;
-      // Préserve les coordonnées géocodées des étapes existantes par index
+      const outputDaysCount = Array.isArray(recomputed.days)
+        ? recomputed.days.length
+        : 0;
+      console.log(
+        "[runRecompute] Réponse Claude — days:",
+        outputDaysCount,
+        "stages:",
+        (recomputed.days || []).map((d) => d.stage),
+      );
+
+      // CAUSE B safety net — si Claude a perdu/dupliqué des étapes,
+      // on refuse la réponse pour ne pas écraser les ajouts utilisateur.
+      if (outputDaysCount !== inputDaysCount) {
+        console.error(
+          "[runRecompute] Mismatch days count — input:",
+          inputDaysCount,
+          "output:",
+          outputDaysCount,
+        );
+        toast.error(
+          `Recalcul rejeté : Claude a renvoyé ${outputDaysCount} jours au lieu de ${inputDaysCount}. Réessaye.`,
+        );
+        return;
+      }
+
+      // Préserve les coordonnées géocodées + stage/accommodation/type/lat/lng
+      // des étapes existantes par index (filet de sécurité côté client).
       if (Array.isArray(recomputed.days) && Array.isArray(cur.days)) {
         recomputed.days = recomputed.days.map((d, i) => {
           const orig = cur.days[i];
+          if (!orig) return d;
+          const merged: Day = { ...d };
+          // Préserve coords toujours
+          if (typeof orig.lat === "number") merged.lat = orig.lat;
+          if (typeof orig.lng === "number") merged.lng = orig.lng;
+          // Préserve stage si Claude l'a vidé
+          if (orig.stage && !d.stage) merged.stage = orig.stage;
+          // Préserve accommodation si user-défini et non vide
           if (
-            orig &&
-            (typeof d.lat !== "number" || typeof d.lng !== "number") &&
-            typeof orig.lat === "number" &&
-            typeof orig.lng === "number"
+            orig.accommodation &&
+            !/^à définir$/i.test(orig.accommodation) &&
+            (!d.accommodation || /^à définir$/i.test(d.accommodation))
           ) {
-            return { ...d, lat: orig.lat, lng: orig.lng };
+            merged.accommodation = orig.accommodation;
           }
-          return d;
+          return merged;
         });
       }
+
+      // Invalide le cache directions pour forcer recalcul carte
+      recomputed.directions_segments = [];
+
       setRb(recomputed);
       const { error } = await supabase
         .from("roadbooks")
@@ -557,7 +631,7 @@ function RoadbookPage() {
       if (error) {
         toast.error("Sauvegarde échouée : " + error.message);
       } else {
-        toast.success("Roadbook recalculé");
+        toast.success(`Roadbook recalculé (${outputDaysCount} jours)`);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
