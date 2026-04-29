@@ -360,6 +360,70 @@ function RoadbookPage() {
     }
   };
 
+  // Recalcul IA — régénère narratives, dates, transitions
+  const runRecompute = async () => {
+    const cur = rbRef.current;
+    if (!cur) return;
+    setRecomputeOpen(false);
+    setRecomputing(true);
+    // Flush any pending auto-save
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    dirtyRef.current = null;
+    try {
+      const res = await fetch("/api/recompute-roadbook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roadbook: cur,
+          preserveModifiedNarratives: preserveModified,
+        }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text;
+        try {
+          msg = JSON.parse(text).error || text;
+        } catch {}
+        toast.error("Échec du recalcul : " + msg.slice(0, 200));
+        return;
+      }
+      const recomputed = JSON.parse(text) as Roadbook;
+      // Préserve les coordonnées géocodées des étapes existantes par index
+      if (Array.isArray(recomputed.days) && Array.isArray(cur.days)) {
+        recomputed.days = recomputed.days.map((d, i) => {
+          const orig = cur.days[i];
+          if (
+            orig &&
+            (typeof d.lat !== "number" || typeof d.lng !== "number") &&
+            typeof orig.lat === "number" &&
+            typeof orig.lng === "number"
+          ) {
+            return { ...d, lat: orig.lat, lng: orig.lng };
+          }
+          return d;
+        });
+      }
+      setRb(recomputed);
+      const { error } = await supabase
+        .from("roadbooks")
+        .update({ content: recomputed as never })
+        .eq("id", id);
+      if (error) {
+        toast.error("Sauvegarde échouée : " + error.message);
+      } else {
+        toast.success("Roadbook recalculé");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Erreur : " + msg);
+    } finally {
+      setRecomputing(false);
+    }
+  };
+
   if (authLoading || loading || !rb) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
