@@ -661,9 +661,11 @@ function DaysTableSection({
 function AccommodationsSection({
   items,
   onSave,
+  regionBias,
 }: {
   items: AccommodationSummary[];
   onSave: (a: AccommodationSummary[]) => void;
+  regionBias?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(items);
@@ -770,9 +772,11 @@ function AccommodationsSection({
 function ContactsSection({
   contacts,
   onSave,
+  regionBias,
 }: {
   contacts: Contact[];
   onSave: (c: Contact[]) => void;
+  regionBias?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(contacts);
