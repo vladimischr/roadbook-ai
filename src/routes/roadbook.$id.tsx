@@ -1151,7 +1151,9 @@ function EditableTextSection({
           }}
         />
       ) : (
-        <p className="text-base leading-relaxed text-foreground/85">{value}</p>
+        <p className="font-display max-w-[68ch] text-[17px] italic leading-[1.7] text-foreground/85">
+          {value}
+        </p>
       )}
     </section>
   );
