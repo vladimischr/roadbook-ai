@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import type { RoadbookFormData } from "@/lib/mockGenerator";
+import { callClaudeAPI, type RoadbookFormData } from "@/lib/mockGenerator";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/new")({
@@ -91,9 +91,22 @@ function NewRoadbook() {
     }
 
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    toast.success("Roadbook généré");
-    navigate({ to: "/roadbook/preview-mock" });
+    try {
+      const roadbook = await callClaudeAPI(form);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("roadbook:last", JSON.stringify(roadbook));
+      }
+      toast.success("Roadbook généré");
+      navigate({ to: "/roadbook/preview-mock" });
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err instanceof Error
+          ? `Échec de la génération : ${err.message}`
+          : "Échec de la génération du roadbook.",
+      );
+      setSubmitting(false);
+    }
   };
 
   if (submitting) {
