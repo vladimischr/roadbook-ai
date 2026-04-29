@@ -36,6 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
+import { useDestinationCover } from "@/lib/useDestinationCover";
 import { RoadbookMap, type DirectionsSegment } from "@/components/RoadbookMap";
 import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
 import { geocodePlace, getDirectionsSegment } from "@/server/maps.functions";
@@ -709,11 +710,25 @@ function RoadbookPage() {
                             .replace(/[^a-z0-9]+/g, "-")
                             .replace(/^-+|-+$/g, "");
                         const content = { ...rb };
+                        // Fetch Pexels cover URL (best-effort, ignored on failure)
+                        let coverImageUrl: string | null = null;
+                        try {
+                          const { fetchDestinationCover } = await import(
+                            "@/server/cover.functions"
+                          );
+                          const r = await fetchDestinationCover({
+                            data: { destination: content.destination || "" },
+                          });
+                          coverImageUrl = r.url;
+                        } catch (e) {
+                          console.warn("Cover fetch failed (PDF):", e);
+                        }
                         const blob = await pdf(
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           <RoadbookPDF
                             roadbook={content as any}
                             mapsApiKey={apiKey || undefined}
+                            coverImageUrl={coverImageUrl}
                           />,
                         ).toBlob();
                         const filename = `Roadbook-${slug(content.client_name)}-${slug(content.destination)}.pdf`;
@@ -754,6 +769,7 @@ function RoadbookPage() {
         <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <CoverSection
             cover={rb.cover}
+            destination={rb.destination}
             theme={rb.theme}
             travelMode={rb.travel_mode}
             forceEdit={globalEdit}
@@ -954,6 +970,7 @@ function SectionHeader({
 
 function CoverSection({
   cover,
+  destination,
   theme,
   travelMode,
   forceEdit,
@@ -961,6 +978,7 @@ function CoverSection({
   onAutoSave,
 }: {
   cover: Cover;
+  destination?: string;
   theme?: string;
   travelMode?: string;
   forceEdit: boolean;
@@ -970,6 +988,7 @@ function CoverSection({
   const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(cover);
   const editing = localEdit || forceEdit;
+  const coverImage = useDestinationCover(destination);
 
   useEffect(() => {
     if (forceEdit) setDraft(cover);
@@ -1036,8 +1055,28 @@ function CoverSection({
   }
 
   return (
-    <section className="relative bg-[#0F6E56] px-8 py-20 text-center text-white">
-      <div className="absolute right-6 top-6">
+    <section
+      className="relative isolate overflow-hidden bg-primary px-8 py-24 text-center text-white sm:py-28"
+      style={{ minHeight: 420 }}
+    >
+      {/* Background image */}
+      {coverImage && (
+        <img
+          src={coverImage}
+          alt=""
+          className="absolute inset-0 -z-20 h-full w-full object-cover"
+        />
+      )}
+      {/* Teal overlay for legibility */}
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(15,110,86,0.85) 0%, rgba(15,110,86,0.72) 50%, rgba(29,158,117,0.78) 100%)",
+        }}
+      />
+
+      <div className="absolute right-6 top-6 z-10">
         <Button
           size="sm"
           variant="ghost"
@@ -1050,20 +1089,24 @@ function CoverSection({
           <Pencil className="h-3.5 w-3.5" /> Modifier
         </Button>
       </div>
-      <p className="mb-6 text-xs uppercase tracking-widest opacity-80">
+      <p className="mb-8 text-[11px] font-semibold uppercase tracking-[0.32em] text-white/75">
         Roadbook
       </p>
-      <h1 className="mb-4 text-7xl font-semibold leading-tight">
+      <h1 className="font-display mb-5 text-5xl font-semibold leading-[1.05] tracking-tight sm:text-7xl">
         {cover.title}
       </h1>
-      <p className="mb-3 text-2xl">{cover.subtitle}</p>
-      <p className="mb-6 text-lg italic opacity-85">{cover.tagline}</p>
+      <p className="font-display mx-auto mb-4 max-w-2xl text-xl italic text-white/95 sm:text-2xl">
+        {cover.subtitle}
+      </p>
+      <p className="mx-auto mb-8 max-w-xl text-sm italic leading-relaxed text-white/85 sm:text-base">
+        {cover.tagline}
+      </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <span className="inline-block rounded-full bg-white/15 px-5 py-2 text-sm">
+        <span className="inline-block rounded-full border border-white/25 bg-white/15 px-5 py-2 text-sm font-medium backdrop-blur-sm">
           {cover.dates_label}
         </span>
         {(theme || travelMode) && (
-          <span className="inline-block rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-wider">
+          <span className="inline-block rounded-full bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
             {[theme, travelMode].filter(Boolean).join(" · ")}
           </span>
         )}
@@ -1122,7 +1165,9 @@ function EditableTextSection({
           }}
         />
       ) : (
-        <p className="text-base leading-relaxed text-foreground/85">{value}</p>
+        <p className="font-display max-w-[68ch] text-[17px] italic leading-[1.7] text-foreground/85">
+          {value}
+        </p>
       )}
     </section>
   );
@@ -1994,14 +2039,18 @@ function TipsSection({
           </Button>
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid gap-4 sm:grid-cols-2">
           {tips.map((t, i) => (
             <li
               key={i}
-              className="flex gap-3 text-sm leading-relaxed text-foreground/85"
+              className="flex gap-3 rounded-xl border border-border bg-surface p-5 transition-smooth hover:border-accent-warm/40 hover:shadow-[0_4px_12px_-4px_rgba(201,146,99,0.18)]"
             >
-              <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <span>{t}</span>
+              <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-warm-soft text-accent-warm">
+                <Lightbulb className="h-3.5 w-3.5" strokeWidth={2} />
+              </span>
+              <span className="font-display text-[14.5px] italic leading-[1.7] text-foreground/85">
+                {t}
+              </span>
             </li>
           ))}
         </ul>
