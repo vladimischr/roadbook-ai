@@ -9,25 +9,33 @@ function daysBetween(a?: string, b?: string): number {
   return Math.max(1, d || 7);
 }
 
-function extractJson(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    const stripped = text
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```\s*$/i, "")
-      .trim();
-    try {
-      return JSON.parse(stripped);
-    } catch {
-      const first = stripped.indexOf("{");
-      const last = stripped.lastIndexOf("}");
-      if (first >= 0 && last > first) {
-        return JSON.parse(stripped.slice(first, last + 1));
-      }
-      throw new Error("Réponse Claude non parsable en JSON");
-    }
+function stripMarkdownFence(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("```")) return trimmed;
+
+  return trimmed
+    .replace(/^```(?:json)?\s*\n?/i, "")
+    .replace(/\n?```\s*$/i, "")
+    .trim();
+}
+
+function cleanClaudeJsonText(text: string): string {
+  let cleaned = stripMarkdownFence(text);
+
+  // Avec le prefill assistant "{", Claude renvoie souvent la suite sans l'accolade initiale.
+  if (!cleaned.startsWith("{")) {
+    cleaned = "{" + cleaned;
   }
+
+  cleaned = stripMarkdownFence(cleaned);
+
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+  }
+
+  return cleaned.trim();
 }
 
 export const Route = createFileRoute("/api/generate-roadbook")({
@@ -120,22 +128,7 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             rawText.substring(0, 300),
           );
 
-          // Prefill assistant "{" : Claude continue depuis là, on le re-préfixe.
-          rawText = "{" + rawText.trim();
-
-          // Strip markdown code fences si Claude en a quand même mis.
-          if (rawText.startsWith("```")) {
-            rawText = rawText.replace(/^```(?:json)?\s*\n?/, "");
-            rawText = rawText.replace(/\n?```\s*$/, "");
-          }
-
-          // Extraire le bloc JSON principal { ... } si du texte traîne autour.
-          const firstBrace = rawText.indexOf("{");
-          const lastBrace = rawText.lastIndexOf("}");
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            rawText = rawText.substring(firstBrace, lastBrace + 1);
-          }
-          rawText = rawText.trim();
+          rawText = cleanClaudeJsonText(rawText);
 
           console.log(
             "[generate-roadbook] Texte nettoyé prêt à parser (200 premiers chars):",
