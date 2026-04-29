@@ -692,13 +692,40 @@ function RoadbookPage() {
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
-                    onClick={() => {
-                      toast.info(
-                        "Une nouvelle fenêtre s'ouvre pour l'impression. Choisis « Enregistrer en PDF » comme destination.",
-                        { duration: 5000 },
+                    onClick={async () => {
+                      const toastId = toast.loading(
+                        "Génération du PDF en cours…",
                       );
-                      const url = `/roadbook/${id}/print?auto=1`;
-                      window.open(url, "_blank", "noopener,noreferrer");
+                      try {
+                        const { data: sess } = await supabase.auth.getSession();
+                        const token = sess.session?.access_token;
+                        const res = await fetch(`/api/export-pdf/${id}`, {
+                          headers: token
+                            ? { Authorization: `Bearer ${token}` }
+                            : {},
+                        });
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const blob = await res.blob();
+                        const cd = res.headers.get("Content-Disposition") || "";
+                        const m = cd.match(/filename="?([^"]+)"?/);
+                        const filename =
+                          m?.[1] ||
+                          `Roadbook-${rb.client_name || "voyage"}-${rb.destination || ""}.pdf`;
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        toast.success("PDF téléchargé", { id: toastId });
+                      } catch (e) {
+                        console.error("PDF export failed", e);
+                        toast.error("Erreur de génération du PDF", {
+                          id: toastId,
+                        });
+                      }
                     }}
                     className="gap-2"
                   >
@@ -706,7 +733,7 @@ function RoadbookPage() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
-                  Ouvre la fenêtre d'impression pour sauvegarder en PDF.
+                  Génère un PDF éditorial et le télécharge.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
