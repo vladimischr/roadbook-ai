@@ -21,7 +21,7 @@ import { useAuth } from "@/lib/auth";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
 import { RoadbookMap, type DirectionsSegment } from "@/components/RoadbookMap";
-import { PlacesAutocompleteInput } from "@/components/PlacesAutocompleteInput";
+import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
 import { geocodePlace } from "@/server/maps.functions";
 import {
   DndContext,
