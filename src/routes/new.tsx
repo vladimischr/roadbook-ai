@@ -161,13 +161,15 @@ function NewRoadbook() {
   if (submitting) {
     return (
       <AppShell>
-        <div className="grid min-h-[60vh] place-items-center text-center">
-          <div>
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <h2 className="mt-6 text-xl font-semibold">Création du roadbook…</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Construction de l’itinéraire, réglage du rythme, mise en forme du récit.
-            </p>
+        <div className="container-editorial px-6 sm:px-10 lg:px-14">
+          <div className="grid min-h-[60vh] place-items-center text-center">
+            <div>
+              <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
+              <h2 className="mt-6 text-xl font-semibold">Création du roadbook…</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Construction de l'itinéraire, réglage du rythme, mise en forme du récit.
+              </p>
+            </div>
           </div>
         </div>
       </AppShell>
@@ -176,14 +178,18 @@ function NewRoadbook() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl">
-        <p className="eyebrow mb-3">Nouveau voyage</p>
-        <h1 className="font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
-          Créer un nouveau roadbook
-        </h1>
-        <p className="mt-3 max-w-xl text-base text-muted-foreground">
-          Renseignez le voyage — nous préparons la trame du programme.
-        </p>
+      <div className="container-editorial px-6 sm:px-10 lg:px-14 py-12 sm:py-16">
+        <div className="mx-auto max-w-3xl">
+          <div className="flex items-center gap-3">
+            <span className="rule-warm" aria-hidden />
+            <span className="eyebrow">Nouveau voyage</span>
+          </div>
+          <h1 className="mt-5 font-display text-[42px] font-semibold leading-[1.05] tracking-tight text-foreground sm:text-[52px]">
+            Créer un nouveau roadbook
+          </h1>
+          <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-muted-foreground">
+            Renseignez le voyage — nous préparons la trame du programme.
+          </p>
 
         <form onSubmit={onGenerate} className="mt-10 space-y-10">
           <Section title="Client et destination">
@@ -371,6 +377,7 @@ function NewRoadbook() {
             </Button>
           </div>
         </form>
+        </div>
       </div>
     </AppShell>
   );
