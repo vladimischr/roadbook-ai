@@ -15,6 +15,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RoadbookPreviewMockRouteImport } from './routes/roadbook.preview-mock'
 import { Route as RoadbookIdRouteImport } from './routes/roadbook.$id'
+import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
 
 const NewRoute = NewRouteImport.update({
   id: '/new',
@@ -46,12 +47,18 @@ const RoadbookIdRoute = RoadbookIdRouteImport.update({
   path: '/roadbook/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGenerateRoadbookRoute = ApiGenerateRoadbookRouteImport.update({
+  id: '/api/generate-roadbook',
+  path: '/api/generate-roadbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
+  '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
+  '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
+  '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/new'
+    | '/api/generate-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/new'
+    | '/api/generate-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/new'
+    | '/api/generate-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   NewRoute: typeof NewRoute
+  ApiGenerateRoadbookRoute: typeof ApiGenerateRoadbookRoute
   RoadbookIdRoute: typeof RoadbookIdRoute
   RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
 }
@@ -152,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoadbookIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/generate-roadbook': {
+      id: '/api/generate-roadbook'
+      path: '/api/generate-roadbook'
+      fullPath: '/api/generate-roadbook'
+      preLoaderRoute: typeof ApiGenerateRoadbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   NewRoute: NewRoute,
+  ApiGenerateRoadbookRoute: ApiGenerateRoadbookRoute,
   RoadbookIdRoute: RoadbookIdRoute,
   RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
 }
