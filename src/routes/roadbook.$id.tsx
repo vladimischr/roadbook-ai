@@ -1902,6 +1902,99 @@ function DaysTableSection({
     [list],
   );
 
+  // Editorial vertical timeline (read mode only).
+  if (!editing) {
+    return (
+      <section>
+        <SectionHeader
+          label=""
+          editing={false}
+          hideEditButton={false}
+          onEdit={() => {
+            setDraft(days);
+            setLocalEdit(true);
+          }}
+          onSave={() => {}}
+          onCancel={() => {}}
+        />
+        <ol className="relative space-y-6 border-l border-accent-warm/40 pl-8 sm:pl-10">
+          {list.map((d, i) => (
+            <li
+              key={`day-card-${d.day}`}
+              className="reveal relative"
+              style={staggerStyle(i, 80)}
+            >
+              {/* Timeline dot */}
+              <span
+                aria-hidden
+                className="absolute -left-[37px] top-6 grid h-4 w-4 place-items-center rounded-full bg-surface ring-1 ring-accent-warm/60 sm:-left-[45px]"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              </span>
+              <article className="hover-lift overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-soft">
+                <div className="flex flex-col gap-6 p-7 sm:flex-row sm:items-start sm:gap-8">
+                  <div className="flex-shrink-0 sm:w-[140px]">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                      Jour {d.day}
+                    </p>
+                    <p className="font-display mt-2 text-[28px] font-semibold leading-none text-foreground">
+                      {d.date || "—"}
+                    </p>
+                    {d.type && (
+                      <span className="status-pill mt-3 inline-block bg-accent-warm-soft text-foreground">
+                        {d.type}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display text-[22px] font-semibold leading-tight text-foreground sm:text-[26px]">
+                      {d.stage || "Étape à définir"}
+                    </h3>
+                    {d.narrative && (
+                      <p className="mt-3 max-w-[58ch] text-[15px] leading-relaxed text-muted-foreground">
+                        {d.narrative}
+                      </p>
+                    )}
+                    <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-muted-foreground">
+                      {d.accommodation && (
+                        <span className="inline-flex items-center gap-1.5">
+                          {(() => {
+                            const Icon = accommodationIcon(d.type);
+                            return <Icon className="h-3.5 w-3.5 text-primary/70" />;
+                          })()}
+                          <span className="font-medium text-foreground">
+                            {d.accommodation}
+                          </span>
+                        </span>
+                      )}
+                      {d.flight && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="text-foreground/60">✈</span>
+                          {d.flight}
+                        </span>
+                      )}
+                      {d.distance_km > 0 && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="text-foreground/60">→</span>
+                          <span className="font-medium text-foreground">
+                            {d.distance_km} km
+                          </span>
+                          {d.drive_hours > 0 && (
+                            <span>· {d.drive_hours.toFixed(1)} h</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </li>
+          ))}
+        </ol>
+      </section>
+    );
+  }
+
   return (
     <section>
       <SectionHeader
