@@ -11,10 +11,26 @@ import {
   Plus,
   Trash2,
   GripVertical,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -62,6 +78,7 @@ interface Day {
   narrative: string;
   lat?: number | null;
   lng?: number | null;
+  narrative_user_modified?: boolean;
 }
 interface AccommodationSummary {
   name: string;
@@ -138,6 +155,9 @@ function RoadbookPage() {
   const [rb, setRb] = useState<Roadbook | null>(null);
   const [loading, setLoading] = useState(true);
   const [globalEdit, setGlobalEdit] = useState(false);
+  const [recomputeOpen, setRecomputeOpen] = useState(false);
+  const [preserveModified, setPreserveModified] = useState(true);
+  const [recomputing, setRecomputing] = useState(false);
   const { apiKey } = useGoogleMapsKey();
   const rbRef = useRef<Roadbook | null>(null);
   rbRef.current = rb;
@@ -340,6 +360,70 @@ function RoadbookPage() {
     }
   };
 
+  // Recalcul IA — régénère narratives, dates, transitions
+  const runRecompute = async () => {
+    const cur = rbRef.current;
+    if (!cur) return;
+    setRecomputeOpen(false);
+    setRecomputing(true);
+    // Flush any pending auto-save
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    dirtyRef.current = null;
+    try {
+      const res = await fetch("/api/recompute-roadbook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roadbook: cur,
+          preserveModifiedNarratives: preserveModified,
+        }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text;
+        try {
+          msg = JSON.parse(text).error || text;
+        } catch {}
+        toast.error("Échec du recalcul : " + msg.slice(0, 200));
+        return;
+      }
+      const recomputed = JSON.parse(text) as Roadbook;
+      // Préserve les coordonnées géocodées des étapes existantes par index
+      if (Array.isArray(recomputed.days) && Array.isArray(cur.days)) {
+        recomputed.days = recomputed.days.map((d, i) => {
+          const orig = cur.days[i];
+          if (
+            orig &&
+            (typeof d.lat !== "number" || typeof d.lng !== "number") &&
+            typeof orig.lat === "number" &&
+            typeof orig.lng === "number"
+          ) {
+            return { ...d, lat: orig.lat, lng: orig.lng };
+          }
+          return d;
+        });
+      }
+      setRb(recomputed);
+      const { error } = await supabase
+        .from("roadbooks")
+        .update({ content: recomputed as never })
+        .eq("id", id);
+      if (error) {
+        toast.error("Sauvegarde échouée : " + error.message);
+      } else {
+        toast.success("Roadbook recalculé");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Erreur : " + msg);
+    } finally {
+      setRecomputing(false);
+    }
+  };
+
   if (authLoading || loading || !rb) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
@@ -367,6 +451,25 @@ function RoadbookPage() {
               <Pencil className="h-3.5 w-3.5" />
               {globalEdit ? "Quitter l'édition" : "Tout modifier"}
             </Button>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setRecomputeOpen(true)}
+                    className="gap-2"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Recalculer avec l'IA
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  Régénère les narratives, dates et transitions en fonction de
+                  tes modifications. Tes étapes restent intactes.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               size="sm"
               onClick={() => {
@@ -460,6 +563,60 @@ function RoadbookPage() {
           </div>
         </article>
       </main>
+
+      <Dialog open={recomputeOpen} onOpenChange={setRecomputeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recalculer le roadbook ?</DialogTitle>
+            <DialogDescription className="pt-2">
+              L'IA va régénérer les narratives, ajuster les dates et lisser les
+              transitions à partir des étapes que tu as définies. Tes étapes
+              (lieux, hébergements, types) seront préservées. Les narratives et
+              conseils peuvent être réécrits.
+            </DialogDescription>
+          </DialogHeader>
+          <label className="flex items-start gap-3 rounded-md border border-border bg-secondary/30 p-3 text-sm">
+            <Checkbox
+              checked={preserveModified}
+              onCheckedChange={(v) => setPreserveModified(v === true)}
+              className="mt-0.5"
+            />
+            <span className="text-foreground/85">
+              Préserver les narratives que j'ai modifiées manuellement
+            </span>
+          </label>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRecomputeOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button onClick={runRecompute} className="gap-2">
+              <Sparkles className="h-4 w-4" /> Recalculer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {recomputing && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm">
+          <div className="flex max-w-sm flex-col items-center gap-4 rounded-xl border border-border bg-card px-8 py-8 text-center shadow-lg">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div>
+              <p className="font-medium text-foreground">
+                Recalcul en cours…
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                L'IA ajuste les narratives, dates et transitions.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Durée estimée : 30 à 60 secondes.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -886,7 +1043,12 @@ function DayRow({
             <Textarea
               rows={2}
               value={day.narrative}
-              onChange={(e) => onUpdate({ narrative: e.target.value })}
+              onChange={(e) =>
+                onUpdate({
+                  narrative: e.target.value,
+                  narrative_user_modified: true,
+                })
+              }
               className="italic"
             />
           ) : (
