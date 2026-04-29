@@ -92,7 +92,7 @@ function NewRoadbook() {
           budget_range: form.budget_range || null,
           generation_mode: form.generation_mode,
           agent_notes: form.agent_notes || null,
-          content,
+          content: content as unknown as import("@/integrations/supabase/types").Json,
           status: "ready",
         }])
         .select("id")
