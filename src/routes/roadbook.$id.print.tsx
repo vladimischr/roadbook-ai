@@ -156,9 +156,9 @@ function PrintPage() {
       <div className="screen-banner no-print">
         <div className="screen-banner-inner">
           <div className="screen-banner-text">
-            <strong>Cette page est conçue pour l'impression.</strong>{" "}
+            <strong>Aperçu pour impression / export PDF.</strong>{" "}
             <span>
-              Utilise <kbd>Cmd</kbd>+<kbd>P</kbd> (ou <kbd>Ctrl</kbd>+<kbd>P</kbd>) puis choisis « Enregistrer en PDF ».
+              Utilise <kbd>Cmd</kbd>+<kbd>P</kbd> (ou <kbd>Ctrl</kbd>+<kbd>P</kbd>), ou clique le bouton.
             </span>
           </div>
           <button
@@ -166,9 +166,12 @@ function PrintPage() {
             className="screen-banner-btn"
             onClick={() => window.print()}
           >
-            Imprimer maintenant
+            Enregistrer en PDF
           </button>
         </div>
+        <p className="screen-banner-hint">
+          Dans le dialogue qui s'ouvre, choisis « Enregistrer en PDF » (ou « Save as PDF ») comme destination, puis « Enregistrer ».
+        </p>
       </div>
 
       <div className="print-doc">
