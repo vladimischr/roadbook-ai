@@ -52,26 +52,51 @@ export const Route = createFileRoute("/api/recompute-roadbook")({
             ? `\n\nPRÉSERVATION STRICTE : pour chaque jour où narrative_user_modified === true, tu DOIS recopier le narrative existant TEL QUEL, sans aucune modification. Tu ne touches pas à ces narratives.`
             : "";
 
-          const userMessage = `Voici un roadbook existant que l'utilisateur a modifié structurellement (ajouts, suppressions, réorganisations d'étapes). Tu dois RÉGÉNÉRER intelligemment ce roadbook en gardant exactement le squelette d'étapes, mais en :
+          const inputDaysCount = Array.isArray((roadbook as any).days)
+            ? (roadbook as any).days.length
+            : 0;
+          const inputStages = (Array.isArray((roadbook as any).days)
+            ? (roadbook as any).days
+            : []
+          ).map((d: any) => d?.stage);
+          console.log(
+            "[recompute-roadbook] INPUT days:",
+            inputDaysCount,
+            "stages:",
+            JSON.stringify(inputStages),
+          );
 
-1. Ajustant les dates (si l'utilisateur a ajouté des étapes, recalcule chaque date à partir de start_date en respectant le nombre de nuits par étape)
-2. Régénérant le narrative de chaque jour pour qu'il s'inscrive dans l'enchaînement logique (transitions cohérentes avec les jours précédent/suivant)
-3. Lissant les transitions entre étapes (mentions explicites du déplacement, du changement de zone)
-4. Mettant à jour l'overview pour refléter le nouveau parcours complet
-5. Adaptant les conseils pratiques à la nouvelle géographie (si nouvelles villes, nouveaux conseils)
-6. Mettant à jour cover.tagline pour refléter la durée et la modalité
+          const userMessage = `# CONSIGNE STRICTE
 
-Tu PRÉSERVES :
-- L'ordre exact des étapes (ne réorganise pas)
-- Les noms d'hébergements précis donnés par l'utilisateur (sauf si vide ou "À définir")
-- Les distance_km et drive_hours si > 0 (sinon recalcule)
-- Le champ stage de chaque jour${preserveBlock}
+L'utilisateur a apporté des modifications structurelles à ce roadbook (ajouts, suppressions, réorganisations d'étapes). Tu dois RÉGÉNÉRER intelligemment ce roadbook en gardant EXACTEMENT le squelette d'étapes existant.
 
-Roadbook actuel à recalculer :
+Tu DOIS reproduire dans ta réponse JSON :
+
+- Le NOMBRE EXACT de jours : il y a ACTUELLEMENT ${inputDaysCount} jours et tu DOIS renvoyer EXACTEMENT ${inputDaysCount} jours dans days[]. Ne supprime AUCUN jour, n'en ajoute AUCUN.
+- L'ORDRE EXACT des jours (ne réorganise pas)
+- Pour chaque jour : préserver stage, accommodation, type, lat, lng tels que reçus (sauf si vides ou 'À définir' → tu peux les compléter)
+
+Tu peux réécrire :
+
+- narrative (sauf si narrative_user_modified === true → tu recopies tel quel)
+- date (recalculer à partir de start_date, +1 jour par étape successive)
+- distance_km / drive_hours (recalculer logiquement à partir de la géographie réelle)
+- flight (compléter si pertinent)
+- overview, contacts, tips, cover.tagline, cover.subtitle, cover.dates_label (régénérer pour cohérence)
+- end_date / duration_days (recalculer à partir de start_date + ${inputDaysCount} jours)
+
+Mise à jour pratique :
+- Lisse les transitions entre étapes (mentions explicites du déplacement, du changement de zone)
+- Adapte les conseils pratiques à la nouvelle géographie
+
+Stages actuels dans cet ordre EXACT (à reproduire à l'identique) :
+${JSON.stringify(inputStages)}${preserveBlock}
+
+# ROADBOOK ACTUEL À RECALCULER (préserve TOUTES les étapes)
 
 ${JSON.stringify(roadbook, null, 2)}
 
-Réponds UNIQUEMENT avec le JSON Roadbook complet recalculé, suivant la même structure que le system prompt. Démarre directement par {.`;
+Réponds avec le JSON Roadbook complet recalculé. La longueur de days[] DOIT être EXACTEMENT ${inputDaysCount}. Réponds UNIQUEMENT avec le JSON brut, sans markdown, sans commentaire. Démarre directement par {.`;
 
           const t0 = Date.now();
           const resp = await fetch("https://api.anthropic.com/v1/messages", {
