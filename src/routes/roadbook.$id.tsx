@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
   ChevronDown,
   Download,
   Pencil,
@@ -13,14 +12,21 @@ import {
   Trash2,
   GripVertical,
   Sparkles,
-  Map as MapIcon,
+  MapPin,
   Clock,
   Plane,
   Phone,
   Mail,
   BedDouble,
+  Tent,
+  Hotel,
+  Home as HomeIcon,
+  Building2,
+  CloudCheck,
+  CloudUpload,
 } from "lucide-react";
 import { useScrollReveal, staggerStyle } from "@/lib/animations";
+import { AppShell, useTopbarSlot, BreadcrumbLine } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +45,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -121,6 +134,29 @@ interface Roadbook {
   directions_segments?: DirectionsSegment[];
 }
 
+type RoadbookStatus = "draft" | "ready" | "delivered" | "archived";
+const STATUS_LABEL: Record<RoadbookStatus, string> = {
+  draft: "Brouillon",
+  ready: "Prêt",
+  delivered: "Livré",
+  archived: "Archivé",
+};
+function normalizeStatus(s: string | null | undefined): RoadbookStatus {
+  if (s === "ready" || s === "delivered" || s === "archived") return s;
+  return "draft";
+}
+
+/* Icon mapping for accommodations */
+function accommodationIcon(type: string) {
+  const t = (type || "").toLowerCase();
+  if (/lodge/.test(t)) return HomeIcon;
+  if (/camp|tent/.test(t)) return Tent;
+  if (/h[oô]tel/.test(t)) return Hotel;
+  if (/appart|apartment/.test(t)) return Building2;
+  if (/vol|fly|plane|avion/.test(t)) return Plane;
+  return BedDouble;
+}
+
 function formatShortDate(iso: string) {
   if (!iso) return "";
   if (iso.includes("/")) return iso;
@@ -167,6 +203,9 @@ function RoadbookPage() {
   const [recomputeOpen, setRecomputeOpen] = useState(false);
   const [preserveModified, setPreserveModified] = useState(true);
   const [recomputing, setRecomputing] = useState(false);
+  const [status, setStatus] = useState<RoadbookStatus>("draft");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [savingState, setSavingState] = useState<"idle" | "saving">("idle");
   const { apiKey } = useGoogleMapsKey();
   const rbRef = useRef<Roadbook | null>(null);
   rbRef.current = rb;
@@ -183,7 +222,7 @@ function RoadbookPage() {
     }
     supabase
       .from("roadbooks")
-      .select("content,destination")
+      .select("content,destination,status")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -197,6 +236,7 @@ function RoadbookPage() {
           content.destination = data.destination;
         }
         setRb(content);
+        setStatus(normalizeStatus(data.status));
         setLoading(false);
       });
   }, [id, user, authLoading, navigate]);
@@ -204,13 +244,16 @@ function RoadbookPage() {
   // Sauvegarde immédiate avec toast
   const persist = async (next: Roadbook) => {
     setRb(next);
+    setSavingState("saving");
     const { error } = await supabase
       .from("roadbooks")
       .update({ content: next as never })
       .eq("id", id);
+    setSavingState("idle");
     if (error) {
       toast.error("Échec de la sauvegarde : " + error.message);
     } else {
+      setLastSavedAt(Date.now());
       toast.success("Modifications enregistrées", { duration: 1800 });
     }
   };
@@ -223,12 +266,14 @@ function RoadbookPage() {
       .update({ content: next as never })
       .eq("id", id);
     if (error) console.error("Silent persist failed:", error.message);
+    else setLastSavedAt(Date.now());
   };
 
   // Auto-save (debounce 2s) — déclenché par updateAndAutosave
   const updateAndAutosave = (next: Roadbook) => {
     setRb(next);
     dirtyRef.current = next;
+    setSavingState("saving");
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       const toSave = dirtyRef.current;
@@ -238,13 +283,30 @@ function RoadbookPage() {
         .update({ content: toSave as never })
         .eq("id", id)
         .then(({ error }) => {
+          setSavingState("idle");
           if (error) {
             toast.error("Échec auto-save : " + error.message);
           } else {
-            toast.success("Modifications enregistrées", { duration: 1500 });
+            setLastSavedAt(Date.now());
           }
         });
-    }, 2000);
+    }, 1500);
+  };
+
+  // Mettre à jour le statut
+  const updateStatus = async (next: RoadbookStatus) => {
+    const prev = status;
+    setStatus(next);
+    const { error } = await supabase
+      .from("roadbooks")
+      .update({ status: next })
+      .eq("id", id);
+    if (error) {
+      toast.error("Mise à jour du statut impossible : " + error.message);
+      setStatus(prev);
+    } else {
+      toast.success(`Marqué comme ${STATUS_LABEL[next].toLowerCase()}`, { duration: 1800 });
+    }
   };
 
   // Géocodage rétroactif
@@ -722,90 +784,30 @@ function RoadbookPage() {
   );
   const accommodationCount = (rb.accommodations_summary || []).length;
 
+  const breadcrumb = (
+    <BreadcrumbLine
+      items={[
+        { label: "Vos roadbooks", to: "/dashboard" },
+        { label: rb.destination || "Roadbook" },
+      ]}
+    />
+  );
+
+  const topbarSlot = (
+    <RoadbookTopbarActions
+      status={status}
+      onSetStatus={updateStatus}
+      savingState={savingState}
+      lastSavedAt={lastSavedAt}
+      globalEdit={globalEdit}
+      onToggleEdit={() => setGlobalEdit((v) => !v)}
+      onRecompute={() => setRecomputeOpen(true)}
+      onExportPdf={handleExportPdf}
+    />
+  );
+
   const content = (
-    <div className="min-h-screen bg-canvas">
-      {/* Sticky toolbar */}
-      <header className="sticky top-0 z-40 border-b border-border/50 bg-canvas/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4 sm:px-10">
-          <div className="flex min-w-0 items-center gap-4">
-            <Link
-              to="/dashboard"
-              className="group inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground transition-smooth hover:text-foreground"
-            >
-              <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
-              Retour
-            </Link>
-            <span className="hidden text-text-soft sm:inline" aria-hidden>
-              /
-            </span>
-            <nav
-              className="hidden truncate text-[13px] text-muted-foreground sm:block"
-              aria-label="Fil d'Ariane"
-            >
-              <Link to="/dashboard" className="hover:text-foreground transition-smooth">
-                Vos roadbooks
-              </Link>
-              <span className="mx-2 text-text-soft">·</span>
-              <span className="font-medium text-foreground">
-                {rb.destination}
-              </span>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setRecomputeOpen(true)}
-                    className="hidden gap-2 border-border bg-surface/60 transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary md:inline-flex"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Recalculer
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  Régénère narratives, dates et transitions à partir de tes
-                  étapes.
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <Button
-              size="sm"
-              variant={globalEdit ? "default" : "outline"}
-              onClick={() => setGlobalEdit((v) => !v)}
-              className={
-                globalEdit
-                  ? "gap-2 transition-smooth"
-                  : "gap-2 border-border bg-surface/60 transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
-              }
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              {globalEdit ? "Quitter l'édition" : "Tout modifier"}
-            </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    onClick={handleExportPdf}
-                    className="gap-2 bg-primary text-primary-foreground transition-smooth hover:scale-[1.02] hover:bg-primary-dark hover:shadow-soft-md"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Exporter en PDF
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs">
-                  Génère un PDF éditorial et le télécharge.
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
-      </header>
-
+    <AppShell breadcrumb={breadcrumb} topbarSlot={topbarSlot}>
       {/* Cover full-bleed */}
       <CoverSection
         cover={rb.cover}
@@ -831,6 +833,9 @@ function RoadbookPage() {
         persist={persist}
         updateAndAutosave={updateAndAutosave}
       />
+
+      {/* Footer */}
+      <RoadbookFooter destination={rb.destination} />
 
       <Dialog open={recomputeOpen} onOpenChange={setRecomputeOpen}>
         <DialogContent>
@@ -885,7 +890,7 @@ function RoadbookPage() {
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   );
 
   if (!apiKey) return content;
@@ -896,6 +901,161 @@ function RoadbookPage() {
     >
       {content}
     </APIProvider>
+  );
+}
+
+/* ---------- Topbar actions ---------- */
+
+function RoadbookTopbarActions({
+  status,
+  onSetStatus,
+  savingState,
+  lastSavedAt,
+  globalEdit,
+  onToggleEdit,
+  onRecompute,
+  onExportPdf,
+}: {
+  status: RoadbookStatus;
+  onSetStatus: (s: RoadbookStatus) => void;
+  savingState: "idle" | "saving";
+  lastSavedAt: number | null;
+  globalEdit: boolean;
+  onToggleEdit: () => void;
+  onRecompute: () => void;
+  onExportPdf: () => void;
+}) {
+  return (
+    <>
+      <SaveIndicator state={savingState} lastSavedAt={lastSavedAt} />
+
+      {/* Status pill — clickable */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "status-pill transition-smooth hover:opacity-90",
+              `status-${status}`,
+            )}
+            aria-label="Changer le statut"
+          >
+            {STATUS_LABEL[status]}
+            <ChevronDown className="h-3 w-3 opacity-70" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          {(["draft", "ready", "delivered", "archived"] as const).map((s) => (
+            <DropdownMenuItem
+              key={s}
+              onClick={() => onSetStatus(s)}
+              className="text-[13px]"
+            >
+              <span className="flex-1">{STATUS_LABEL[s]}</span>
+              {status === s && <Check className="h-3.5 w-3.5 text-primary" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <TooltipProvider delayDuration={250}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onRecompute}
+              className="hidden h-9 gap-1.5 rounded-full border-border/70 bg-surface px-3.5 text-[12.5px] transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary md:inline-flex"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Recalculer
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            Régénère narratives, dates et transitions à partir de tes étapes.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      <Button
+        size="sm"
+        variant={globalEdit ? "default" : "outline"}
+        onClick={onToggleEdit}
+        className={
+          globalEdit
+            ? "h-9 gap-1.5 rounded-full px-3.5 text-[12.5px] transition-smooth"
+            : "hidden h-9 gap-1.5 rounded-full border-border/70 bg-surface px-3.5 text-[12.5px] transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary sm:inline-flex"
+        }
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        {globalEdit ? "Quitter l'édition" : "Tout modifier"}
+      </Button>
+
+      <Button
+        size="sm"
+        onClick={onExportPdf}
+        className="h-9 gap-1.5 rounded-full px-4 text-[12.5px] transition-smooth hover:scale-[1.02] hover:shadow-soft-md"
+      >
+        <Download className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Exporter en PDF</span>
+        <span className="sm:hidden">PDF</span>
+      </Button>
+    </>
+  );
+}
+
+function SaveIndicator({
+  state,
+  lastSavedAt,
+}: {
+  state: "idle" | "saving";
+  lastSavedAt: number | null;
+}) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const i = setInterval(() => setTick((t) => t + 1), 15_000);
+    return () => clearInterval(i);
+  }, []);
+  // Reference tick so the elapsed string recomputes
+  void tick;
+
+  if (state === "saving") {
+    return (
+      <span className="hidden items-center gap-1.5 text-[12px] text-muted-foreground sm:inline-flex">
+        <CloudUpload className="h-3.5 w-3.5 animate-pulse text-primary" />
+        Enregistrement…
+      </span>
+    );
+  }
+  if (!lastSavedAt) return null;
+  const seconds = Math.max(1, Math.round((Date.now() - lastSavedAt) / 1000));
+  let label: string;
+  if (seconds < 60) label = `il y a ${seconds}s`;
+  else if (seconds < 3600) label = `il y a ${Math.round(seconds / 60)} min`;
+  else label = "enregistré";
+  return (
+    <span className="hidden items-center gap-1.5 text-[12px] text-muted-foreground sm:inline-flex">
+      <CloudCheck className="h-3.5 w-3.5 text-primary/70" />
+      <span>Enregistré {label}</span>
+    </span>
+  );
+}
+
+/* ---------- Roadbook footer ---------- */
+
+function RoadbookFooter({ destination }: { destination?: string }) {
+  return (
+    <footer className="border-t border-border/40 px-6 pb-16 pt-24 text-center sm:px-10">
+      <span className="rule-warm" aria-hidden />
+      <p className="mt-6 font-display text-[18px] italic text-foreground/70">
+        Roadbook préparé sur Roadbook.ai
+      </p>
+      {destination && (
+        <p className="mt-2 text-[12px] uppercase tracking-[0.24em] text-text-soft">
+          {destination}
+        </p>
+      )}
+    </footer>
   );
 }
 
