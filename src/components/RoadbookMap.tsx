@@ -154,7 +154,7 @@ export function RoadbookMap({ days, segments, onSegmentsChange }: Props) {
         {clusters.map((c, idx) => (
           <ClusterMarker key={`m-${idx}`} cluster={c} />
         ))}
-      </Map>
+      </GMap>
     </div>
   );
 }
