@@ -329,7 +329,7 @@ function Editable({
   className?: string;
   multiline?: boolean;
 }) {
-  const Tag = as as keyof JSX.IntrinsicElements;
+  const Tag = as as React.ElementType;
   return (
     <Tag
       contentEditable
