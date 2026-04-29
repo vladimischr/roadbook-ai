@@ -114,16 +114,19 @@ function PrintPage() {
     if (filename) document.title = filename;
   }, [filename]);
 
-  // Auto-trigger print dialog once the content is ready.
+  // Best-effort auto-trigger of print dialog once the content is ready.
+  // Many browsers block this without a user gesture — the on-screen button is
+  // the reliable fallback.
   useEffect(() => {
     if (!rb) return;
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("auto") === "1") {
-      const t = setTimeout(() => {
+    const t = setTimeout(() => {
+      try {
         window.print();
-      }, 600);
-      return () => clearTimeout(t);
-    }
+      } catch (e) {
+        console.warn("Auto-print blocked, user must click button", e);
+      }
+    }, 800);
+    return () => clearTimeout(t);
   }, [rb]);
 
   if (error) {
@@ -153,9 +156,9 @@ function PrintPage() {
       <div className="screen-banner no-print">
         <div className="screen-banner-inner">
           <div className="screen-banner-text">
-            <strong>Cette page est conçue pour l'impression.</strong>{" "}
+            <strong>Aperçu pour impression / export PDF.</strong>{" "}
             <span>
-              Utilise <kbd>Cmd</kbd>+<kbd>P</kbd> (ou <kbd>Ctrl</kbd>+<kbd>P</kbd>) puis choisis « Enregistrer en PDF ».
+              Utilise <kbd>Cmd</kbd>+<kbd>P</kbd> (ou <kbd>Ctrl</kbd>+<kbd>P</kbd>), ou clique le bouton.
             </span>
           </div>
           <button
@@ -163,9 +166,12 @@ function PrintPage() {
             className="screen-banner-btn"
             onClick={() => window.print()}
           >
-            Imprimer maintenant
+            Enregistrer en PDF
           </button>
         </div>
+        <p className="screen-banner-hint">
+          Dans le dialogue qui s'ouvre, choisis « Enregistrer en PDF » (ou « Save as PDF ») comme destination, puis « Enregistrer ».
+        </p>
       </div>
 
       <div className="print-doc">
@@ -801,6 +807,14 @@ const PRINT_CSS = `
     white-space: nowrap;
   }
   .screen-banner-btn:hover { background: #E1F5EE; }
+  .screen-banner-hint {
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 0 20px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.85);
+  }
 
   /* ============== Print-only adjustments ============== */
   @media print {
