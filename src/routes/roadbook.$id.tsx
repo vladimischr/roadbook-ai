@@ -755,6 +755,7 @@ function RoadbookPage() {
         <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <CoverSection
             cover={rb.cover}
+            destination={rb.destination}
             theme={rb.theme}
             travelMode={rb.travel_mode}
             forceEdit={globalEdit}
@@ -955,6 +956,7 @@ function SectionHeader({
 
 function CoverSection({
   cover,
+  destination,
   theme,
   travelMode,
   forceEdit,
@@ -962,6 +964,7 @@ function CoverSection({
   onAutoSave,
 }: {
   cover: Cover;
+  destination?: string;
   theme?: string;
   travelMode?: string;
   forceEdit: boolean;
@@ -971,6 +974,7 @@ function CoverSection({
   const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(cover);
   const editing = localEdit || forceEdit;
+  const coverImage = useDestinationCover(destination);
 
   useEffect(() => {
     if (forceEdit) setDraft(cover);
