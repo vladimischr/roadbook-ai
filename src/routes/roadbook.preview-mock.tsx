@@ -369,7 +369,7 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
                 </td>
               </tr>,
               <tr key={`n-${i}`} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
-                <td colSpan={7} className="px-3 pb-4 pt-0 italic text-foreground/70">
+                <td colSpan={8} className="px-3 pb-4 pt-0 italic text-foreground/70">
                   {editing ? (
                     <Textarea rows={2} value={d.narrative}
                       onChange={(e) => update(i, { narrative: e.target.value })}
