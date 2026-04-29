@@ -807,6 +807,14 @@ const PRINT_CSS = `
     white-space: nowrap;
   }
   .screen-banner-btn:hover { background: #E1F5EE; }
+  .screen-banner-hint {
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 0 20px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.85);
+  }
 
   /* ============== Print-only adjustments ============== */
   @media print {
