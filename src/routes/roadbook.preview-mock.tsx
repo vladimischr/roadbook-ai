@@ -197,7 +197,7 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
               <X className="h-3.5 w-3.5" /> Annuler
             </Button>
             <Button size="sm" onClick={() => { onSave(draft); setEditing(false); }}
-              className="gap-1.5 bg-white text-primary hover:bg-white/90">
+              className="gap-1.5 bg-primary-foreground text-primary hover:bg-primary-foreground/90">
               <Check className="h-3.5 w-3.5" /> Enregistrer
             </Button>
           </div>
@@ -210,7 +210,7 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
       </div>
 
       <div className="mx-auto max-w-3xl text-center">
-        <div className="text-[11px] font-medium uppercase tracking-[0.3em] opacity-80">Roadbook</div>
+        <div className="text-[11px] font-medium uppercase tracking-[0.3em] opacity-80">Carnet de voyage</div>
 
         {editing ? (
           <div className="mt-8 space-y-3 text-left">
@@ -228,7 +228,7 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
             <h1 className="mt-6 text-5xl font-bold tracking-tight sm:text-6xl">{cover.title}</h1>
             <p className="mt-6 text-xl opacity-95 sm:text-2xl">{cover.subtitle}</p>
             <p className="mt-3 text-base italic opacity-85">{cover.tagline}</p>
-            <div className="mt-10 inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-2 text-sm font-medium tracking-wide backdrop-blur">
+            <div className="mt-10 inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-5 py-2 text-sm font-medium tracking-wide backdrop-blur">
               {cover.dates_label}
             </div>
           </>
