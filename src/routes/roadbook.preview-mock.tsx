@@ -205,60 +205,60 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(cover);
 
-  return (
-    <div className="relative bg-gradient-to-br from-primary to-primary-light px-8 py-20 text-primary-foreground sm:px-14 sm:py-28">
-      <div className="absolute right-6 top-6">
-        {editing ? (
-          <div className="flex items-center gap-1">
-            <Button size="sm" variant="ghost"
-              onClick={() => { setDraft(cover); setEditing(false); }}
-               className="gap-1.5 text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground">
-              <X className="h-3.5 w-3.5" /> Annuler
-            </Button>
-            <Button size="sm" onClick={() => { onSave(draft); setEditing(false); }}
-              className="gap-1.5 bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-              <Check className="h-3.5 w-3.5" /> Enregistrer
-            </Button>
-          </div>
-        ) : (
-          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}
-            className="gap-1.5 text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground">
-            <Pencil className="h-3.5 w-3.5" /> Modifier
+  if (editing) {
+    return (
+      <div className="relative bg-[#0F6E56] px-8 py-20 text-white sm:px-14">
+        <div className="absolute right-6 top-6 flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => { setDraft(cover); setEditing(false); }}
+            className="gap-1.5 text-white/90 hover:bg-white/15 hover:text-white"
+          >
+            <X className="h-3.5 w-3.5" /> Annuler
           </Button>
-        )}
+          <Button
+            size="sm"
+            onClick={() => { onSave(draft); setEditing(false); }}
+            className="gap-1.5 bg-white text-[#0F6E56] hover:bg-white/90"
+          >
+            <Check className="h-3.5 w-3.5" /> Enregistrer
+          </Button>
+        </div>
+        <div className="mx-auto max-w-3xl space-y-3 pt-10">
+          <Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            className="border-white/30 bg-white/15 text-2xl font-bold text-white placeholder:text-white/60" />
+          <Input value={draft.subtitle} onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
+            className="border-white/30 bg-white/15 text-white placeholder:text-white/60" />
+          <Input value={draft.tagline} onChange={(e) => setDraft({ ...draft, tagline: e.target.value })}
+            className="border-white/30 bg-white/15 text-white placeholder:text-white/60" />
+          <Input value={draft.dates_label} onChange={(e) => setDraft({ ...draft, dates_label: e.target.value })}
+            className="border-white/30 bg-white/15 text-white placeholder:text-white/60" />
+        </div>
       </div>
+    );
+  }
 
-      <div className="mx-auto max-w-3xl text-center">
-        <div className="text-[11px] font-medium uppercase tracking-[0.3em] opacity-80">Carnet de voyage</div>
-
-        {editing ? (
-          <div className="mt-8 space-y-3 text-left">
-            <Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              className="border-primary-foreground/30 bg-primary-foreground/15 text-2xl font-bold text-primary-foreground placeholder:text-primary-foreground/60" />
-            <Input value={draft.subtitle} onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
-              className="border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/60" />
-            <Input value={draft.tagline} onChange={(e) => setDraft({ ...draft, tagline: e.target.value })}
-              className="border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/60" />
-            <Input value={draft.dates_label} onChange={(e) => setDraft({ ...draft, dates_label: e.target.value })}
-              className="border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground placeholder:text-primary-foreground/60" />
-          </div>
-        ) : (
-          <>
-            <h1
-              className="mt-6 block text-[64px] font-semibold leading-[1.05] tracking-tight sm:text-[72px]"
-              style={{ wordBreak: "normal", overflowWrap: "normal" }}
-            >
-              {String(cover.title ?? "")}
-            </h1>
-            <p className="mt-6 text-xl opacity-95 sm:text-2xl">{cover.subtitle}</p>
-            <p className="mt-3 text-base italic opacity-85">{cover.tagline}</p>
-            <div className="mt-10 inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-5 py-2 text-sm font-medium tracking-wide backdrop-blur">
-              {cover.dates_label}
-            </div>
-          </>
-        )}
+  return (
+    <section className="relative bg-[#0F6E56] px-8 py-20 text-center text-white">
+      <div className="absolute right-6 top-6">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setEditing(true)}
+          className="gap-1.5 text-white/90 hover:bg-white/15 hover:text-white"
+        >
+          <Pencil className="h-3.5 w-3.5" /> Modifier
+        </Button>
       </div>
-    </div>
+      <p className="mb-6 text-xs uppercase tracking-widest opacity-80">Carnet de voyage</p>
+      <h1 className="mb-4 text-7xl font-semibold leading-tight">{cover.title}</h1>
+      <p className="mb-3 text-2xl">{cover.subtitle}</p>
+      <p className="mb-6 text-lg italic opacity-85">{cover.tagline}</p>
+      <span className="inline-block rounded-full bg-white/15 px-5 py-2 text-sm">
+        {cover.dates_label}
+      </span>
+    </section>
   );
 }
 

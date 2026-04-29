@@ -21,9 +21,35 @@ export const Route = createFileRoute("/new")({
   head: () => ({ meta: [{ title: "Nouveau roadbook — Roadbook.ai" }] }),
 });
 
-const THEMES = ["Safari premium", "Culture", "Aventure", "Plage", "Autotour", "Sur mesure"];
-const PROFILES = ["Couple", "Famille", "Solo", "Amis"];
-const BUDGETS = ["3–5k €", "5–8k €", "8–12k €", "12–15k €", "15k €+"];
+const TRAVELERS: { value: string; label: string }[] = [
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3", label: "3" },
+  { value: "4", label: "4" },
+  { value: "5", label: "5" },
+  { value: "6", label: "6" },
+  { value: "7", label: "7" },
+  { value: "8plus", label: "8+" },
+];
+const PROFILES = ["Solo", "Couple", "Famille", "Amis"];
+const THEMES = [
+  "Désert et faune",
+  "Safari et culture",
+  "Aventure et trekking",
+  "Voyage culturel",
+  "Plage et farniente",
+  "Voyage de noces",
+  "Roadtrip 4x4",
+  "Sur-mesure libre",
+];
+const BUDGETS = [
+  "Moins de 3 k€",
+  "3 à 5 k€",
+  "5 à 8 k€",
+  "8 à 12 k€",
+  "12 à 20 k€",
+  "Plus de 20 k€",
+];
 
 function NewRoadbook() {
   const navigate = useNavigate();
@@ -34,10 +60,10 @@ function NewRoadbook() {
     destination: "",
     start_date: "",
     end_date: "",
-    travelers_count: 2,
-    traveler_profile: "Couple",
-    theme: "Culture",
-    budget_range: "5–8k €",
+    travelers_count: undefined as unknown as number,
+    traveler_profile: undefined,
+    theme: undefined,
+    budget_range: undefined,
     generation_mode: "ai",
     agent_notes: "",
     manual_steps: [{ location: "", nights: 2, activities: "" }],
@@ -140,11 +166,19 @@ function NewRoadbook() {
           <Section title="Voyageurs">
             <div className="grid grid-cols-2 gap-4">
               <Field label="Nombre de voyageurs">
-                <Input
-                  type="number"
-                  min={1}
-                  value={form.travelers_count}
-                  onChange={(e) => update("travelers_count", parseInt(e.target.value) || 1)}
+                <SelectField
+                  value={
+                    form.travelers_count === undefined || form.travelers_count === null
+                      ? undefined
+                      : form.travelers_count >= 8
+                        ? "8plus"
+                        : String(form.travelers_count)
+                  }
+                  onChange={(v) =>
+                    update("travelers_count", v === "8plus" ? 8 : parseInt(v) || 1)
+                  }
+                  options={TRAVELERS}
+                  placeholder="Choisir le nombre"
                 />
               </Field>
               <Field label="Profil">
@@ -152,6 +186,7 @@ function NewRoadbook() {
                   value={form.traveler_profile}
                   onChange={(v) => update("traveler_profile", v)}
                   options={PROFILES}
+                  placeholder="Choisir un profil"
                 />
               </Field>
             </div>
@@ -161,13 +196,15 @@ function NewRoadbook() {
                   value={form.theme}
                   onChange={(v) => update("theme", v)}
                   options={THEMES}
+                  placeholder="Choisir un thème"
                 />
               </Field>
-              <Field label="Budget">
+              <Field label="Gamme de budget">
                 <SelectField
                   value={form.budget_range}
                   onChange={(v) => update("budget_range", v)}
                   options={BUDGETS}
+                  placeholder="Choisir un budget"
                 />
               </Field>
             </div>
@@ -292,20 +329,25 @@ function SelectField({
   value,
   onChange,
   options,
+  placeholder = "Choisir…",
 }: {
   value?: string;
   onChange: (v: string) => void;
-  options: string[];
+  options: (string | { value: string; label: string })[];
+  placeholder?: string;
 }) {
+  const normalized = options.map((o) =>
+    typeof o === "string" ? { value: o, label: o } : o,
+  );
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
-        <SelectValue />
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {options.map((o) => (
-          <SelectItem key={o} value={o}>
-            {o}
+        {normalized.map((o) => (
+          <SelectItem key={o.value} value={o.value}>
+            {o.label}
           </SelectItem>
         ))}
       </SelectContent>
