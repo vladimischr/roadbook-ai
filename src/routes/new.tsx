@@ -36,7 +36,7 @@ function NewRoadbook() {
     end_date: "",
     travelers_count: 2,
     traveler_profile: "Couple",
-    theme: "Cultural",
+    theme: "Culture",
     budget_range: "5–8k €",
     generation_mode: "ai",
     agent_notes: "",
