@@ -155,6 +155,9 @@ function RoadbookPage() {
   const [rb, setRb] = useState<Roadbook | null>(null);
   const [loading, setLoading] = useState(true);
   const [globalEdit, setGlobalEdit] = useState(false);
+  const [recomputeOpen, setRecomputeOpen] = useState(false);
+  const [preserveModified, setPreserveModified] = useState(true);
+  const [recomputing, setRecomputing] = useState(false);
   const { apiKey } = useGoogleMapsKey();
   const rbRef = useRef<Roadbook | null>(null);
   rbRef.current = rb;
