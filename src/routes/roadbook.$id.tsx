@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Download,
@@ -10,6 +10,7 @@ import {
   Loader2,
   Plus,
   Trash2,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +20,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
-import { RoadbookMap } from "@/components/RoadbookMap";
+import { RoadbookMap, type DirectionsSegment } from "@/components/RoadbookMap";
 import { PlacesAutocompleteInput } from "@/components/PlacesAutocompleteInput";
 import { geocodePlace } from "@/server/maps.functions";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export const Route = createFileRoute("/roadbook/$id")({
   component: RoadbookPage,
@@ -75,6 +91,7 @@ interface Roadbook {
   accommodations_summary: AccommodationSummary[];
   contacts: Contact[];
   tips: string[];
+  directions_segments?: DirectionsSegment[];
 }
 
 function formatShortDate(iso: string) {
@@ -107,15 +124,26 @@ function emptyContact(): Contact {
   return { role: "", name: "", phone: "", email: "" };
 }
 
+function renumberDays(list: Day[]): Day[] {
+  return list.map((d, i) => ({ ...d, day: i + 1 }));
+}
+
+/* ---------- Page ---------- */
+
 function RoadbookPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [rb, setRb] = useState<Roadbook | null>(null);
   const [loading, setLoading] = useState(true);
+  const [globalEdit, setGlobalEdit] = useState(false);
   const { apiKey } = useGoogleMapsKey();
   const rbRef = useRef<Roadbook | null>(null);
   rbRef.current = rb;
+
+  // Auto-save debounce
+  const dirtyRef = useRef<Roadbook | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -135,7 +163,6 @@ function RoadbookPage() {
           return;
         }
         const content = data.content as unknown as Roadbook;
-        // Garantit que la destination est dans l'objet pour le bias géo
         if (!content.destination && data.destination) {
           content.destination = data.destination;
         }
@@ -144,30 +171,53 @@ function RoadbookPage() {
       });
   }, [id, user, authLoading, navigate]);
 
+  // Sauvegarde immédiate avec toast
   const persist = async (next: Roadbook) => {
     setRb(next);
     const { error } = await supabase
       .from("roadbooks")
-      .update({ content: next as any })
+      .update({ content: next as never })
       .eq("id", id);
     if (error) {
       toast.error("Échec de la sauvegarde : " + error.message);
     } else {
-      toast.success("Modifications enregistrées", { duration: 2000 });
+      toast.success("Modifications enregistrées", { duration: 1800 });
     }
   };
 
-  // Persistance silencieuse (sans toast) pour le géocodage rétroactif
+  // Sauvegarde silencieuse (géocodage, segments)
   const persistSilent = async (next: Roadbook) => {
     setRb(next);
     const { error } = await supabase
       .from("roadbooks")
-      .update({ content: next as any })
+      .update({ content: next as never })
       .eq("id", id);
-    if (error) console.error("Geocode persist failed:", error.message);
+    if (error) console.error("Silent persist failed:", error.message);
   };
 
-  // Géocodage rétroactif des jours sans lat/lng
+  // Auto-save (debounce 2s) — déclenché par updateAndAutosave
+  const updateAndAutosave = (next: Roadbook) => {
+    setRb(next);
+    dirtyRef.current = next;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      const toSave = dirtyRef.current;
+      if (!toSave) return;
+      supabase
+        .from("roadbooks")
+        .update({ content: toSave as never })
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) {
+            toast.error("Échec auto-save : " + error.message);
+          } else {
+            toast.success("Modifications enregistrées", { duration: 1500 });
+          }
+        });
+    }, 2000);
+  };
+
+  // Géocodage rétroactif
   useEffect(() => {
     if (!rb) return;
     const days = rb.days || [];
@@ -193,12 +243,7 @@ function RoadbookPage() {
             data: { query, region: working.destination },
           });
           if (cancelled) return;
-          if (res.lat == null || res.lng == null) {
-            console.warn(
-              `[map] Géocodage impossible pour J${day.day} : "${query}"`,
-            );
-            continue;
-          }
+          if (res.lat == null || res.lng == null) continue;
           const nextDays: Day[] = working.days.map((d, i) =>
             i === idx ? { ...d, lat: res.lat, lng: res.lng } : d,
           );
@@ -215,6 +260,13 @@ function RoadbookPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rb?.days?.length, id]);
+
+  // Persistance segments cache (silencieuse)
+  const handleSegmentsChange = (segs: DirectionsSegment[]) => {
+    const cur = rbRef.current;
+    if (!cur) return;
+    persistSilent({ ...cur, directions_segments: segs });
+  };
 
   if (authLoading || loading || !rb) {
     return (
@@ -233,29 +285,47 @@ function RoadbookPage() {
               <ArrowLeft className="h-4 w-4" /> Retour au tableau de bord
             </Button>
           </Link>
-          <Button
-            size="sm"
-            onClick={() => {
-              toast.info("Génération du PDF en cours…", { duration: 2500 });
-              const url = `/roadbook/${id}/print?auto=1`;
-              window.open(url, "_blank", "noopener,noreferrer");
-            }}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" /> Exporter en PDF
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={globalEdit ? "default" : "outline"}
+              onClick={() => setGlobalEdit((v) => !v)}
+              className="gap-2"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {globalEdit ? "Quitter l'édition" : "Tout modifier"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                toast.info("Génération du PDF en cours…", { duration: 2500 });
+                const url = `/roadbook/${id}/print?auto=1`;
+                window.open(url, "_blank", "noopener,noreferrer");
+              }}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" /> Exporter en PDF
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-12">
         <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <CoverSection cover={rb.cover} onSave={(cover) => persist({ ...rb, cover })} />
+          <CoverSection
+            cover={rb.cover}
+            forceEdit={globalEdit}
+            onSave={(cover) => persist({ ...rb, cover })}
+            onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
+          />
 
           <div className="space-y-14 px-8 py-12 sm:px-14">
             <EditableTextSection
               label="Vue d'ensemble"
               value={rb.overview}
+              forceEdit={globalEdit}
               onSave={(overview) => persist({ ...rb, overview })}
+              onAutoSave={(overview) => updateAndAutosave({ ...rb, overview })}
             />
 
             <section>
@@ -263,7 +333,11 @@ function RoadbookPage() {
                 Tracé du voyage
               </h2>
               {apiKey ? (
-                <RoadbookMap days={rb.days || []} />
+                <RoadbookMap
+                  days={rb.days || []}
+                  segments={rb.directions_segments ?? []}
+                  onSegmentsChange={handleSegmentsChange}
+                />
               ) : (
                 <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
                   Chargement de la carte…
@@ -274,24 +348,37 @@ function RoadbookPage() {
             <DaysTableSection
               days={rb.days || []}
               regionBias={rb.destination}
+              forceEdit={globalEdit}
               onSave={(days) => persist({ ...rb, days })}
+              onAutoSave={(days) => updateAndAutosave({ ...rb, days })}
             />
 
             <AccommodationsSection
               items={rb.accommodations_summary || []}
               regionBias={rb.destination}
+              forceEdit={globalEdit}
               onSave={(accommodations_summary) =>
                 persist({ ...rb, accommodations_summary })
+              }
+              onAutoSave={(accommodations_summary) =>
+                updateAndAutosave({ ...rb, accommodations_summary })
               }
             />
 
             <ContactsSection
               contacts={rb.contacts || []}
               regionBias={rb.destination}
+              forceEdit={globalEdit}
               onSave={(contacts) => persist({ ...rb, contacts })}
+              onAutoSave={(contacts) => updateAndAutosave({ ...rb, contacts })}
             />
 
-            <TipsSection tips={rb.tips || []} onSave={(tips) => persist({ ...rb, tips })} />
+            <TipsSection
+              tips={rb.tips || []}
+              forceEdit={globalEdit}
+              onSave={(tips) => persist({ ...rb, tips })}
+              onAutoSave={(tips) => updateAndAutosave({ ...rb, tips })}
+            />
           </div>
         </article>
       </main>
@@ -300,7 +387,10 @@ function RoadbookPage() {
 
   if (!apiKey) return content;
   return (
-    <APIProvider apiKey={apiKey} libraries={["places", "marker"]}>
+    <APIProvider
+      apiKey={apiKey}
+      libraries={["places", "marker", "geometry"]}
+    >
       {content}
     </APIProvider>
   );
@@ -314,12 +404,14 @@ function SectionHeader({
   onEdit,
   onSave,
   onCancel,
+  hideEditButton,
 }: {
   label: string;
   editing: boolean;
   onEdit: () => void;
   onSave: () => void;
   onCancel: () => void;
+  hideEditButton?: boolean;
 }) {
   return (
     <div className="mb-5 flex items-center justify-between">
@@ -327,18 +419,32 @@ function SectionHeader({
         {label}
       </h2>
       {editing ? (
-        <div className="flex items-center gap-1">
-          <Button size="sm" variant="ghost" onClick={onCancel} className="gap-1.5 text-muted-foreground">
-            <X className="h-3.5 w-3.5" /> Annuler
-          </Button>
-          <Button size="sm" onClick={onSave} className="gap-1.5">
-            <Check className="h-3.5 w-3.5" /> Enregistrer
-          </Button>
-        </div>
+        hideEditButton ? null : (
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onCancel}
+              className="gap-1.5 text-muted-foreground"
+            >
+              <X className="h-3.5 w-3.5" /> Annuler
+            </Button>
+            <Button size="sm" onClick={onSave} className="gap-1.5">
+              <Check className="h-3.5 w-3.5" /> Enregistrer
+            </Button>
+          </div>
+        )
       ) : (
-        <Button size="sm" variant="ghost" onClick={onEdit} className="gap-1.5 text-muted-foreground hover:text-primary">
-          <Pencil className="h-3.5 w-3.5" /> Modifier
-        </Button>
+        !hideEditButton && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onEdit}
+            className="gap-1.5 text-muted-foreground hover:text-primary"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Modifier
+          </Button>
+        )
       )}
     </div>
   );
@@ -346,55 +452,78 @@ function SectionHeader({
 
 /* ---------- Cover ---------- */
 
-function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => void }) {
-  const [editing, setEditing] = useState(false);
+function CoverSection({
+  cover,
+  forceEdit,
+  onSave,
+  onAutoSave,
+}: {
+  cover: Cover;
+  forceEdit: boolean;
+  onSave: (c: Cover) => void;
+  onAutoSave: (c: Cover) => void;
+}) {
+  const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(cover);
+  const editing = localEdit || forceEdit;
+
+  useEffect(() => {
+    if (forceEdit) setDraft(cover);
+  }, [forceEdit, cover]);
+
+  const update = (patch: Partial<Cover>) => {
+    const next = { ...draft, ...patch };
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
 
   if (editing) {
     return (
       <div className="relative bg-[#0F6E56] px-8 py-20 text-white sm:px-14">
-        <div className="absolute right-6 top-6 flex items-center gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setDraft(cover);
-              setEditing(false);
-            }}
-            className="gap-1.5 text-white/90 hover:bg-white/15 hover:text-white"
-          >
-            <X className="h-3.5 w-3.5" /> Annuler
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              onSave(draft);
-              setEditing(false);
-            }}
-            className="gap-1.5 bg-white text-[#0F6E56] hover:bg-white/90"
-          >
-            <Check className="h-3.5 w-3.5" /> Enregistrer
-          </Button>
-        </div>
+        {!forceEdit && (
+          <div className="absolute right-6 top-6 flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setDraft(cover);
+                setLocalEdit(false);
+              }}
+              className="gap-1.5 text-white/90 hover:bg-white/15 hover:text-white"
+            >
+              <X className="h-3.5 w-3.5" /> Annuler
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                onSave(draft);
+                setLocalEdit(false);
+              }}
+              className="gap-1.5 bg-white text-[#0F6E56] hover:bg-white/90"
+            >
+              <Check className="h-3.5 w-3.5" /> Enregistrer
+            </Button>
+          </div>
+        )}
         <div className="mx-auto max-w-3xl space-y-3 pt-10">
           <Input
             value={draft.title}
-            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            onChange={(e) => update({ title: e.target.value })}
             className="border-white/30 bg-white/15 text-2xl font-bold text-white placeholder:text-white/60"
           />
           <Input
             value={draft.subtitle}
-            onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
+            onChange={(e) => update({ subtitle: e.target.value })}
             className="border-white/30 bg-white/15 text-white placeholder:text-white/60"
           />
           <Input
             value={draft.tagline}
-            onChange={(e) => setDraft({ ...draft, tagline: e.target.value })}
+            onChange={(e) => update({ tagline: e.target.value })}
             className="border-white/30 bg-white/15 text-white placeholder:text-white/60"
           />
           <Input
             value={draft.dates_label}
-            onChange={(e) => setDraft({ ...draft, dates_label: e.target.value })}
+            onChange={(e) => update({ dates_label: e.target.value })}
             className="border-white/30 bg-white/15 text-white placeholder:text-white/60"
           />
         </div>
@@ -408,14 +537,21 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => setEditing(true)}
+          onClick={() => {
+            setDraft(cover);
+            setLocalEdit(true);
+          }}
           className="gap-1.5 text-white/90 hover:bg-white/15 hover:text-white"
         >
           <Pencil className="h-3.5 w-3.5" /> Modifier
         </Button>
       </div>
-      <p className="mb-6 text-xs uppercase tracking-widest opacity-80">Carnet de voyage</p>
-      <h1 className="mb-4 text-7xl font-semibold leading-tight">{cover.title}</h1>
+      <p className="mb-6 text-xs uppercase tracking-widest opacity-80">
+        Roadbook
+      </p>
+      <h1 className="mb-4 text-7xl font-semibold leading-tight">
+        {cover.title}
+      </h1>
       <p className="mb-3 text-2xl">{cover.subtitle}</p>
       <p className="mb-6 text-lg italic opacity-85">{cover.tagline}</p>
       <span className="inline-block rounded-full bg-white/15 px-5 py-2 text-sm">
@@ -430,32 +566,50 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
 function EditableTextSection({
   label,
   value,
+  forceEdit,
   onSave,
+  onAutoSave,
 }: {
   label: string;
   value: string;
+  forceEdit: boolean;
   onSave: (v: string) => void;
+  onAutoSave: (v: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(value);
+  const editing = localEdit || forceEdit;
+
+  useEffect(() => {
+    if (forceEdit) setDraft(value);
+  }, [forceEdit, value]);
 
   return (
     <section>
       <SectionHeader
         label={label}
         editing={editing}
+        hideEditButton={forceEdit}
         onEdit={() => {
           setDraft(value);
-          setEditing(true);
+          setLocalEdit(true);
         }}
         onSave={() => {
           onSave(draft);
-          setEditing(false);
+          setLocalEdit(false);
         }}
-        onCancel={() => setEditing(false)}
+        onCancel={() => setLocalEdit(false)}
       />
       {editing ? (
-        <Textarea rows={6} value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <Textarea
+          rows={6}
+          value={draft}
+          onChange={(e) => {
+            const v = e.target.value;
+            setDraft(v);
+            if (forceEdit) onAutoSave(v);
+          }}
+        />
       ) : (
         <p className="text-base leading-relaxed text-foreground/85">{value}</p>
       )}
@@ -463,193 +617,335 @@ function EditableTextSection({
   );
 }
 
-/* ---------- Days table ---------- */
+/* ---------- Days table (drag-and-drop) ---------- */
 
-function renumberDays(list: Day[]): Day[] {
-  return list.map((d, i) => ({ ...d, day: i + 1 }));
+interface DayRowProps {
+  day: Day;
+  index: number;
+  editing: boolean;
+  regionBias?: string;
+  onUpdate: (patch: Partial<Day>) => void;
+  onRemove: () => void;
+  isOdd: boolean;
+}
+
+function DayRow({
+  day,
+  editing,
+  regionBias,
+  onUpdate,
+  onRemove,
+  isOdd,
+}: DayRowProps) {
+  const sortable = useSortable({ id: `day-${day.day}` });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = sortable;
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+
+  return (
+    <Fragment>
+      <tr
+        ref={setNodeRef}
+        style={style}
+        className={isOdd ? "bg-secondary/25" : ""}
+      >
+        {editing && (
+          <td className="px-1 py-3 align-top">
+            <button
+              type="button"
+              {...attributes}
+              {...listeners}
+              className="cursor-grab text-muted-foreground hover:text-primary active:cursor-grabbing"
+              aria-label="Réordonner"
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+          </td>
+        )}
+        <td className="px-3 py-3 font-semibold text-primary">J{day.day}</td>
+        <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
+          {editing ? (
+            <Input
+              value={day.date}
+              onChange={(e) => onUpdate({ date: e.target.value })}
+              className="h-8"
+            />
+          ) : (
+            formatShortDate(day.date)
+          )}
+        </td>
+        <td className="px-3 py-3 font-medium">
+          {editing ? (
+            <PlacesAutocompleteInput
+              value={day.stage}
+              onChange={(v) => onUpdate({ stage: v })}
+              onSelect={(p) =>
+                onUpdate({
+                  stage: p.name,
+                  lat: p.lat,
+                  lng: p.lng,
+                })
+              }
+              regionBias={regionBias}
+              className="h-8"
+            />
+          ) : (
+            day.stage
+          )}
+        </td>
+        <td className="px-3 py-3">
+          {editing ? (
+            <PlacesAutocompleteInput
+              value={day.accommodation}
+              onChange={(v) => onUpdate({ accommodation: v })}
+              onSelect={(p) =>
+                onUpdate({
+                  accommodation: p.name,
+                  ...(typeof day.lat !== "number" && p.lat != null
+                    ? { lat: p.lat, lng: p.lng }
+                    : {}),
+                })
+              }
+              regionBias={regionBias}
+              types={["establishment"]}
+              className="h-8"
+            />
+          ) : (
+            day.accommodation
+          )}
+        </td>
+        <td className="px-3 py-3 text-muted-foreground">
+          {editing ? (
+            <Input
+              value={day.type}
+              onChange={(e) => onUpdate({ type: e.target.value })}
+              className="h-8"
+            />
+          ) : (
+            day.type
+          )}
+        </td>
+        <td className="px-3 py-3 text-muted-foreground">
+          {editing ? (
+            <Input
+              value={day.flight}
+              onChange={(e) => onUpdate({ flight: e.target.value })}
+              className="h-8"
+            />
+          ) : (
+            day.flight
+          )}
+        </td>
+        <td className="px-3 py-3 text-right tabular-nums">
+          {editing ? (
+            <Input
+              type="number"
+              value={day.distance_km}
+              onChange={(e) =>
+                onUpdate({ distance_km: parseInt(e.target.value) || 0 })
+              }
+              className="h-8 w-20 ml-auto text-right"
+            />
+          ) : (
+            <span>{day.distance_km} km</span>
+          )}
+        </td>
+        <td className="px-3 py-3 text-right tabular-nums">
+          {editing ? (
+            <Input
+              type="number"
+              value={day.drive_hours}
+              onChange={(e) =>
+                onUpdate({ drive_hours: parseInt(e.target.value) || 0 })
+              }
+              className="h-8 w-16 ml-auto text-right"
+            />
+          ) : (
+            <span>{day.drive_hours} h</span>
+          )}
+        </td>
+        {editing && (
+          <td className="px-2 py-3 align-top">
+            <button
+              type="button"
+              onClick={onRemove}
+              className="text-muted-foreground hover:text-destructive"
+              aria-label="Supprimer ce jour"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </td>
+        )}
+      </tr>
+      <tr className={isOdd ? "bg-secondary/25" : ""}>
+        <td
+          colSpan={editing ? 10 : 8}
+          className="px-3 pb-4 pt-0 italic text-foreground/70"
+        >
+          {editing ? (
+            <Textarea
+              rows={2}
+              value={day.narrative}
+              onChange={(e) => onUpdate({ narrative: e.target.value })}
+              className="italic"
+            />
+          ) : (
+            day.narrative
+          )}
+        </td>
+      </tr>
+    </Fragment>
+  );
 }
 
 function DaysTableSection({
   days,
   onSave,
+  onAutoSave,
   regionBias,
+  forceEdit,
 }: {
   days: Day[];
   onSave: (d: Day[]) => void;
+  onAutoSave: (d: Day[]) => void;
   regionBias?: string;
+  forceEdit: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(days);
+  const editing = localEdit || forceEdit;
 
-  const update = (i: number, patch: Partial<Day>) =>
-    setDraft((d) => d.map((day, idx) => (idx === i ? { ...day, ...patch } : day)));
+  useEffect(() => {
+    if (forceEdit) setDraft(days);
+  }, [forceEdit, days]);
 
-  const remove = (i: number) =>
-    setDraft((d) => renumberDays(d.filter((_, idx) => idx !== i)));
-
-  const add = () =>
-    setDraft((d) => renumberDays([...d, emptyDay(d.length + 1)]));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
 
   const list = editing ? draft : days;
+
+  const update = (i: number, patch: Partial<Day>) => {
+    const next = draft.map((day, idx) =>
+      idx === i ? { ...day, ...patch } : day,
+    );
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
+
+  const remove = (i: number) => {
+    const next = renumberDays(draft.filter((_, idx) => idx !== i));
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
+
+  const add = () => {
+    const next = renumberDays([...draft, emptyDay(draft.length + 1)]);
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = draft.findIndex((d) => `day-${d.day}` === active.id);
+    const newIdx = draft.findIndex((d) => `day-${d.day}` === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const next = renumberDays(arrayMove(draft, oldIdx, newIdx));
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
+
+  const sortableIds = useMemo(
+    () => list.map((d) => `day-${d.day}`),
+    [list],
+  );
 
   return (
     <section>
       <SectionHeader
         label="Itinéraire jour par jour"
         editing={editing}
+        hideEditButton={forceEdit}
         onEdit={() => {
           setDraft(days);
-          setEditing(true);
+          setLocalEdit(true);
         }}
         onSave={() => {
           onSave(renumberDays(draft));
-          setEditing(false);
+          setLocalEdit(false);
         }}
-        onCancel={() => setEditing(false)}
+        onCancel={() => setLocalEdit(false)}
       />
 
       <div className="overflow-hidden rounded-xl border border-border">
         <table className="w-full text-sm">
           <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             <tr>
+              {editing && <th className="px-1 py-3 w-6" />}
               <th className="px-3 py-3 w-12">Jour</th>
               <th className="px-3 py-3 w-20">Date</th>
               <th className="px-3 py-3">Étape</th>
               <th className="px-3 py-3">Hébergement</th>
-              <th className="px-3 py-3 w-28">Type</th>
+              <th className="px-3 py-3 w-28" translate="no">
+                Type
+              </th>
               <th className="px-3 py-3">Vols / Transport</th>
               <th className="px-3 py-3 w-24 text-right">Distance</th>
-              <th className="px-3 py-3 w-20 text-right">Route</th>
+              <th className="px-3 py-3 w-20 text-right" translate="no">
+                Route
+              </th>
               {editing && <th className="px-2 py-3 w-10" />}
             </tr>
           </thead>
-          <tbody>
-            {list.map((d, i) => (
-              <Fragment key={`day-${i}`}>
-                <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
-                  <td className="px-3 py-3 font-semibold text-primary">J{d.day}</td>
-                  <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
-                    {editing ? (
-                      <Input value={d.date} onChange={(e) => update(i, { date: e.target.value })} className="h-8" />
-                    ) : (
-                      formatShortDate(d.date)
-                    )}
-                  </td>
-                  <td className="px-3 py-3 font-medium">
-                    {editing ? (
-                      <PlacesAutocompleteInput
-                        value={d.stage}
-                        onChange={(v) => update(i, { stage: v })}
-                        onSelect={(p) =>
-                          update(i, {
-                            stage: p.name,
-                            lat: p.lat,
-                            lng: p.lng,
-                          })
-                        }
-                        regionBias={regionBias}
-                        className="h-8"
-                      />
-                    ) : (
-                      d.stage
-                    )}
-                  </td>
-                  <td className="px-3 py-3">
-                    {editing ? (
-                      <PlacesAutocompleteInput
-                        value={d.accommodation}
-                        onChange={(v) => update(i, { accommodation: v })}
-                        onSelect={(p) =>
-                          update(i, {
-                            accommodation: p.name,
-                            // Si l'étape n'a pas encore de coords, on les hérite de l'hébergement
-                            ...(typeof d.lat !== "number" && p.lat != null
-                              ? { lat: p.lat, lng: p.lng }
-                              : {}),
-                          })
-                        }
-                        regionBias={regionBias}
-                        types={["establishment"]}
-                        className="h-8"
-                      />
-                    ) : (
-                      d.accommodation
-                    )}
-                  </td>
-                  <td className="px-3 py-3 text-muted-foreground">
-                    {editing ? (
-                      <Input value={d.type} onChange={(e) => update(i, { type: e.target.value })} className="h-8" />
-                    ) : (
-                      d.type
-                    )}
-                  </td>
-                  <td className="px-3 py-3 text-muted-foreground">
-                    {editing ? (
-                      <Input value={d.flight} onChange={(e) => update(i, { flight: e.target.value })} className="h-8" />
-                    ) : (
-                      d.flight
-                    )}
-                  </td>
-                  <td className="px-3 py-3 text-right tabular-nums">
-                    {editing ? (
-                      <Input
-                        type="number"
-                        value={d.distance_km}
-                        onChange={(e) => update(i, { distance_km: parseInt(e.target.value) || 0 })}
-                        className="h-8 w-20 ml-auto text-right"
-                      />
-                    ) : (
-                      <span>{d.distance_km} km</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-3 text-right tabular-nums">
-                    {editing ? (
-                      <Input
-                        type="number"
-                        value={d.drive_hours}
-                        onChange={(e) => update(i, { drive_hours: parseInt(e.target.value) || 0 })}
-                        className="h-8 w-16 ml-auto text-right"
-                      />
-                    ) : (
-                      <span>{d.drive_hours} h</span>
-                    )}
-                  </td>
-                  {editing && (
-                    <td className="px-2 py-3 align-top">
-                      <button
-                        type="button"
-                        onClick={() => remove(i)}
-                        className="text-muted-foreground hover:text-destructive"
-                        aria-label="Supprimer ce jour"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  )}
-                </tr>
-                <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
-                  <td colSpan={editing ? 9 : 8} className="px-3 pb-4 pt-0 italic text-foreground/70">
-                    {editing ? (
-                      <Textarea
-                        rows={2}
-                        value={d.narrative}
-                        onChange={(e) => update(i, { narrative: e.target.value })}
-                        className="italic"
-                      />
-                    ) : (
-                      d.narrative
-                    )}
-                  </td>
-                </tr>
-              </Fragment>
-            ))}
-          </tbody>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={sortableIds}
+              strategy={verticalListSortingStrategy}
+            >
+              <tbody>
+                {list.map((d, i) => (
+                  <DayRow
+                    key={`day-${d.day}`}
+                    day={d}
+                    index={i}
+                    editing={editing}
+                    regionBias={regionBias}
+                    onUpdate={(patch) => update(i, patch)}
+                    onRemove={() => remove(i)}
+                    isOdd={i % 2 === 1}
+                  />
+                ))}
+              </tbody>
+            </SortableContext>
+          </DndContext>
         </table>
       </div>
 
       {editing && (
-        <Button type="button" variant="outline" size="sm" onClick={add} className="mt-3 gap-2">
-          <Plus className="h-3.5 w-3.5" /> Ajouter une étape
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={add}
+          className="mt-3 gap-2"
+        >
+          <Plus className="h-3.5 w-3.5" /> Ajouter un jour
         </Button>
       )}
     </section>
@@ -661,18 +957,39 @@ function DaysTableSection({
 function AccommodationsSection({
   items,
   onSave,
+  onAutoSave,
   regionBias,
+  forceEdit,
 }: {
   items: AccommodationSummary[];
   onSave: (a: AccommodationSummary[]) => void;
+  onAutoSave: (a: AccommodationSummary[]) => void;
   regionBias?: string;
+  forceEdit: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(items);
-  const update = (i: number, patch: Partial<AccommodationSummary>) =>
-    setDraft((d) => d.map((a, idx) => (idx === i ? { ...a, ...patch } : a)));
-  const remove = (i: number) => setDraft((d) => d.filter((_, idx) => idx !== i));
-  const add = () => setDraft((d) => [...d, emptyAccommodation()]);
+  const editing = localEdit || forceEdit;
+
+  useEffect(() => {
+    if (forceEdit) setDraft(items);
+  }, [forceEdit, items]);
+
+  const update = (i: number, patch: Partial<AccommodationSummary>) => {
+    const next = draft.map((a, idx) => (idx === i ? { ...a, ...patch } : a));
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
+  const remove = (i: number) => {
+    const next = draft.filter((_, idx) => idx !== i);
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
+  const add = () => {
+    const next = [...draft, emptyAccommodation()];
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
 
   const list = editing ? draft : items;
 
@@ -681,15 +998,16 @@ function AccommodationsSection({
       <SectionHeader
         label="Hébergements"
         editing={editing}
+        hideEditButton={forceEdit}
         onEdit={() => {
           setDraft(items);
-          setEditing(true);
+          setLocalEdit(true);
         }}
         onSave={() => {
           onSave(draft);
-          setEditing(false);
+          setLocalEdit(false);
         }}
-        onCancel={() => setEditing(false)}
+        onCancel={() => setLocalEdit(false)}
       />
 
       <div className="overflow-hidden rounded-xl border border-border">
@@ -698,7 +1016,9 @@ function AccommodationsSection({
             <tr>
               <th className="px-4 py-3">Lodge / Camp</th>
               <th className="px-4 py-3">Localisation</th>
-              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3" translate="no">
+                Type
+              </th>
               <th className="px-4 py-3 text-right w-20">Nuits</th>
               {editing && <th className="px-2 py-3 w-10" />}
             </tr>
@@ -740,9 +1060,13 @@ function AccommodationsSection({
                     a.location
                   )}
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">
+                <td className="px-4 py-3 text-muted-foreground" translate="no">
                   {editing ? (
-                    <Input value={a.type} onChange={(e) => update(i, { type: e.target.value })} className="h-8" />
+                    <Input
+                      value={a.type}
+                      onChange={(e) => update(i, { type: e.target.value })}
+                      className="h-8"
+                    />
                   ) : (
                     a.type
                   )}
@@ -753,7 +1077,9 @@ function AccommodationsSection({
                       type="number"
                       min={1}
                       value={a.nights}
-                      onChange={(e) => update(i, { nights: parseInt(e.target.value) || 1 })}
+                      onChange={(e) =>
+                        update(i, { nights: parseInt(e.target.value) || 1 })
+                      }
                       className="h-8 w-16 ml-auto text-right"
                     />
                   ) : (
@@ -779,7 +1105,13 @@ function AccommodationsSection({
       </div>
 
       {editing && (
-        <Button type="button" variant="outline" size="sm" onClick={add} className="mt-3 gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={add}
+          className="mt-3 gap-2"
+        >
           <Plus className="h-3.5 w-3.5" /> Ajouter un hébergement
         </Button>
       )}
@@ -792,18 +1124,39 @@ function AccommodationsSection({
 function ContactsSection({
   contacts,
   onSave,
+  onAutoSave,
   regionBias,
+  forceEdit,
 }: {
   contacts: Contact[];
   onSave: (c: Contact[]) => void;
+  onAutoSave: (c: Contact[]) => void;
   regionBias?: string;
+  forceEdit: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(contacts);
-  const update = (i: number, patch: Partial<Contact>) =>
-    setDraft((d) => d.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
-  const remove = (i: number) => setDraft((d) => d.filter((_, idx) => idx !== i));
-  const add = () => setDraft((d) => [...d, emptyContact()]);
+  const editing = localEdit || forceEdit;
+
+  useEffect(() => {
+    if (forceEdit) setDraft(contacts);
+  }, [forceEdit, contacts]);
+
+  const update = (i: number, patch: Partial<Contact>) => {
+    const next = draft.map((c, idx) => (idx === i ? { ...c, ...patch } : c));
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
+  const remove = (i: number) => {
+    const next = draft.filter((_, idx) => idx !== i);
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
+  const add = () => {
+    const next = [...draft, emptyContact()];
+    setDraft(next);
+    if (forceEdit) onAutoSave(next);
+  };
 
   const list = editing ? draft : contacts;
 
@@ -812,15 +1165,16 @@ function ContactsSection({
       <SectionHeader
         label="Contacts pratiques"
         editing={editing}
+        hideEditButton={forceEdit}
         onEdit={() => {
           setDraft(contacts);
-          setEditing(true);
+          setLocalEdit(true);
         }}
         onSave={() => {
           onSave(draft);
-          setEditing(false);
+          setLocalEdit(false);
         }}
-        onCancel={() => setEditing(false)}
+        onCancel={() => setLocalEdit(false)}
       />
 
       <div className="overflow-hidden rounded-xl border border-border">
@@ -839,7 +1193,11 @@ function ContactsSection({
               <tr key={i} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
                 <td className="px-4 py-3 text-muted-foreground">
                   {editing ? (
-                    <Input value={c.role} onChange={(e) => update(i, { role: e.target.value })} className="h-8" />
+                    <Input
+                      value={c.role}
+                      onChange={(e) => update(i, { role: e.target.value })}
+                      className="h-8"
+                    />
                   ) : (
                     c.role
                   )}
@@ -860,14 +1218,22 @@ function ContactsSection({
                 </td>
                 <td className="px-4 py-3 tabular-nums">
                   {editing ? (
-                    <Input value={c.phone} onChange={(e) => update(i, { phone: e.target.value })} className="h-8" />
+                    <Input
+                      value={c.phone}
+                      onChange={(e) => update(i, { phone: e.target.value })}
+                      className="h-8"
+                    />
                   ) : (
                     c.phone
                   )}
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {editing ? (
-                    <Input value={c.email ?? ""} onChange={(e) => update(i, { email: e.target.value })} className="h-8" />
+                    <Input
+                      value={c.email ?? ""}
+                      onChange={(e) => update(i, { email: e.target.value })}
+                      className="h-8"
+                    />
                   ) : (
                     c.email || "—"
                   )}
@@ -891,7 +1257,13 @@ function ContactsSection({
       </div>
 
       {editing && (
-        <Button type="button" variant="outline" size="sm" onClick={add} className="mt-3 gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={add}
+          className="mt-3 gap-2"
+        >
           <Plus className="h-3.5 w-3.5" /> Ajouter un contact
         </Button>
       )}
@@ -901,29 +1273,55 @@ function ContactsSection({
 
 /* ---------- Tips ---------- */
 
-function TipsSection({ tips, onSave }: { tips: string[]; onSave: (t: string[]) => void }) {
-  const [editing, setEditing] = useState(false);
+function TipsSection({
+  tips,
+  onSave,
+  onAutoSave,
+  forceEdit,
+}: {
+  tips: string[];
+  onSave: (t: string[]) => void;
+  onAutoSave: (t: string[]) => void;
+  forceEdit: boolean;
+}) {
+  const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState<string[]>(tips);
+  const editing = localEdit || forceEdit;
 
-  const update = (i: number, v: string) =>
-    setDraft((d) => d.map((t, idx) => (idx === i ? v : t)));
-  const remove = (i: number) => setDraft((d) => d.filter((_, idx) => idx !== i));
-  const add = () => setDraft((d) => [...d, ""]);
+  useEffect(() => {
+    if (forceEdit) setDraft(tips);
+  }, [forceEdit, tips]);
+
+  const update = (i: number, v: string) => {
+    const next = draft.map((t, idx) => (idx === i ? v : t));
+    setDraft(next);
+    if (forceEdit) onAutoSave(next.map((t) => t.trim()).filter(Boolean));
+  };
+  const remove = (i: number) => {
+    const next = draft.filter((_, idx) => idx !== i);
+    setDraft(next);
+    if (forceEdit) onAutoSave(next.map((t) => t.trim()).filter(Boolean));
+  };
+  const add = () => {
+    const next = [...draft, ""];
+    setDraft(next);
+  };
 
   return (
     <section>
       <SectionHeader
         label="Conseils & recommandations"
         editing={editing}
+        hideEditButton={forceEdit}
         onEdit={() => {
           setDraft(tips);
-          setEditing(true);
+          setLocalEdit(true);
         }}
         onSave={() => {
           onSave(draft.map((t) => t.trim()).filter(Boolean));
-          setEditing(false);
+          setLocalEdit(false);
         }}
-        onCancel={() => setEditing(false)}
+        onCancel={() => setLocalEdit(false)}
       />
 
       {editing ? (
@@ -947,14 +1345,23 @@ function TipsSection({ tips, onSave }: { tips: string[]; onSave: (t: string[]) =
               </button>
             </div>
           ))}
-          <Button type="button" variant="outline" size="sm" onClick={add} className="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={add}
+            className="gap-2"
+          >
             <Plus className="h-3.5 w-3.5" /> Ajouter un conseil
           </Button>
         </div>
       ) : (
         <ul className="space-y-3">
           {tips.map((t, i) => (
-            <li key={i} className="flex gap-3 text-sm leading-relaxed text-foreground/85">
+            <li
+              key={i}
+              className="flex gap-3 text-sm leading-relaxed text-foreground/85"
+            >
               <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <span>{t}</span>
             </li>
