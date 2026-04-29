@@ -1,19 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
-// Inline fallback prompt (used if the file cannot be read at runtime).
-const FALLBACK_SYSTEM_PROMPT =
-  "Tu es un travel designer expert. Réponds en JSON uniquement avec la structure Roadbook attendue.";
-
-function loadSystemPrompt(): string {
-  try {
-    const p = join(process.cwd(), "prompts", "roadbook-system.md");
-    return readFileSync(p, "utf-8");
-  } catch {
-    return FALLBACK_SYSTEM_PROMPT;
-  }
-}
+import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
 
 function daysBetween(a?: string, b?: string): number {
   if (!a || !b) return 7;
@@ -24,11 +10,9 @@ function daysBetween(a?: string, b?: string): number {
 }
 
 function extractJson(text: string): unknown {
-  // Try direct parse first
   try {
     return JSON.parse(text);
   } catch {
-    // Strip code fences and retry
     const stripped = text
       .replace(/^```(?:json)?\s*/i, "")
       .replace(/\s*```\s*$/i, "")
@@ -36,7 +20,6 @@ function extractJson(text: string): unknown {
     try {
       return JSON.parse(stripped);
     } catch {
-      // Find the first { ... last }
       const first = stripped.indexOf("{");
       const last = stripped.lastIndexOf("}");
       if (first >= 0 && last > first) {
@@ -53,9 +36,15 @@ export const Route = createFileRoute("/api/generate-roadbook")({
       POST: async ({ request }) => {
         try {
           const apiKey = process.env.ANTHROPIC_API_KEY;
+          console.log(
+            "[generate-roadbook] start, key present:",
+            Boolean(apiKey),
+          );
           if (!apiKey) {
             return new Response(
-              JSON.stringify({ error: "ANTHROPIC_API_KEY manquante côté serveur." }),
+              JSON.stringify({
+                error: "ANTHROPIC_API_KEY manquante côté serveur.",
+              }),
               { status: 500, headers: { "Content-Type": "application/json" } },
             );
           }
@@ -64,7 +53,6 @@ export const Route = createFileRoute("/api/generate-roadbook")({
           const duration_days = daysBetween(form.start_date, form.end_date);
           const inputs = { ...form, duration_days };
 
-          const systemPrompt = loadSystemPrompt();
           const userMessage =
             "Voici les paramètres du voyage à mettre en forme :\n\n" +
             JSON.stringify(inputs, null, 2);
@@ -79,14 +67,18 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             body: JSON.stringify({
               model: "claude-sonnet-4-5",
               max_tokens: 8000,
-              system: systemPrompt,
+              system: ROADBOOK_SYSTEM_PROMPT,
               messages: [{ role: "user", content: userMessage }],
             }),
           });
 
           if (!resp.ok) {
             const errText = await resp.text();
-            console.error("[generate-roadbook] Anthropic error:", resp.status, errText);
+            console.error(
+              "[generate-roadbook] Anthropic error:",
+              resp.status,
+              errText,
+            );
             return new Response(
               JSON.stringify({
                 error: `Erreur Anthropic (${resp.status}): ${errText.slice(0, 300)}`,
@@ -106,7 +98,12 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             parsed = extractJson(text);
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
-            console.error("[generate-roadbook] Parse JSON failed:", msg, "raw:", text.slice(0, 1000));
+            console.error(
+              "[generate-roadbook] Parse JSON failed:",
+              msg,
+              "raw:",
+              text.slice(0, 1000),
+            );
             return new Response(
               JSON.stringify({
                 error: `La réponse de Claude n'était pas un JSON valide: ${msg}`,
