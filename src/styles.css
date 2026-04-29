@@ -258,3 +258,57 @@
 @utility shadow-soft-lg {
   box-shadow: 0 12px 40px rgba(15,110,86,0.10), 0 4px 12px rgba(15,110,86,0.05);
 }
+
+/* Hover lift utility */
+@utility hover-lift {
+  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@utility hover-lift {
+  &:hover { transform: translateY(-2px); }
+}
+
+/* Editorial container — confortable lecture */
+@utility container-prose {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+@utility container-editorial {
+  max-width: 1120px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Status pill colors (paired with bg-* classes) */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.status-draft  { background: var(--color-accent-warm-soft); color: oklch(0.45 0.08 65); }
+.status-ready  { background: var(--color-primary-soft);     color: var(--color-primary); }
+.status-delivered { background: oklch(0.95 0.005 90); color: oklch(0.40 0.012 90); }
+.status-archived { background: oklch(0.95 0.005 90); color: var(--color-text-soft); }
+
+/* Backdrop blur pill (over images) */
+.pill-glass {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+}
