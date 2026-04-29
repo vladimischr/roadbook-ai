@@ -41,6 +41,11 @@ export function PlacesAutocompleteInput({
   types,
 }: Props) {
   const placesLib = useMapsLibrary("places");
+  useEffect(() => {
+    if (placesLib) {
+      console.debug("[PlacesAutocomplete] Places library loaded");
+    }
+  }, [placesLib]);
   const [predictions, setPredictions] = useState<
     google.maps.places.AutocompletePrediction[]
   >([]);
