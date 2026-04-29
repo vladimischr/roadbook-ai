@@ -953,7 +953,214 @@ function SectionHeader({
   );
 }
 
-/* ---------- Cover ---------- */
+/* ---------- Roadbook Body (editorial sections wrapper) ---------- */
+
+function RoadbookBody({
+  rb,
+  apiKey,
+  globalEdit,
+  totalDistance,
+  totalDriveHours,
+  accommodationCount,
+  handleSegmentsChange,
+  addDayFromPlace,
+  removeDayByNumber,
+  persist,
+  updateAndAutosave,
+}: {
+  rb: Roadbook;
+  apiKey: string | null;
+  globalEdit: boolean;
+  totalDistance: number;
+  totalDriveHours: number;
+  accommodationCount: number;
+  handleSegmentsChange: (segs: DirectionsSegment[]) => void;
+  addDayFromPlace: (place: PlaceSelection, position: number | null) => void;
+  removeDayByNumber: (dayNumber: number) => void;
+  persist: (next: Roadbook) => void;
+  updateAndAutosave: (next: Roadbook) => void;
+}) {
+  const revealRef = useScrollReveal<HTMLDivElement>();
+
+  return (
+    <div ref={revealRef} className="mx-auto max-w-[880px] px-6 pb-32 pt-24 sm:px-10 sm:pt-32">
+      {/* Vue d'ensemble */}
+      <section className="reveal" style={staggerStyle(0)}>
+        <div className="mb-6 flex items-center gap-4">
+          <span className="rule-warm" />
+          <span className="eyebrow">Vue d'ensemble</span>
+        </div>
+        <EditableTextSection
+          label=""
+          value={rb.overview}
+          forceEdit={globalEdit}
+          onSave={(overview) => persist({ ...rb, overview })}
+          onAutoSave={(overview) => updateAndAutosave({ ...rb, overview })}
+          hideHeader
+        />
+      </section>
+
+      {/* En bref — stats */}
+      <section className="reveal mt-24" style={staggerStyle(1)}>
+        <div className="mb-6 flex items-center gap-4">
+          <span className="rule-warm" />
+          <span className="eyebrow">En bref</span>
+        </div>
+        <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+          <StatCell
+            label="Durée"
+            value={
+              rb.duration_days
+                ? `${rb.duration_days} j`
+                : rb.days
+                  ? `${rb.days.length} j`
+                  : "—"
+            }
+          />
+          <StatCell
+            label="Voyageurs"
+            value={
+              rb.travelers
+                ? `${rb.travelers}${rb.profile ? ` · ${rb.profile}` : ""}`
+                : rb.profile || "—"
+            }
+          />
+          <StatCell label="Modalité" value={rb.travel_mode || "—"} />
+          <StatCell
+            label="Distance"
+            value={totalDistance > 0 ? `${totalDistance} km` : "—"}
+          />
+        </div>
+      </section>
+
+      {/* Tracé du voyage */}
+      <section className="reveal mt-24" style={staggerStyle(2)}>
+        <div className="mb-6 flex items-center gap-4">
+          <span className="rule-warm" />
+          <span className="eyebrow">Tracé du voyage</span>
+        </div>
+        <h2 className="font-display mb-8 text-3xl font-semibold leading-tight text-foreground sm:text-[32px]">
+          Vue d'ensemble de l'itinéraire
+        </h2>
+        <div className="overflow-hidden rounded-2xl shadow-soft-lg">
+          {apiKey ? (
+            <RoadbookMap
+              days={rb.days || []}
+              segments={rb.directions_segments ?? []}
+              onSegmentsChange={handleSegmentsChange}
+              regionBias={rb.destination}
+              onAddDay={addDayFromPlace}
+              onRemoveDay={removeDayByNumber}
+            />
+          ) : (
+            <div className="grid h-[450px] place-items-center bg-surface-warm text-sm text-muted-foreground">
+              Chargement de la carte…
+            </div>
+          )}
+        </div>
+        <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 text-[13px] text-muted-foreground">
+          <span>
+            Distance totale&nbsp;:{" "}
+            <span className="font-semibold text-foreground">
+              {totalDistance} km
+            </span>
+          </span>
+          <span>
+            Route totale&nbsp;:{" "}
+            <span className="font-semibold text-foreground">
+              {totalDriveHours.toFixed(1)} h
+            </span>
+          </span>
+          <span>
+            Hébergements&nbsp;:{" "}
+            <span className="font-semibold text-foreground">
+              {accommodationCount}
+            </span>
+          </span>
+        </div>
+      </section>
+
+      {/* Itinéraire */}
+      <section className="reveal mt-24" style={staggerStyle(3)}>
+        <div className="mb-6 flex items-center gap-4">
+          <span className="rule-warm" />
+          <span className="eyebrow">Itinéraire jour par jour</span>
+        </div>
+        <DaysTableSection
+          days={rb.days || []}
+          regionBias={rb.destination}
+          forceEdit={globalEdit}
+          onSave={(days) => persist({ ...rb, days })}
+          onAutoSave={(days) => updateAndAutosave({ ...rb, days })}
+          onAddDayFromPlace={addDayFromPlace}
+        />
+      </section>
+
+      {/* Hébergements */}
+      <section className="reveal mt-24" style={staggerStyle(4)}>
+        <div className="mb-6 flex items-center gap-4">
+          <span className="rule-warm" />
+          <span className="eyebrow">Hébergements</span>
+        </div>
+        <AccommodationsSection
+          items={rb.accommodations_summary || []}
+          regionBias={rb.destination}
+          forceEdit={globalEdit}
+          onSave={(accommodations_summary) =>
+            persist({ ...rb, accommodations_summary })
+          }
+          onAutoSave={(accommodations_summary) =>
+            updateAndAutosave({ ...rb, accommodations_summary })
+          }
+        />
+      </section>
+
+      {/* Contacts */}
+      <section className="reveal mt-24" style={staggerStyle(5)}>
+        <div className="mb-6 flex items-center gap-4">
+          <span className="rule-warm" />
+          <span className="eyebrow">Contacts pratiques</span>
+        </div>
+        <ContactsSection
+          contacts={rb.contacts || []}
+          regionBias={rb.destination}
+          forceEdit={globalEdit}
+          onSave={(contacts) => persist({ ...rb, contacts })}
+          onAutoSave={(contacts) => updateAndAutosave({ ...rb, contacts })}
+        />
+      </section>
+
+      {/* Tips */}
+      <section className="reveal mt-24" style={staggerStyle(6)}>
+        <div className="mb-6 flex items-center gap-4">
+          <span className="rule-warm" />
+          <span className="eyebrow">Conseils &amp; recommandations</span>
+        </div>
+        <TipsSection
+          tips={rb.tips || []}
+          forceEdit={globalEdit}
+          onSave={(tips) => persist({ ...rb, tips })}
+          onAutoSave={(tips) => updateAndAutosave({ ...rb, tips })}
+        />
+      </section>
+    </div>
+  );
+}
+
+function StatCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-b border-accent-warm/40 pb-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="font-display mt-2 text-[26px] font-semibold leading-tight text-foreground">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/* ---------- Cover (full-bleed editorial) ---------- */
 
 function CoverSection({
   cover,
@@ -974,12 +1181,33 @@ function CoverSection({
 }) {
   const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(cover);
+  const [scrollY, setScrollY] = useState(0);
+  const [hideHint, setHideHint] = useState(false);
   const editing = localEdit || forceEdit;
   const coverImage = useDestinationCover(destination);
 
   useEffect(() => {
     if (forceEdit) setDraft(cover);
   }, [forceEdit, cover]);
+
+  // Subtle parallax: 0.4x scroll speed, only first 600px.
+  useEffect(() => {
+    if (editing) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const y = Math.min(window.scrollY, 600);
+        setScrollY(y);
+        if (y > 40) setHideHint(true);
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [editing]);
 
   const update = (patch: Partial<Cover>) => {
     const next = { ...draft, ...patch };
@@ -989,7 +1217,7 @@ function CoverSection({
 
   if (editing) {
     return (
-      <div className="relative bg-[#0F6E56] px-8 py-20 text-white sm:px-14">
+      <div className="relative bg-primary px-8 py-20 text-white sm:px-14">
         {!forceEdit && (
           <div className="absolute right-6 top-6 flex items-center gap-1">
             <Button
@@ -1009,7 +1237,7 @@ function CoverSection({
                 onSave(draft);
                 setLocalEdit(false);
               }}
-              className="gap-1.5 bg-white text-[#0F6E56] hover:bg-white/90"
+              className="gap-1.5 bg-white text-primary hover:bg-white/90"
             >
               <Check className="h-3.5 w-3.5" /> Enregistrer
             </Button>
@@ -1043,60 +1271,112 @@ function CoverSection({
 
   return (
     <section
-      className="relative isolate overflow-hidden bg-primary px-8 py-24 text-center text-white sm:py-28"
-      style={{ minHeight: 420 }}
+      className="relative isolate w-full overflow-hidden bg-primary text-white"
+      style={{
+        minHeight: "min(70vh, 640px)",
+        height: "70vh",
+      }}
     >
-      {/* Background image */}
-      {coverImage && (
-        <img
-          src={coverImage}
-          alt=""
-          className="absolute inset-0 -z-20 h-full w-full object-cover"
-        />
-      )}
-      {/* Teal overlay for legibility */}
+      {/* Parallax photo */}
+      <div
+        className="absolute inset-0 -z-20"
+        style={{
+          transform: `translate3d(0, ${scrollY * 0.4}px, 0)`,
+          willChange: "transform",
+        }}
+      >
+        {coverImage ? (
+          <img
+            src={coverImage}
+            alt=""
+            className="h-[120%] w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-primary via-primary to-primary-light" />
+        )}
+      </div>
+
+      {/* Vertical overlay: dark top → teal bottom */}
       <div
         className="absolute inset-0 -z-10"
         style={{
           background:
-            "linear-gradient(135deg, rgba(15,110,86,0.85) 0%, rgba(15,110,86,0.72) 50%, rgba(29,158,117,0.78) 100%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0.20) 0%, rgba(15,110,86,0.05) 35%, rgba(15,110,86,0.45) 75%, rgba(15,110,86,0.72) 100%)",
         }}
       />
 
-      <div className="absolute right-6 top-6 z-10">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            setDraft(cover);
-            setLocalEdit(true);
-          }}
-          className="gap-1.5 text-white/90 hover:bg-white/15 hover:text-white"
-        >
-          <Pencil className="h-3.5 w-3.5" /> Modifier
-        </Button>
+      {/* Edit button */}
+      <button
+        type="button"
+        onClick={() => {
+          setDraft(cover);
+          setLocalEdit(true);
+        }}
+        className="absolute right-6 top-6 z-10 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[12px] font-medium text-white backdrop-blur-md transition-smooth hover:bg-white/20 sm:right-10"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        Modifier
+      </button>
+
+      {/* Content — centered vertically at ~60% */}
+      <div className="relative z-0 flex h-full w-full items-end justify-center pb-[28%] sm:pb-[22%]">
+        <div className="mx-auto max-w-4xl px-6 text-center sm:px-10">
+          <p
+            className="reveal eyebrow-light mb-6"
+            style={{ ...staggerStyle(0, 100), animation: "none" }}
+          >
+            Roadbook
+          </p>
+          <h1
+            className="reveal font-display font-bold leading-[0.95] text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.25)]"
+            style={{
+              ...staggerStyle(1, 100),
+              fontSize: "clamp(56px, 8vw, 120px)",
+              maxWidth: "16ch",
+              margin: "0 auto",
+            }}
+          >
+            {cover.title}
+          </h1>
+          {cover.subtitle && (
+            <p
+              className="reveal font-display mx-auto mt-6 max-w-[600px] text-[20px] italic leading-snug text-white/95 sm:text-[24px]"
+              style={staggerStyle(2, 100)}
+            >
+              {cover.subtitle}
+            </p>
+          )}
+          {cover.tagline && (
+            <p
+              className="reveal mx-auto mt-4 max-w-[560px] text-[14px] italic leading-relaxed text-white/80"
+              style={staggerStyle(3, 100)}
+            >
+              {cover.tagline}
+            </p>
+          )}
+          <div
+            className="reveal mt-8 flex flex-wrap items-center justify-center gap-2"
+            style={staggerStyle(4, 100)}
+          >
+            {cover.dates_label && (
+              <span className="inline-block rounded-full border border-white/25 bg-white/10 px-[18px] py-2 text-[13px] font-medium text-white backdrop-blur-md">
+                {cover.dates_label}
+              </span>
+            )}
+            {(theme || travelMode) && (
+              <span className="inline-block rounded-full border border-white/25 bg-white/10 px-[18px] py-2 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-md">
+                {[theme, travelMode].filter(Boolean).join(" · ")}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
-      <p className="mb-8 text-[11px] font-semibold uppercase tracking-[0.32em] text-white/75">
-        Roadbook
-      </p>
-      <h1 className="font-display mb-5 text-5xl font-semibold leading-[1.05] tracking-tight sm:text-7xl">
-        {cover.title}
-      </h1>
-      <p className="font-display mx-auto mb-4 max-w-2xl text-xl italic text-white/95 sm:text-2xl">
-        {cover.subtitle}
-      </p>
-      <p className="mx-auto mb-8 max-w-xl text-sm italic leading-relaxed text-white/85 sm:text-base">
-        {cover.tagline}
-      </p>
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <span className="inline-block rounded-full border border-white/25 bg-white/15 px-5 py-2 text-sm font-medium backdrop-blur-sm">
-          {cover.dates_label}
-        </span>
-        {(theme || travelMode) && (
-          <span className="inline-block rounded-full bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
-            {[theme, travelMode].filter(Boolean).join(" · ")}
-          </span>
-        )}
+
+      {/* Scroll hint */}
+      <div
+        className={`pointer-events-none absolute bottom-8 left-1/2 z-10 -translate-x-1/2 text-white/70 transition-opacity duration-500 ${hideHint ? "opacity-0" : "opacity-100"}`}
+      >
+        <ChevronDown className="animate-scroll-hint h-5 w-5" strokeWidth={1.6} />
       </div>
     </section>
   );
