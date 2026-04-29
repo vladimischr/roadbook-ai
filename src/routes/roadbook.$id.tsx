@@ -84,6 +84,7 @@ interface Roadbook {
   travelers?: number;
   profile?: string;
   theme?: string;
+  travel_mode?: string;
   budget_range?: string;
   cover: Cover;
   overview: string;
