@@ -972,16 +972,31 @@ function DaysTableSection({
             >
               <tbody>
                 {list.map((d, i) => (
-                  <DayRow
-                    key={`day-${d.day}`}
-                    day={d}
-                    index={i}
-                    editing={editing}
-                    regionBias={regionBias}
-                    onUpdate={(patch) => update(i, patch)}
-                    onRemove={() => remove(i)}
-                    isOdd={i % 2 === 1}
-                  />
+                  <Fragment key={`day-${d.day}`}>
+                    <DayRow
+                      day={d}
+                      index={i}
+                      editing={editing}
+                      regionBias={regionBias}
+                      onUpdate={(patch) => update(i, patch)}
+                      onRemove={() => remove(i)}
+                      isOdd={i % 2 === 1}
+                    />
+                    {editing && onAddDayFromPlace && i < list.length - 1 && (
+                      <tr>
+                        <td colSpan={10} className="p-0">
+                          <button
+                            type="button"
+                            onClick={() => setAddingAt(i + 1)}
+                            className="group flex w-full items-center justify-center gap-1.5 py-1 text-[11px] font-medium text-muted-foreground/60 transition hover:bg-primary/5 hover:text-primary"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Insérer une étape entre J{d.day} et J{list[i + 1].day}
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </SortableContext>
@@ -989,16 +1004,71 @@ function DaysTableSection({
         </table>
       </div>
 
+      {editing && onAddDayFromPlace && addingAt !== null && (
+        <div className="mt-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-sm font-medium text-foreground">
+              {addingAt === "end"
+                ? "Ajouter une étape à la fin du voyage"
+                : addingAt === 0
+                  ? `Insérer une étape avant J${list[0]?.day ?? 1}`
+                  : `Insérer une étape entre J${list[(addingAt as number) - 1]?.day} et J${list[addingAt as number]?.day}`}
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddingAt(null)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Annuler
+            </button>
+          </div>
+          <PlacesAutocompleteInput
+            value=""
+            onChange={() => {}}
+            onSelect={(p) => {
+              if (p.lat == null || p.lng == null) {
+                toast.error("Lieu sans coordonnées, choisis-en un autre.");
+                return;
+              }
+              const pos = addingAt === "end" ? null : (addingAt as number);
+              onAddDayFromPlace(p, pos);
+              setAddingAt(null);
+            }}
+            regionBias={regionBias}
+            placeholder="Tape un lieu : Etosha National Park, Swakopmund…"
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Sélectionne une suggestion : la nouvelle étape apparaîtra immédiatement sur la carte avec son tracé.
+          </p>
+        </div>
+      )}
+
       {editing && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={add}
-          className="mt-3 gap-2"
-        >
-          <Plus className="h-3.5 w-3.5" /> Ajouter un jour
-        </Button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {onAddDayFromPlace ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setAddingAt(addingAt === "end" ? null : "end")
+              }
+              className="gap-2"
+            >
+              <Plus className="h-3.5 w-3.5" /> Ajouter un jour
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={add}
+              className="gap-2"
+            >
+              <Plus className="h-3.5 w-3.5" /> Ajouter un jour
+            </Button>
+          )}
+        </div>
       )}
     </section>
   );
