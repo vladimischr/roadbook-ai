@@ -716,11 +716,6 @@ function RoadbookPage() {
                             mapsApiKey={apiKey || undefined}
                           />,
                         ).toBlob();
-                          <RoadbookPDF
-                            roadbook={content}
-                            mapsApiKey={apiKey || undefined}
-                          />,
-                        ).toBlob();
                         const filename = `Roadbook-${slug(content.client_name)}-${slug(content.destination)}.pdf`;
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
