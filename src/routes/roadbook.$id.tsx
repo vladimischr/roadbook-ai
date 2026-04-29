@@ -414,7 +414,7 @@ function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => v
           <Pencil className="h-3.5 w-3.5" /> Modifier
         </Button>
       </div>
-      <p className="mb-6 text-xs uppercase tracking-widest opacity-80">Carnet de voyage</p>
+      <p className="mb-6 text-xs uppercase tracking-widest opacity-80">Roadbook</p>
       <h1 className="mb-4 text-7xl font-semibold leading-tight">{cover.title}</h1>
       <p className="mb-3 text-2xl">{cover.subtitle}</p>
       <p className="mb-6 text-lg italic opacity-85">{cover.tagline}</p>

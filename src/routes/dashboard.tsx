@@ -120,7 +120,7 @@ function Dashboard() {
             </div>
             <h2 className="mt-4 text-lg font-semibold">Pas encore de roadbooks</h2>
             <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-              Créez votre premier carnet de voyage généré par IA en moins de 5 minutes.
+              Créez votre premier roadbook généré par IA en moins de 5 minutes.
             </p>
             <Link to="/new" className="mt-6 inline-block">
               <Button className="gap-2">

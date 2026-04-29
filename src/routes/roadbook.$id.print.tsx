@@ -154,7 +154,7 @@ function PrintPage() {
         {/* ------ Couverture pleine page ------ */}
         <section className="cover">
           <div className="cover-inner">
-            <p className="cover-eyebrow">Carnet de voyage</p>
+            <p className="cover-eyebrow">Roadbook</p>
             <h1 className="cover-title">{rb.cover.title}</h1>
             <p className="cover-subtitle">{rb.cover.subtitle}</p>
             <p className="cover-tagline">{rb.cover.tagline}</p>
