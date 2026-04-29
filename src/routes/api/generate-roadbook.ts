@@ -37,8 +37,8 @@ export const Route = createFileRoute("/api/generate-roadbook")({
         try {
           const apiKey = process.env.ANTHROPIC_API_KEY;
           console.log(
-            "[generate-roadbook] start, key present:",
-            Boolean(apiKey),
+            "[generate-roadbook] ANTHROPIC_API_KEY présente:",
+            !!process.env.ANTHROPIC_API_KEY,
           );
           if (!apiKey) {
             return new Response(
@@ -49,14 +49,26 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             );
           }
 
-          const form = await request.json();
-          const duration_days = daysBetween(form.start_date, form.end_date);
-          const inputs = { ...form, duration_days };
+          const formData = await request.json();
+          console.log(
+            "[generate-roadbook] Reçu form:",
+            JSON.stringify(formData),
+          );
+          const duration_days = daysBetween(
+            formData.start_date,
+            formData.end_date,
+          );
+          const inputs = { ...formData, duration_days };
 
           const userMessage =
             "Voici les paramètres du voyage à mettre en forme :\n\n" +
             JSON.stringify(inputs, null, 2);
 
+          console.log(
+            "[generate-roadbook] System prompt longueur:",
+            ROADBOOK_SYSTEM_PROMPT.length,
+          );
+          console.log("[generate-roadbook] Appel Claude...");
           const t0 = Date.now();
           const resp = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
@@ -94,26 +106,29 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             );
           }
 
+          console.log("[generate-roadbook] Réponse Claude reçue, parsing...");
           const data = await resp.json();
           const text =
             data?.content?.[0]?.text ??
             data?.content?.map?.((c: any) => c.text).join("\n") ??
             "";
+          console.log(
+            "[generate-roadbook] Texte brut Claude (300 premiers chars):",
+            text.substring(0, 300),
+          );
 
           let parsed: unknown;
           try {
             parsed = extractJson(text);
           } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
+            console.error("[generate-roadbook] Erreur parsing JSON:", e);
             console.error(
-              "[generate-roadbook] Parse JSON failed:",
-              msg,
-              "raw:",
-              text.slice(0, 1000),
+              "[generate-roadbook] Texte qui n'a pas pu être parsé:",
+              text,
             );
             return new Response(
               JSON.stringify({
-                error: `La réponse de Claude n'était pas un JSON valide: ${msg}`,
+                error: "Réponse Claude non-JSON: " + text.substring(0, 300),
               }),
               { status: 500, headers: { "Content-Type": "application/json" } },
             );
