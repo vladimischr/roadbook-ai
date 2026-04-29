@@ -708,13 +708,7 @@ function RoadbookPage() {
                             .replace(/[\u0300-\u036f]/g, "")
                             .replace(/[^a-z0-9]+/g, "-")
                             .replace(/^-+|-+$/g, "");
-                        const content = {
-                          ...rb.content,
-                          client_name:
-                            rb.content?.client_name || rb.client_name || "",
-                          destination:
-                            rb.content?.destination || rb.destination || "",
-                        };
+                        const content = { ...rb };
                         const blob = await pdf(
                           <RoadbookPDF
                             roadbook={content}
