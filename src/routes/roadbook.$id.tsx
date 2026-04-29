@@ -298,44 +298,187 @@ function RoadbookPage() {
     return { ...rb, directions_segments: [] };
   };
 
+  // Devine le type d'hébergement à partir du nom du lieu.
+  const guessAccommodationType = (name: string): string => {
+    const n = (name || "").toLowerCase();
+    if (/lodge/.test(n)) return "Lodge";
+    if (/camp(site|ground)?\b/.test(n)) return "Camp";
+    if (/h[oô]tel|hotel/.test(n)) return "Hôtel";
+    if (/guest\s?house|guesthouse|b&b|bnb/.test(n)) return "Guesthouse";
+    if (/appart|apartment|appartement/.test(n)) return "Appartement";
+    return "À définir";
+  };
+
+  // Décale une date YYYY-MM-DD de N jours. Renvoie "" si invalide.
+  const shiftIsoDate = (iso: string, days: number): string => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+
   // Ajouter une étape depuis un PlaceSelection (autocomplete ou recherche carte).
-  // Sauvegarde IMMÉDIATE en base — pas d'attente du bouton "Enregistrer".
+  // Sauvegarde IMMÉDIATE + auto-fill date / accommodation / distance / durée.
   const addDayFromPlace = async (place: PlaceSelection, position: number | null) => {
     const cur = rbRef.current;
     if (!cur) return;
     const list = cur.days || [];
     const insertIdx = position === null ? list.length : Math.max(0, Math.min(position, list.length));
+
+    // 1. Date auto
+    let newDate = "";
+    if (insertIdx === 0) {
+      newDate = cur.start_date || "";
+    } else {
+      const prev = list[insertIdx - 1];
+      newDate = shiftIsoDate(prev?.date || cur.start_date || "", 1);
+    }
+
+    const accomType = guessAccommodationType(place.name);
     const newDay: Day = {
       ...emptyDay(insertIdx + 1),
+      date: newDate,
       stage: place.name,
-      accommodation: "À définir",
+      accommodation: `Hébergement à ${place.name} - À choisir`,
+      type: accomType,
       lat: place.lat ?? null,
       lng: place.lng ?? null,
     };
+
+    // 2. Décale les dates des jours suivants de +1
+    const after = list.slice(insertIdx).map((d) => ({
+      ...d,
+      date: shiftIsoDate(d.date, 1),
+    }));
+
     const nextDays = renumberDays([
       ...list.slice(0, insertIdx),
       newDay,
-      ...list.slice(insertIdx),
+      ...after,
     ]);
     const next = invalidateDirectionsCache({ ...cur, days: nextDays });
     setRb(next);
-    // Annule tout auto-save en attente pour ne pas écraser la mutation
-    // qu'on vient de faire avec un draft obsolète.
+
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
     dirtyRef.current = null;
+
+    // Persiste la version "structurelle" tout de suite
     const { error } = await supabase
       .from("roadbooks")
       .update({ content: next as never })
       .eq("id", id);
     if (error) {
       toast.error("Échec de la sauvegarde : " + error.message);
-    } else {
-      toast.success("Étape ajoutée et enregistrée", { duration: 1500 });
+      return;
     }
+    toast.success("Étape ajoutée", { duration: 1500 });
+
+    // 3. Calcul Directions pour les segments touchés (prev → new) et (new → next)
+    const newDayIdx = insertIdx;
+    const prevDay = newDayIdx > 0 ? nextDays[newDayIdx - 1] : null;
+    const nextNeighbor = newDayIdx < nextDays.length - 1 ? nextDays[newDayIdx + 1] : null;
+    const newDayPos = nextDays[newDayIdx];
+
+    const newSegments: DirectionsSegment[] = [...(next.directions_segments || [])];
+    let updatedDistance = 0;
+    let updatedDuration = 0;
+    let updatedNeighborDistance: number | null = null;
+    let updatedNeighborDuration: number | null = null;
+
+    const callDirections = async (
+      from: Day,
+      to: Day,
+    ): Promise<DirectionsSegment | null> => {
+      if (
+        typeof from.lat !== "number" ||
+        typeof from.lng !== "number" ||
+        typeof to.lat !== "number" ||
+        typeof to.lng !== "number"
+      ) {
+        return null;
+      }
+      try {
+        const res = await getDirectionsSegment({
+          data: {
+            from: { lat: from.lat, lng: from.lng },
+            to: { lat: to.lat, lng: to.lng },
+          },
+        });
+        return {
+          from_day: from.day,
+          to_day: to.day,
+          encoded_polyline: res.encoded_polyline,
+          distance_meters: res.distance_meters,
+          duration_seconds: res.duration_seconds,
+          mode: res.ok ? "driving" : "fallback",
+        };
+      } catch (e) {
+        console.warn("Directions auto-fill échoué:", e);
+        return null;
+      }
+    };
+
+    if (prevDay) {
+      const seg = await callDirections(prevDay, newDayPos);
+      if (seg) {
+        newSegments.push(seg);
+        if (seg.mode === "driving" && seg.distance_meters && seg.duration_seconds) {
+          updatedDistance = Math.round(seg.distance_meters / 1000);
+          updatedDuration = Math.round((seg.duration_seconds / 3600) * 10) / 10;
+        }
+      }
+    }
+    if (nextNeighbor) {
+      const seg = await callDirections(newDayPos, nextNeighbor);
+      if (seg) {
+        newSegments.push(seg);
+        if (seg.mode === "driving" && seg.distance_meters && seg.duration_seconds) {
+          updatedNeighborDistance = Math.round(seg.distance_meters / 1000);
+          updatedNeighborDuration =
+            Math.round((seg.duration_seconds / 3600) * 10) / 10;
+        }
+      }
+    }
+
+    // 4. Met à jour distance/durée sur newDay et neighbor si calculés
+    const finalDays = nextDays.map((d, i) => {
+      if (i === newDayIdx && updatedDistance > 0) {
+        return {
+          ...d,
+          distance_km: updatedDistance,
+          drive_hours: updatedDuration,
+        };
+      }
+      if (
+        i === newDayIdx + 1 &&
+        updatedNeighborDistance !== null &&
+        updatedNeighborDistance > 0
+      ) {
+        return {
+          ...d,
+          distance_km: updatedNeighborDistance,
+          drive_hours: updatedNeighborDuration ?? d.drive_hours,
+        };
+      }
+      return d;
+    });
+
+    const final: Roadbook = {
+      ...next,
+      days: finalDays,
+      directions_segments: newSegments,
+    };
+    setRb(final);
+    await supabase
+      .from("roadbooks")
+      .update({ content: final as never })
+      .eq("id", id);
   };
+
 
   // Suppression d'une étape — sauvegarde immédiate également.
   const removeDayByNumber = async (dayNumber: number) => {
