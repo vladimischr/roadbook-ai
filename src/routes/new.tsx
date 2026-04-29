@@ -21,9 +21,35 @@ export const Route = createFileRoute("/new")({
   head: () => ({ meta: [{ title: "Nouveau roadbook — Roadbook.ai" }] }),
 });
 
-const THEMES = ["Safari premium", "Culture", "Aventure", "Plage", "Autotour", "Sur mesure"];
-const PROFILES = ["Couple", "Famille", "Solo", "Amis"];
-const BUDGETS = ["3–5k €", "5–8k €", "8–12k €", "12–15k €", "15k €+"];
+const TRAVELERS: { value: string; label: string }[] = [
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3", label: "3" },
+  { value: "4", label: "4" },
+  { value: "5", label: "5" },
+  { value: "6", label: "6" },
+  { value: "7", label: "7" },
+  { value: "8plus", label: "8+" },
+];
+const PROFILES = ["Solo", "Couple", "Famille", "Amis"];
+const THEMES = [
+  "Désert et faune",
+  "Safari et culture",
+  "Aventure et trekking",
+  "Voyage culturel",
+  "Plage et farniente",
+  "Voyage de noces",
+  "Roadtrip 4x4",
+  "Sur-mesure libre",
+];
+const BUDGETS = [
+  "Moins de 3 k€",
+  "3 à 5 k€",
+  "5 à 8 k€",
+  "8 à 12 k€",
+  "12 à 20 k€",
+  "Plus de 20 k€",
+];
 
 function NewRoadbook() {
   const navigate = useNavigate();
