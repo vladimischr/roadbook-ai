@@ -109,7 +109,7 @@ Génère le roadbook complet en JSON conforme à la structure définie dans ton 
             },
             body: JSON.stringify({
               model: "claude-haiku-4-5",
-              max_tokens: 4000,
+              max_tokens: 16000,
               system: ROADBOOK_SYSTEM_PROMPT,
               messages: [
                 { role: "user", content: userMessage },
