@@ -7,6 +7,7 @@ import {
   useMap,
 } from "@vis.gl/react-google-maps";
 import { getDirectionsSegment } from "@/server/maps.functions";
+import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
 
 export interface MapDay {
   day: number;
@@ -37,7 +38,15 @@ interface Props {
   segments?: DirectionsSegment[];
   /** Appelé quand de nouveaux segments sont calculés (à persister). */
   onSegmentsChange?: (segs: DirectionsSegment[]) => void;
+  /** Bias géographique pour les recherches Places (nom de pays/région). */
+  regionBias?: string;
+  /** Ajouter une étape au roadbook. position = index d'insertion (0-based) ou null = ajout en fin. */
+  onAddDay?: (place: PlaceSelection, position: number | null) => void;
+  /** Supprimer une étape du roadbook par son numéro de jour. */
+  onRemoveDay?: (dayNumber: number) => void;
 }
+
+const AMBER = "#D97706";
 
 const TEAL = "#0F6E56";
 const TEAL_LIGHT = "#1D9E75";
