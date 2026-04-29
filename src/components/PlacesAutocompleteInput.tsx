@@ -97,9 +97,13 @@ export function PlacesAutocompleteInput({
     }
     let cancelled = false;
     const handle = setTimeout(() => {
+      // NOTE: pas de componentRestrictions (countries) ni de locationRestriction —
+      // on autorise tous les pays pour les voyages multi-pays (Afrique australe,
+      // Afrique de l'Est…). regionBias est intentionnellement ignoré ici afin
+      // de ne pas polluer la requête (ex: "Etosha Botswana" → 0 résultats).
       autocompleteService.getPlacePredictions(
         {
-          input: regionBias ? `${q} ${regionBias}` : q,
+          input: q,
           sessionToken: sessionTokenRef.current ?? undefined,
           types: types && types.length ? types : undefined,
         },

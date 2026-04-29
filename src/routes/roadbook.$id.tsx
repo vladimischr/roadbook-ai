@@ -269,8 +269,9 @@ function RoadbookPage() {
     persistSilent({ ...cur, directions_segments: segs });
   };
 
-  // Ajouter une étape depuis un PlaceSelection (autocomplete ou recherche carte)
-  const addDayFromPlace = (place: PlaceSelection, position: number | null) => {
+  // Ajouter une étape depuis un PlaceSelection (autocomplete ou recherche carte).
+  // Sauvegarde IMMÉDIATE en base — pas d'attente du bouton "Enregistrer".
+  const addDayFromPlace = async (place: PlaceSelection, position: number | null) => {
     const cur = rbRef.current;
     if (!cur) return;
     const list = cur.days || [];
@@ -287,15 +288,35 @@ function RoadbookPage() {
       newDay,
       ...list.slice(insertIdx),
     ]);
-    persist({ ...cur, days: nextDays });
-    toast.success(`${place.name} ajouté au roadbook`);
+    const next = { ...cur, days: nextDays };
+    setRb(next);
+    const { error } = await supabase
+      .from("roadbooks")
+      .update({ content: next as never })
+      .eq("id", id);
+    if (error) {
+      toast.error("Échec de la sauvegarde : " + error.message);
+    } else {
+      toast.success("Étape ajoutée et enregistrée", { duration: 1500 });
+    }
   };
 
-  const removeDayByNumber = (dayNumber: number) => {
+  // Suppression d'une étape — sauvegarde immédiate également.
+  const removeDayByNumber = async (dayNumber: number) => {
     const cur = rbRef.current;
     if (!cur) return;
-    const next = renumberDays((cur.days || []).filter((d) => d.day !== dayNumber));
-    persist({ ...cur, days: next });
+    const nextDays = renumberDays((cur.days || []).filter((d) => d.day !== dayNumber));
+    const next = { ...cur, days: nextDays };
+    setRb(next);
+    const { error } = await supabase
+      .from("roadbooks")
+      .update({ content: next as never })
+      .eq("id", id);
+    if (error) {
+      toast.error("Échec de la sauvegarde : " + error.message);
+    } else {
+      toast.success("Étape supprimée et enregistrée", { duration: 1500 });
+    }
   };
 
   if (authLoading || loading || !rb) {
