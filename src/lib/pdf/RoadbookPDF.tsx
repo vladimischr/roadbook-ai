@@ -571,9 +571,11 @@ function chunk<T>(arr: T[], size: number): T[][] {
 export function RoadbookPDF({
   roadbook,
   mapsApiKey,
+  coverImageUrl,
 }: {
   roadbook: RoadbookContent;
   mapsApiKey?: string;
+  coverImageUrl?: string | null;
 }) {
   const cover = roadbook.cover || {};
   const days = roadbook.days || [];
@@ -601,6 +603,34 @@ export function RoadbookPDF({
     >
       {/* ---------- Cover ---------- */}
       <Page size="A4" style={styles.coverPage}>
+        {coverImageUrl ? (
+          <Image
+            src={coverImageUrl}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        ) : null}
+        {/* Teal overlay for legibility */}
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: coverImageUrl
+              ? "rgba(15,110,86,0.78)"
+              : TEAL,
+          }}
+        />
         <View style={styles.coverWrap}>
           <Text style={styles.eyebrow}>Roadbook</Text>
           <Text style={styles.coverTitle}>{cover.title || destination}</Text>
