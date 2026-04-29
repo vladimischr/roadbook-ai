@@ -184,21 +184,24 @@ function EmptyState() {
   );
 }
 
-function RoadbookCard({ rb, onDelete }: { rb: RoadbookRow; onDelete: () => void }) {
+function RoadbookCard({ rb, index = 0, onDelete }: { rb: RoadbookRow; index?: number; onDelete: () => void }) {
   const navigate = useNavigate();
   const cover = useDestinationCover(rb.destination);
   const dateRange = formatDateRange(rb.start_date, rb.end_date);
 
   return (
-    <li className="group relative">
+    <li
+      className="group relative animate-fade-in"
+      style={{ animationDelay: `${index * 80}ms`, animationFillMode: "backwards" }}
+    >
       <button
         type="button"
         onClick={() => navigate({ to: "/roadbook/$id", params: { id: rb.id } })}
-        className="block w-full overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-smooth hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_12px_24px_-12px_rgba(15,110,86,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+        className="block w-full overflow-hidden rounded-2xl border border-border/60 bg-surface text-left shadow-soft transition-smooth hover:-translate-y-1 hover:border-primary/30 hover:shadow-soft-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
         aria-label={`Ouvrir ${rb.destination} — ${rb.client_name}`}
       >
-        {/* Cover image */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-light">
+        {/* Cover image — portrait 4/5 editorial */}
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-light">
           {cover ? (
             <img
               src={cover}
