@@ -80,7 +80,7 @@ function NewRoadbook() {
       const content = await callClaudeAPI(form);
       const { data, error } = await supabase
         .from("roadbooks")
-        .insert({
+        .insert([{
           user_id: user.id,
           client_name: form.client_name,
           destination: form.destination,
@@ -94,7 +94,7 @@ function NewRoadbook() {
           agent_notes: form.agent_notes || null,
           content,
           status: "ready",
-        })
+        }])
         .select("id")
         .single();
 
