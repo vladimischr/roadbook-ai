@@ -150,6 +150,24 @@ function PrintPage() {
     <>
       <style>{PRINT_CSS}</style>
 
+      <div className="screen-banner no-print">
+        <div className="screen-banner-inner">
+          <div className="screen-banner-text">
+            <strong>Cette page est conçue pour l'impression.</strong>{" "}
+            <span>
+              Utilise <kbd>Cmd</kbd>+<kbd>P</kbd> (ou <kbd>Ctrl</kbd>+<kbd>P</kbd>) puis choisis « Enregistrer en PDF ».
+            </span>
+          </div>
+          <button
+            type="button"
+            className="screen-banner-btn"
+            onClick={() => window.print()}
+          >
+            Imprimer maintenant
+          </button>
+        </div>
+      </div>
+
       <div className="print-doc">
         {/* ------ Couverture pleine page ------ */}
         <section className="cover">
