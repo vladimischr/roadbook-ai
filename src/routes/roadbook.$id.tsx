@@ -369,6 +369,9 @@ function RoadbookPage() {
                   days={rb.days || []}
                   segments={rb.directions_segments ?? []}
                   onSegmentsChange={handleSegmentsChange}
+                  regionBias={rb.destination}
+                  onAddDay={addDayFromPlace}
+                  onRemoveDay={removeDayByNumber}
                 />
               ) : (
                 <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
@@ -383,6 +386,7 @@ function RoadbookPage() {
               forceEdit={globalEdit}
               onSave={(days) => persist({ ...rb, days })}
               onAutoSave={(days) => updateAndAutosave({ ...rb, days })}
+              onAddDayFromPlace={addDayFromPlace}
             />
 
             <AccommodationsSection
