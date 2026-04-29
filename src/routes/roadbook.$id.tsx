@@ -1043,7 +1043,12 @@ function DayRow({
             <Textarea
               rows={2}
               value={day.narrative}
-              onChange={(e) => onUpdate({ narrative: e.target.value })}
+              onChange={(e) =>
+                onUpdate({
+                  narrative: e.target.value,
+                  narrative_user_modified: true,
+                })
+              }
               className="italic"
             />
           ) : (
