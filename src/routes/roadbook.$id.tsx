@@ -199,7 +199,7 @@ function RoadbookPage() {
             );
             continue;
           }
-          const nextDays = working.days.map((d, i) =>
+          const nextDays: Day[] = working.days.map((d, i) =>
             i === idx ? { ...d, lat: res.lat, lng: res.lng } : d,
           );
           working = { ...working, days: nextDays };
