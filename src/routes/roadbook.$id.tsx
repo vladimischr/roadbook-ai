@@ -658,110 +658,143 @@ function RoadbookPage() {
     );
   }
 
+  const handleExportPdf = async () => {
+    const toastId = toast.loading("Génération du PDF en cours…");
+    try {
+      const [{ pdf }, { RoadbookPDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/lib/pdf/RoadbookPDF"),
+      ]);
+      const slug = (s: string | undefined | null) =>
+        (s || "voyage")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      const content = { ...rb! };
+      let coverImageUrl: string | null = null;
+      try {
+        const { fetchDestinationCover } = await import(
+          "@/server/cover.functions"
+        );
+        const r = await fetchDestinationCover({
+          data: { destination: content.destination || "" },
+        });
+        coverImageUrl = r.url;
+      } catch (e) {
+        console.warn("Cover fetch failed (PDF):", e);
+      }
+      const blob = await pdf(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        <RoadbookPDF
+          roadbook={content as any}
+          mapsApiKey={apiKey || undefined}
+          coverImageUrl={coverImageUrl}
+        />,
+      ).toBlob();
+      const filename = `Roadbook-${slug(content.client_name)}-${slug(content.destination)}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("PDF téléchargé", { id: toastId });
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      console.error("PDF export failed", e);
+      toast.error("Erreur génération PDF: " + (err?.message || "inconnue"), {
+        id: toastId,
+      });
+    }
+  };
+
+  const totalDistance = (rb.days || []).reduce(
+    (acc, d) => acc + (d.distance_km || 0),
+    0,
+  );
+  const totalDriveHours = (rb.days || []).reduce(
+    (acc, d) => acc + (d.drive_hours || 0),
+    0,
+  );
+  const accommodationCount = (rb.accommodations_summary || []).length;
+
   const content = (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Link to="/dashboard">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" /> Retour au tableau de bord
-            </Button>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={globalEdit ? "default" : "outline"}
-              onClick={() => setGlobalEdit((v) => !v)}
-              className="gap-2"
+    <div className="min-h-screen bg-canvas">
+      {/* Sticky toolbar */}
+      <header className="sticky top-0 z-40 border-b border-border/50 bg-canvas/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4 sm:px-10">
+          <div className="flex min-w-0 items-center gap-4">
+            <Link
+              to="/dashboard"
+              className="group inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground transition-smooth hover:text-foreground"
             >
-              <Pencil className="h-3.5 w-3.5" />
-              {globalEdit ? "Quitter l'édition" : "Tout modifier"}
-            </Button>
+              <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
+              Retour
+            </Link>
+            <span className="hidden text-text-soft sm:inline" aria-hidden>
+              /
+            </span>
+            <nav
+              className="hidden truncate text-[13px] text-muted-foreground sm:block"
+              aria-label="Fil d'Ariane"
+            >
+              <Link to="/dashboard" className="hover:text-foreground transition-smooth">
+                Vos roadbooks
+              </Link>
+              <span className="mx-2 text-text-soft">·</span>
+              <span className="font-medium text-foreground">
+                {rb.destination}
+              </span>
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-2">
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => setRecomputeOpen(true)}
-                    className="gap-2"
+                    className="hidden gap-2 border-border bg-surface/60 transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary md:inline-flex"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
-                    Recalculer avec l'IA
+                    Recalculer
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  Régénère les narratives, dates et transitions en fonction de
-                  tes modifications. Tes étapes restent intactes.
+                  Régénère narratives, dates et transitions à partir de tes
+                  étapes.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            <Button
+              size="sm"
+              variant={globalEdit ? "default" : "outline"}
+              onClick={() => setGlobalEdit((v) => !v)}
+              className={
+                globalEdit
+                  ? "gap-2 transition-smooth"
+                  : "gap-2 border-border bg-surface/60 transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
+              }
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {globalEdit ? "Quitter l'édition" : "Tout modifier"}
+            </Button>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
-                    onClick={async () => {
-                      const toastId = toast.loading(
-                        "Génération du PDF en cours…",
-                      );
-                      try {
-                        const [{ pdf }, { RoadbookPDF }] = await Promise.all([
-                          import("@react-pdf/renderer"),
-                          import("@/lib/pdf/RoadbookPDF"),
-                        ]);
-                        const slug = (s: string | undefined | null) =>
-                          (s || "voyage")
-                            .toLowerCase()
-                            .normalize("NFD")
-                            .replace(/[\u0300-\u036f]/g, "")
-                            .replace(/[^a-z0-9]+/g, "-")
-                            .replace(/^-+|-+$/g, "");
-                        const content = { ...rb };
-                        // Fetch Pexels cover URL (best-effort, ignored on failure)
-                        let coverImageUrl: string | null = null;
-                        try {
-                          const { fetchDestinationCover } = await import(
-                            "@/server/cover.functions"
-                          );
-                          const r = await fetchDestinationCover({
-                            data: { destination: content.destination || "" },
-                          });
-                          coverImageUrl = r.url;
-                        } catch (e) {
-                          console.warn("Cover fetch failed (PDF):", e);
-                        }
-                        const blob = await pdf(
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          <RoadbookPDF
-                            roadbook={content as any}
-                            mapsApiKey={apiKey || undefined}
-                            coverImageUrl={coverImageUrl}
-                          />,
-                        ).toBlob();
-                        const filename = `Roadbook-${slug(content.client_name)}-${slug(content.destination)}.pdf`;
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        setTimeout(() => URL.revokeObjectURL(url), 1000);
-                        toast.success("PDF téléchargé", { id: toastId });
-                      } catch (e: unknown) {
-                        const err = e as { message?: string };
-                        console.error("PDF export failed", e);
-                        toast.error(
-                          "Erreur génération PDF: " +
-                            (err?.message || "inconnue"),
-                          { id: toastId },
-                        );
-                      }
-                    }}
-                    className="gap-2"
+                    onClick={handleExportPdf}
+                    className="gap-2 bg-primary text-primary-foreground transition-smooth hover:scale-[1.02] hover:bg-primary-dark hover:shadow-soft-md"
                   >
-                    <Download className="h-4 w-4" /> Exporter en PDF
+                    <Download className="h-3.5 w-3.5" />
+                    Exporter en PDF
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
@@ -773,85 +806,31 @@ function RoadbookPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-12">
-        <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <CoverSection
-            cover={rb.cover}
-            destination={rb.destination}
-            theme={rb.theme}
-            travelMode={rb.travel_mode}
-            forceEdit={globalEdit}
-            onSave={(cover) => persist({ ...rb, cover })}
-            onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
-          />
+      {/* Cover full-bleed */}
+      <CoverSection
+        cover={rb.cover}
+        destination={rb.destination}
+        theme={rb.theme}
+        travelMode={rb.travel_mode}
+        forceEdit={globalEdit}
+        onSave={(cover) => persist({ ...rb, cover })}
+        onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
+      />
 
-          <div className="space-y-14 px-8 py-12 sm:px-14">
-            <EditableTextSection
-              label="Vue d'ensemble"
-              value={rb.overview}
-              forceEdit={globalEdit}
-              onSave={(overview) => persist({ ...rb, overview })}
-              onAutoSave={(overview) => updateAndAutosave({ ...rb, overview })}
-            />
-
-            <section>
-              <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-                Tracé du voyage
-              </h2>
-              {apiKey ? (
-                <RoadbookMap
-                  days={rb.days || []}
-                  segments={rb.directions_segments ?? []}
-                  onSegmentsChange={handleSegmentsChange}
-                  regionBias={rb.destination}
-                  onAddDay={addDayFromPlace}
-                  onRemoveDay={removeDayByNumber}
-                />
-              ) : (
-                <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
-                  Chargement de la carte…
-                </div>
-              )}
-            </section>
-
-            <DaysTableSection
-              days={rb.days || []}
-              regionBias={rb.destination}
-              forceEdit={globalEdit}
-              onSave={(days) => persist({ ...rb, days })}
-              onAutoSave={(days) => updateAndAutosave({ ...rb, days })}
-              onAddDayFromPlace={addDayFromPlace}
-            />
-
-            <AccommodationsSection
-              items={rb.accommodations_summary || []}
-              regionBias={rb.destination}
-              forceEdit={globalEdit}
-              onSave={(accommodations_summary) =>
-                persist({ ...rb, accommodations_summary })
-              }
-              onAutoSave={(accommodations_summary) =>
-                updateAndAutosave({ ...rb, accommodations_summary })
-              }
-            />
-
-            <ContactsSection
-              contacts={rb.contacts || []}
-              regionBias={rb.destination}
-              forceEdit={globalEdit}
-              onSave={(contacts) => persist({ ...rb, contacts })}
-              onAutoSave={(contacts) => updateAndAutosave({ ...rb, contacts })}
-            />
-
-            <TipsSection
-              tips={rb.tips || []}
-              forceEdit={globalEdit}
-              onSave={(tips) => persist({ ...rb, tips })}
-              onAutoSave={(tips) => updateAndAutosave({ ...rb, tips })}
-            />
-          </div>
-        </article>
-      </main>
+      {/* Editorial body */}
+      <RoadbookBody
+        rb={rb}
+        apiKey={apiKey}
+        globalEdit={globalEdit}
+        totalDistance={totalDistance}
+        totalDriveHours={totalDriveHours}
+        accommodationCount={accommodationCount}
+        handleSegmentsChange={handleSegmentsChange}
+        addDayFromPlace={addDayFromPlace}
+        removeDayByNumber={removeDayByNumber}
+        persist={persist}
+        updateAndAutosave={updateAndAutosave}
+      />
 
       <Dialog open={recomputeOpen} onOpenChange={setRecomputeOpen}>
         <DialogContent>
@@ -889,17 +868,17 @@ function RoadbookPage() {
       </Dialog>
 
       {recomputing && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm">
-          <div className="flex max-w-sm flex-col items-center gap-4 rounded-xl border border-border bg-card px-8 py-8 text-center shadow-lg">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-canvas/85 backdrop-blur-sm">
+          <div className="flex max-w-sm flex-col items-center gap-4 rounded-2xl border border-border bg-surface px-10 py-10 text-center shadow-soft-lg">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <div>
-              <p className="font-medium text-foreground">
-                Recalcul en cours…
+              <p className="font-display text-xl font-semibold text-foreground">
+                Recalcul en cours
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 L'IA ajuste les narratives, dates et transitions.
               </p>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-text-soft">
                 Durée estimée : 30 à 60 secondes.
               </p>
             </div>
