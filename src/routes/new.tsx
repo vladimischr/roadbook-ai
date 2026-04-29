@@ -114,6 +114,11 @@ function NewRoadbook() {
     try {
       const roadbook = await callClaudeAPI(form);
 
+      // Garantir la présence de travel_mode dans content même si Claude l'oublie
+      if (form.travel_mode && !(roadbook as any).travel_mode) {
+        (roadbook as any).travel_mode = form.travel_mode;
+      }
+
       const destination = (roadbook as any).destination || form.destination;
       const clientName = (roadbook as any).client_name || form.client_name;
       const startDate = (roadbook as any).start_date || form.start_date || null;
