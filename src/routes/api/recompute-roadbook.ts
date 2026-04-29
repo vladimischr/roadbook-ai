@@ -167,6 +167,33 @@ Réponds avec le JSON Roadbook complet recalculé. La longueur de days[] DOIT ê
             );
           }
 
+          const outputDays = (recomputed as any).days as any[] | undefined;
+          const outputDaysCount = Array.isArray(outputDays) ? outputDays.length : 0;
+          const outputStages = Array.isArray(outputDays)
+            ? outputDays.map((d: any) => d?.stage)
+            : [];
+          console.log(
+            "[recompute-roadbook] OUTPUT days:",
+            outputDaysCount,
+            "stages:",
+            JSON.stringify(outputStages),
+          );
+
+          if (outputDaysCount !== inputDaysCount) {
+            console.error(
+              "[recompute-roadbook] MISMATCH days count — input:",
+              inputDaysCount,
+              "output:",
+              outputDaysCount,
+            );
+            return new Response(
+              JSON.stringify({
+                error: `Claude a renvoyé ${outputDaysCount} jours au lieu de ${inputDaysCount}. Réessaye.`,
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
           // Force preservation côté serveur (filet de sécurité) si demandé
           if (preserveModifiedNarratives) {
             const origDays = (roadbook as any).days as any[] | undefined;
@@ -181,6 +208,33 @@ Réponds avec le JSON Roadbook complet recalculé. La longueur de days[] DOIT ê
                     narrative_user_modified: true,
                   };
                 }
+              }
+            }
+          }
+
+          // Filet de sécurité supplémentaire : préserver stage / lat / lng
+          // de chaque étape par index (Claude est instruit de le faire mais
+          // peut faillir).
+          {
+            const origDays = (roadbook as any).days as any[] | undefined;
+            const newDays = (recomputed as any).days as any[] | undefined;
+            if (Array.isArray(origDays) && Array.isArray(newDays)) {
+              for (let i = 0; i < newDays.length; i++) {
+                const orig = origDays[i];
+                if (!orig) continue;
+                const cur = newDays[i] || {};
+                const merged = { ...cur };
+                if (orig.stage && !cur.stage) merged.stage = orig.stage;
+                if (typeof orig.lat === "number") merged.lat = orig.lat;
+                if (typeof orig.lng === "number") merged.lng = orig.lng;
+                if (
+                  orig.accommodation &&
+                  !/^à définir$/i.test(orig.accommodation) &&
+                  (!cur.accommodation || /^à définir$/i.test(cur.accommodation))
+                ) {
+                  merged.accommodation = orig.accommodation;
+                }
+                newDays[i] = merged;
               }
             }
           }
