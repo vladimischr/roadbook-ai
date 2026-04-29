@@ -41,6 +41,11 @@ export function PlacesAutocompleteInput({
   types,
 }: Props) {
   const placesLib = useMapsLibrary("places");
+  useEffect(() => {
+    if (placesLib) {
+      console.debug("[PlacesAutocomplete] Places library loaded");
+    }
+  }, [placesLib]);
   const [predictions, setPredictions] = useState<
     google.maps.places.AutocompletePrediction[]
   >([]);
@@ -104,6 +109,15 @@ export function PlacesAutocompleteInput({
             status !== google.maps.places.PlacesServiceStatus.OK ||
             !res
           ) {
+            if (
+              status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS
+            ) {
+              console.warn(
+                "[PlacesAutocomplete] getPlacePredictions status:",
+                status,
+                "— vérifie que 'Places API' (legacy) est activée dans Google Cloud + autorisée sur la clé.",
+              );
+            }
             setPredictions([]);
             return;
           }

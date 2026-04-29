@@ -982,7 +982,28 @@ function DaysTableSection({
                       onRemove={() => remove(i)}
                       isOdd={i % 2 === 1}
                     />
-                    {editing && onAddDayFromPlace && i < list.length - 1 && (
+                    {editing &&
+                      onAddDayFromPlace &&
+                      addingAt === i + 1 && (
+                        <InsertRow
+                          label={
+                            i + 1 >= list.length
+                              ? "Ajouter une étape à la fin du voyage"
+                              : `Insérer une étape entre J${d.day} et J${list[i + 1].day}`
+                          }
+                          regionBias={regionBias}
+                          onCancel={() => setAddingAt(null)}
+                          onSelect={(p) => {
+                            if (p.lat == null || p.lng == null) {
+                              toast.error("Lieu sans coordonnées, choisis-en un autre.");
+                              return;
+                            }
+                            onAddDayFromPlace(p, i + 1);
+                            setAddingAt(null);
+                          }}
+                        />
+                      )}
+                    {editing && onAddDayFromPlace && i < list.length - 1 && addingAt !== i + 1 && (
                       <tr>
                         <td colSpan={10} className="p-0">
                           <button
@@ -998,50 +1019,27 @@ function DaysTableSection({
                     )}
                   </Fragment>
                 ))}
+                {editing && onAddDayFromPlace && addingAt === "end" && (
+                  <InsertRow
+                    label="Ajouter une étape à la fin du voyage"
+                    regionBias={regionBias}
+                    onCancel={() => setAddingAt(null)}
+                    onSelect={(p) => {
+                      if (p.lat == null || p.lng == null) {
+                        toast.error("Lieu sans coordonnées, choisis-en un autre.");
+                        return;
+                      }
+                      onAddDayFromPlace(p, null);
+                      setAddingAt(null);
+                    }}
+                  />
+                )}
               </tbody>
             </SortableContext>
           </DndContext>
         </table>
       </div>
 
-      {editing && onAddDayFromPlace && addingAt !== null && (
-        <div className="mt-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="text-sm font-medium text-foreground">
-              {addingAt === "end"
-                ? "Ajouter une étape à la fin du voyage"
-                : addingAt === 0
-                  ? `Insérer une étape avant J${list[0]?.day ?? 1}`
-                  : `Insérer une étape entre J${list[(addingAt as number) - 1]?.day} et J${list[addingAt as number]?.day}`}
-            </div>
-            <button
-              type="button"
-              onClick={() => setAddingAt(null)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              Annuler
-            </button>
-          </div>
-          <PlacesAutocompleteInput
-            value=""
-            onChange={() => {}}
-            onSelect={(p) => {
-              if (p.lat == null || p.lng == null) {
-                toast.error("Lieu sans coordonnées, choisis-en un autre.");
-                return;
-              }
-              const pos = addingAt === "end" ? null : (addingAt as number);
-              onAddDayFromPlace(p, pos);
-              setAddingAt(null);
-            }}
-            regionBias={regionBias}
-            placeholder="Tape un lieu : Etosha National Park, Swakopmund…"
-          />
-          <p className="mt-2 text-xs text-muted-foreground">
-            Sélectionne une suggestion : la nouvelle étape apparaîtra immédiatement sur la carte avec son tracé.
-          </p>
-        </div>
-      )}
 
       {editing && (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -1071,6 +1069,51 @@ function DaysTableSection({
         </div>
       )}
     </section>
+  );
+}
+
+/* ---------- Insert row (inline autocomplete inside the days table) ---------- */
+
+function InsertRow({
+  label,
+  regionBias,
+  onCancel,
+  onSelect,
+}: {
+  label: string;
+  regionBias?: string;
+  onCancel: () => void;
+  onSelect: (p: PlaceSelection) => void;
+}) {
+  const [query, setQuery] = useState("");
+  return (
+    <tr className="bg-primary/5">
+      <td colSpan={10} className="p-0">
+        <div className="animate-in fade-in slide-in-from-top-1 duration-200 border-y-2 border-primary/40 px-4 py-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-sm font-medium text-foreground">{label}</div>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Annuler
+            </button>
+          </div>
+          <PlacesAutocompleteInput
+            value={query}
+            onChange={setQuery}
+            onSelect={onSelect}
+            regionBias={regionBias}
+            placeholder="Tape un lieu : Etosha National Park, Swakopmund…"
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Sélectionne une suggestion : la nouvelle étape apparaîtra
+            immédiatement sur la carte avec son tracé.
+          </p>
+        </div>
+      </td>
+    </tr>
   );
 }
 
