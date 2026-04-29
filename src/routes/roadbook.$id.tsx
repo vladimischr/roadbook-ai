@@ -2146,7 +2146,7 @@ function ContactsSection({
   return (
     <section>
       <SectionHeader
-        label="Contacts pratiques"
+        label=""
         editing={editing}
         hideEditButton={forceEdit}
         onEdit={() => {
