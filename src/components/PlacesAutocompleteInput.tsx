@@ -109,6 +109,15 @@ export function PlacesAutocompleteInput({
             status !== google.maps.places.PlacesServiceStatus.OK ||
             !res
           ) {
+            if (
+              status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS
+            ) {
+              console.warn(
+                "[PlacesAutocomplete] getPlacePredictions status:",
+                status,
+                "— vérifie que 'Places API' (legacy) est activée dans Google Cloud + autorisée sur la clé.",
+              );
+            }
             setPredictions([]);
             return;
           }
