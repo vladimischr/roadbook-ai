@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { callClaudeAPI, type RoadbookFormData } from "@/lib/mockGenerator";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/new")({
   component: NewRoadbook,
@@ -46,6 +48,7 @@ const BUDGETS = [
 
 function NewRoadbook() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState<RoadbookFormData>({
@@ -90,21 +93,50 @@ function NewRoadbook() {
       return;
     }
 
+    if (!user) {
+      toast.error("Vous devez être connecté pour générer un roadbook.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const roadbook = await callClaudeAPI(form);
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("roadbook:last", JSON.stringify(roadbook));
+
+      const destination = (roadbook as any).destination || form.destination;
+      const clientName = (roadbook as any).client_name || form.client_name;
+      const startDate = (roadbook as any).start_date || form.start_date || null;
+      const endDate = (roadbook as any).end_date || form.end_date || null;
+
+      const { data, error } = await supabase
+        .from("roadbooks")
+        .insert({
+          user_id: user.id,
+          client_name: clientName,
+          destination,
+          start_date: startDate,
+          end_date: endDate,
+          travelers_count: form.travelers_count || null,
+          traveler_profile: form.traveler_profile || null,
+          theme: form.theme || null,
+          budget_range: form.budget_range || null,
+          generation_mode: form.generation_mode,
+          agent_notes: form.agent_notes || null,
+          content: roadbook as any,
+          status: "ready",
+        })
+        .select("id")
+        .single();
+
+      if (error || !data) {
+        setSubmitting(false);
+        toast.error("Échec de l'enregistrement : " + (error?.message || "inconnu"));
+        return;
       }
-      navigate({ to: "/roadbook/preview-mock" });
+
+      navigate({ to: "/roadbook/$id", params: { id: data.id } });
     } catch (error: any) {
       setSubmitting(false);
-      alert(
-        "ERREUR DE GÉNÉRATION :\n\n" +
-          (error?.message || "Erreur inconnue") +
-          "\n\n" +
-          (error?.stack || ""),
-      );
+      toast.error("Erreur de génération : " + (error?.message || "inconnue"));
       console.error("Erreur génération:", error);
     }
   };
