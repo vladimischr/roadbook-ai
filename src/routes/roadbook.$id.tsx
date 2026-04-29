@@ -244,13 +244,16 @@ function RoadbookPage() {
   // Sauvegarde immédiate avec toast
   const persist = async (next: Roadbook) => {
     setRb(next);
+    setSavingState("saving");
     const { error } = await supabase
       .from("roadbooks")
       .update({ content: next as never })
       .eq("id", id);
+    setSavingState("idle");
     if (error) {
       toast.error("Échec de la sauvegarde : " + error.message);
     } else {
+      setLastSavedAt(Date.now());
       toast.success("Modifications enregistrées", { duration: 1800 });
     }
   };
@@ -263,6 +266,7 @@ function RoadbookPage() {
       .update({ content: next as never })
       .eq("id", id);
     if (error) console.error("Silent persist failed:", error.message);
+    else setLastSavedAt(Date.now());
   };
 
   // Auto-save (debounce 2s) — déclenché par updateAndAutosave
