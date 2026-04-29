@@ -167,16 +167,6 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
-                error: "Réponse Claude non-JSON: " + text.substring(0, 300),
-              }),
-              { status: 500, headers: { "Content-Type": "application/json" } },
-            );
-          }
-
-          return new Response(JSON.stringify(parsed), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           console.error("[generate-roadbook] fatal error:", msg, e);
