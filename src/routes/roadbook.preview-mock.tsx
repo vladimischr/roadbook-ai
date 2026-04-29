@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ArrowLeft, Download, Pencil, Check, X, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -358,8 +358,9 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
             </tr>
           </thead>
           <tbody>
-            {list.flatMap((d, i) => [
-              <tr key={`r-${i}`} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+            {list.map((d, i) => (
+              <Fragment key={`day-${i}`}>
+              <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
                 <td className="px-3 py-3 font-semibold text-primary">J{d.day}</td>
                 <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
                   {editing
@@ -404,8 +405,8 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
                     <span>{d.drive_hours} h</span>
                   )}
                 </td>
-              </tr>,
-              <tr key={`n-${i}`} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+              </tr>
+              <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
                 <td colSpan={8} className="px-3 pb-4 pt-0 italic text-foreground/70">
                   {editing ? (
                     <Textarea rows={2} value={d.narrative}
@@ -415,8 +416,9 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
                     d.narrative
                   )}
                 </td>
-              </tr>,
-            ])}
+              </tr>
+              </Fragment>
+            ))}
           </tbody>
         </table>
       </div>
