@@ -352,15 +352,20 @@ function NewRoadbook() {
             />
           </Section>
 
-          <div className="flex items-center justify-end gap-3 border-t border-border pt-6">
+          <div className="flex flex-col-reverse items-stretch gap-3 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-end">
             <Button
               type="button"
               variant="ghost"
               onClick={() => navigate({ to: "/dashboard" })}
+              className="transition-smooth"
             >
               Annuler
             </Button>
-            <Button type="submit" className="gap-2">
+            <Button
+              type="submit"
+              size="lg"
+              className="gap-2 px-8 shadow-[0_4px_14px_-4px_rgba(15,110,86,0.4)] transition-smooth hover:shadow-[0_6px_18px_-4px_rgba(15,110,86,0.55)]"
+            >
               <Sparkles className="h-4 w-4" />
               Générer un roadbook
             </Button>
