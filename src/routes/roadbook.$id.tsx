@@ -1390,12 +1390,14 @@ function EditableTextSection({
   forceEdit,
   onSave,
   onAutoSave,
+  hideHeader,
 }: {
   label: string;
   value: string;
   forceEdit: boolean;
   onSave: (v: string) => void;
   onAutoSave: (v: string) => void;
+  hideHeader?: boolean;
 }) {
   const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(value);
