@@ -15,6 +15,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RoadbookPreviewMockRouteImport } from './routes/roadbook.preview-mock'
 import { Route as RoadbookIdRouteImport } from './routes/roadbook.$id'
+import { Route as ApiRecomputeRoadbookRouteImport } from './routes/api/recompute-roadbook'
 import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
 import { Route as RoadbookIdPrintRouteImport } from './routes/roadbook.$id.print'
 
@@ -48,6 +49,11 @@ const RoadbookIdRoute = RoadbookIdRouteImport.update({
   path: '/roadbook/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRecomputeRoadbookRoute = ApiRecomputeRoadbookRouteImport.update({
+  id: '/api/recompute-roadbook',
+  path: '/api/recompute-roadbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiGenerateRoadbookRoute = ApiGenerateRoadbookRouteImport.update({
   id: '/api/generate-roadbook',
   path: '/api/generate-roadbook',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
+  '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRouteWithChildren
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
   '/roadbook/$id/print': typeof RoadbookIdPrintRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
+  '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRouteWithChildren
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
   '/roadbook/$id/print': typeof RoadbookIdPrintRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
+  '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRouteWithChildren
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
   '/roadbook/$id/print': typeof RoadbookIdPrintRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/new'
     | '/api/generate-roadbook'
+    | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
     | '/roadbook/$id/print'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/new'
     | '/api/generate-roadbook'
+    | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
     | '/roadbook/$id/print'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/new'
     | '/api/generate-roadbook'
+    | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
     | '/roadbook/$id/print'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NewRoute: typeof NewRoute
   ApiGenerateRoadbookRoute: typeof ApiGenerateRoadbookRoute
+  ApiRecomputeRoadbookRoute: typeof ApiRecomputeRoadbookRoute
   RoadbookIdRoute: typeof RoadbookIdRouteWithChildren
   RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
 }
@@ -177,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoadbookIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/recompute-roadbook': {
+      id: '/api/recompute-roadbook'
+      path: '/api/recompute-roadbook'
+      fullPath: '/api/recompute-roadbook'
+      preLoaderRoute: typeof ApiRecomputeRoadbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/generate-roadbook': {
       id: '/api/generate-roadbook'
       path: '/api/generate-roadbook'
@@ -212,6 +232,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NewRoute: NewRoute,
   ApiGenerateRoadbookRoute: ApiGenerateRoadbookRoute,
+  ApiRecomputeRoadbookRoute: ApiRecomputeRoadbookRoute,
   RoadbookIdRoute: RoadbookIdRouteWithChildren,
   RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
 }
