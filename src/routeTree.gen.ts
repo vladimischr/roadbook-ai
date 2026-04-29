@@ -13,6 +13,7 @@ import { Route as NewRouteImport } from './routes/new'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RoadbookPreviewMockRouteImport } from './routes/roadbook.preview-mock'
 import { Route as RoadbookIdRouteImport } from './routes/roadbook.$id'
 
 const NewRoute = NewRouteImport.update({
@@ -35,6 +36,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoadbookPreviewMockRoute = RoadbookPreviewMockRouteImport.update({
+  id: '/roadbook/preview-mock',
+  path: '/roadbook/preview-mock',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoadbookIdRoute = RoadbookIdRouteImport.update({
   id: '/roadbook/$id',
   path: '/roadbook/$id',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/roadbook/$id': typeof RoadbookIdRoute
+  '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/roadbook/$id': typeof RoadbookIdRoute
+  '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,33 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/roadbook/$id': typeof RoadbookIdRoute
+  '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/login' | '/new' | '/roadbook/$id'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/new'
+    | '/roadbook/$id'
+    | '/roadbook/preview-mock'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/login' | '/new' | '/roadbook/$id'
-  id: '__root__' | '/' | '/dashboard' | '/login' | '/new' | '/roadbook/$id'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/new'
+    | '/roadbook/$id'
+    | '/roadbook/preview-mock'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/new'
+    | '/roadbook/$id'
+    | '/roadbook/preview-mock'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +105,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NewRoute: typeof NewRoute
   RoadbookIdRoute: typeof RoadbookIdRoute
+  RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -109,6 +138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/roadbook/preview-mock': {
+      id: '/roadbook/preview-mock'
+      path: '/roadbook/preview-mock'
+      fullPath: '/roadbook/preview-mock'
+      preLoaderRoute: typeof RoadbookPreviewMockRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/roadbook/$id': {
       id: '/roadbook/$id'
       path: '/roadbook/$id'
@@ -125,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NewRoute: NewRoute,
   RoadbookIdRoute: RoadbookIdRoute,
+  RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
