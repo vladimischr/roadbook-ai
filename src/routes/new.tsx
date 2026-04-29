@@ -255,11 +255,11 @@ function NewRoadbook() {
               variant="ghost"
               onClick={() => navigate({ to: "/dashboard" })}
             >
-              Cancel
+              Annuler
             </Button>
             <Button type="submit" className="gap-2">
               <Sparkles className="h-4 w-4" />
-              Generate roadbook
+              Générer un roadbook
             </Button>
           </div>
         </form>
