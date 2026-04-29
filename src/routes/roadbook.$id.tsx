@@ -708,14 +708,34 @@ function AccommodationsSection({
               <tr key={i} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
                 <td className="px-4 py-3 font-medium">
                   {editing ? (
-                    <Input value={a.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8" />
+                    <PlacesAutocompleteInput
+                      value={a.name}
+                      onChange={(v) => update(i, { name: v })}
+                      onSelect={(p) =>
+                        update(i, {
+                          name: p.name,
+                          ...(p.formatted && !a.location
+                            ? { location: p.formatted }
+                            : {}),
+                        })
+                      }
+                      regionBias={regionBias}
+                      types={["establishment"]}
+                      className="h-8"
+                    />
                   ) : (
                     a.name
                   )}
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {editing ? (
-                    <Input value={a.location} onChange={(e) => update(i, { location: e.target.value })} className="h-8" />
+                    <PlacesAutocompleteInput
+                      value={a.location}
+                      onChange={(v) => update(i, { location: v })}
+                      onSelect={(p) => update(i, { location: p.name })}
+                      regionBias={regionBias}
+                      className="h-8"
+                    />
                   ) : (
                     a.location
                   )}
