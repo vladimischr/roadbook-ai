@@ -2025,14 +2025,18 @@ function TipsSection({
           </Button>
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid gap-4 sm:grid-cols-2">
           {tips.map((t, i) => (
             <li
               key={i}
-              className="flex gap-3 text-sm leading-relaxed text-foreground/85"
+              className="flex gap-3 rounded-xl border border-border bg-surface p-5 transition-smooth hover:border-accent-warm/40 hover:shadow-[0_4px_12px_-4px_rgba(201,146,99,0.18)]"
             >
-              <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <span>{t}</span>
+              <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-warm-soft text-accent-warm">
+                <Lightbulb className="h-3.5 w-3.5" strokeWidth={2} />
+              </span>
+              <span className="font-display text-[14.5px] italic leading-[1.7] text-foreground/85">
+                {t}
+              </span>
             </li>
           ))}
         </ul>
