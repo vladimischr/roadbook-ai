@@ -704,7 +704,14 @@ function RoadbookPage() {
                             ? { Authorization: `Bearer ${token}` }
                             : {},
                         });
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        if (!res.ok) {
+                          let errMsg = `Erreur ${res.status}`;
+                          try {
+                            const errBody = await res.json();
+                            errMsg = errBody.error || errMsg;
+                          } catch {}
+                          throw new Error(errMsg);
+                        }
                         const blob = await res.blob();
                         const cd = res.headers.get("Content-Disposition") || "";
                         const m = cd.match(/filename="?([^"]+)"?/);
@@ -720,9 +727,10 @@ function RoadbookPage() {
                         document.body.removeChild(a);
                         setTimeout(() => URL.revokeObjectURL(url), 1000);
                         toast.success("PDF téléchargé", { id: toastId });
-                      } catch (e) {
+                      } catch (e: unknown) {
+                        const err = e as { message?: string };
                         console.error("PDF export failed", e);
-                        toast.error("Erreur de génération du PDF", {
+                        toast.error(err?.message || "Erreur de génération du PDF", {
                           id: toastId,
                         });
                       }
