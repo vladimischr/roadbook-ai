@@ -1745,7 +1745,7 @@ function DaysTableSection({
   return (
     <section>
       <SectionHeader
-        label="Itinéraire jour par jour"
+        label=""
         editing={editing}
         hideEditButton={forceEdit}
         onEdit={() => {
