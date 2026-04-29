@@ -11,58 +11,68 @@ import React from "react";
 
 // ---------- Fonts ----------
 // Use TTF mirrors (react-pdf doesn't support woff2).
-Font.register({
-  family: "Inter",
-  fonts: [
-    {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf",
-      fontWeight: 400,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-500-normal.ttf",
-      fontWeight: 500,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-600-normal.ttf",
-      fontWeight: 600,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf",
-      fontWeight: 700,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-italic.ttf",
-      fontWeight: 400,
-      fontStyle: "italic",
-    },
-  ],
-});
+export let FONTS_LOADED = false;
+try {
+  Font.register({
+    family: "Inter",
+    fonts: [
+      {
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-400-normal.ttf",
+        fontWeight: 400,
+      },
+      {
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-500-normal.ttf",
+        fontWeight: 500,
+      },
+      {
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-600-normal.ttf",
+        fontWeight: 600,
+      },
+      {
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-700-normal.ttf",
+        fontWeight: 700,
+      },
+      {
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-400-italic.ttf",
+        fontWeight: 400,
+        fontStyle: "italic",
+      },
+    ],
+  });
 
-Font.register({
-  family: "Playfair",
-  fonts: [
-    {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/playfair-display@latest/latin-400-normal.ttf",
-      fontWeight: 400,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/playfair-display@latest/latin-600-normal.ttf",
-      fontWeight: 600,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/playfair-display@latest/latin-700-normal.ttf",
-      fontWeight: 700,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/fontsource/fonts/playfair-display@latest/latin-400-italic.ttf",
-      fontWeight: 400,
-      fontStyle: "italic",
-    },
-  ],
-});
+  Font.register({
+    family: "Playfair",
+    fonts: [
+      {
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-400-normal.ttf",
+        fontWeight: 400,
+      },
+      {
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-600-normal.ttf",
+        fontWeight: 600,
+      },
+      {
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-700-normal.ttf",
+        fontWeight: 700,
+      },
+      {
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-400-italic.ttf",
+        fontWeight: 400,
+        fontStyle: "italic",
+      },
+    ],
+  });
+
+  FONTS_LOADED = true;
+} catch (err) {
+  console.warn("[RoadbookPDF] Font.register failed, falling back to Helvetica:", err);
+  FONTS_LOADED = false;
+}
 
 // Avoid hyphenation on words for cleaner editorial layout.
-Font.registerHyphenationCallback((word) => [word]);
+try {
+  Font.registerHyphenationCallback((word) => [word]);
+} catch {}
 
 // ---------- Types ----------
 export interface RoadbookContent {
