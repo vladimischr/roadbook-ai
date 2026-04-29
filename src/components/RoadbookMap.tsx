@@ -573,7 +573,13 @@ function RouteRenderer({
 
 /* ---------- Marker (avec fusion) ---------- */
 
-function ClusterMarker({ cluster }: { cluster: MarkerCluster }) {
+function ClusterMarker({
+  cluster,
+  onRemoveDay,
+}: {
+  cluster: MarkerCluster;
+  onRemoveDay?: (dayNumber: number) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState(false);
   const sortedDays = [...cluster.days].sort((a, b) => a.day - b.day);
@@ -629,7 +635,24 @@ function ClusterMarker({ cluster }: { cluster: MarkerCluster }) {
         >
           <div className="min-w-[220px] max-w-[280px] space-y-3 p-1">
             {sortedDays.map((d) => (
-              <DayInfoBlock key={d.day} day={d} />
+              <DayInfoBlock
+                key={d.day}
+                day={d}
+                onRemove={
+                  onRemoveDay
+                    ? () => {
+                        if (
+                          confirm(
+                            `Supprimer J${d.day} (${d.stage || "étape"}) du roadbook ?`,
+                          )
+                        ) {
+                          onRemoveDay(d.day);
+                          setOpen(false);
+                        }
+                      }
+                    : undefined
+                }
+              />
             ))}
           </div>
         </InfoWindow>
