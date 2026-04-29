@@ -14,7 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      roadbooks: {
+        Row: {
+          agent_notes: string | null
+          budget_range: string | null
+          client_name: string
+          content: Json | null
+          created_at: string
+          destination: string
+          end_date: string | null
+          generation_mode: string
+          id: string
+          start_date: string | null
+          status: string
+          theme: string | null
+          traveler_profile: string | null
+          travelers_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_notes?: string | null
+          budget_range?: string | null
+          client_name: string
+          content?: Json | null
+          created_at?: string
+          destination: string
+          end_date?: string | null
+          generation_mode?: string
+          id?: string
+          start_date?: string | null
+          status?: string
+          theme?: string | null
+          traveler_profile?: string | null
+          travelers_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_notes?: string | null
+          budget_range?: string | null
+          client_name?: string
+          content?: Json | null
+          created_at?: string
+          destination?: string
+          end_date?: string | null
+          generation_mode?: string
+          id?: string
+          start_date?: string | null
+          status?: string
+          theme?: string | null
+          traveler_profile?: string | null
+          travelers_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
