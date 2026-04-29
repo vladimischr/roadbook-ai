@@ -26,7 +26,6 @@ const PROFILES = ["Couple", "Family", "Solo", "Friends"];
 const BUDGETS = ["3–5k €", "5–8k €", "8–12k €", "12–15k €", "15k €+"];
 
 function NewRoadbook() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
 
