@@ -1,382 +1,799 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Download, Loader2, Save, Trash2 } from "lucide-react";
-import { AppShell } from "@/components/AppShell";
+import { Fragment, useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  Download,
+  Pencil,
+  Check,
+  X,
+  Lightbulb,
+  Loader2,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import type { RoadbookContent } from "@/lib/mockGenerator";
-import type { Tables, Json } from "@/integrations/supabase/types";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { exportRoadbookPDF } from "@/lib/pdfExport";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/roadbook/$id")({
   component: RoadbookPage,
   head: () => ({ meta: [{ title: "Roadbook — Roadbook.ai" }] }),
 });
 
-type Roadbook = Tables<"roadbooks">;
+interface Cover {
+  title: string;
+  subtitle: string;
+  tagline: string;
+  dates_label: string;
+}
+interface Day {
+  day: number;
+  date: string;
+  stage: string;
+  accommodation: string;
+  type: string;
+  distance_km: number;
+  drive_hours: number;
+  flight: string;
+  narrative: string;
+}
+interface AccommodationSummary {
+  name: string;
+  location: string;
+  nights: number;
+  type: string;
+}
+interface Contact {
+  role: string;
+  name: string;
+  phone: string;
+  email?: string;
+}
+interface Roadbook {
+  client_name: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  duration_days?: number;
+  travelers?: number;
+  profile?: string;
+  theme?: string;
+  budget_range?: string;
+  cover: Cover;
+  overview: string;
+  days: Day[];
+  accommodations_summary: AccommodationSummary[];
+  contacts: Contact[];
+  tips: string[];
+}
+
+function formatShortDate(iso: string) {
+  if (!iso) return "";
+  if (iso.includes("/")) return iso;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+}
+
+function emptyDay(nextNum: number): Day {
+  return {
+    day: nextNum,
+    date: "",
+    stage: "",
+    accommodation: "",
+    type: "",
+    distance_km: 0,
+    drive_hours: 0,
+    flight: "—",
+    narrative: "",
+  };
+}
+
+function emptyAccommodation(): AccommodationSummary {
+  return { name: "", location: "", nights: 1, type: "Lodge" };
+}
+
+function emptyContact(): Contact {
+  return { role: "", name: "", phone: "", email: "" };
+}
 
 function RoadbookPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [rb, setRb] = useState<Roadbook | null>(null);
-  const [content, setContent] = useState<RoadbookContent | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
     supabase
       .from("roadbooks")
-      .select("*")
+      .select("content")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
         if (error || !data) {
-          toast.error("Roadbook not found");
+          toast.error("Roadbook introuvable");
           navigate({ to: "/dashboard" });
           return;
         }
-        setRb(data);
-        setContent(data.content as unknown as RoadbookContent);
+        setRb(data.content as unknown as Roadbook);
         setLoading(false);
       });
-  }, [id, navigate]);
+  }, [id, user, authLoading, navigate]);
 
-  const dateRange = useMemo(() => {
-    if (!rb?.start_date || !rb?.end_date) return "";
-    const fmt = (d: string) =>
-      new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-    return `${fmt(rb.start_date)} → ${fmt(rb.end_date)}`;
-  }, [rb]);
-
-  const save = async () => {
-    if (!content || !rb) return;
-    setSaving(true);
+  const persist = async (next: Roadbook) => {
+    setRb(next);
     const { error } = await supabase
       .from("roadbooks")
-      .update({ content: content as unknown as Json })
-      .eq("id", rb.id);
-    setSaving(false);
-    if (error) toast.error(error.message);
-    else toast.success("Saved");
-  };
-
-  const remove = async () => {
-    if (!rb) return;
-    if (!confirm("Delete this roadbook? This cannot be undone.")) return;
-    const { error } = await supabase.from("roadbooks").delete().eq("id", rb.id);
-    if (error) return toast.error(error.message);
-    toast.success("Deleted");
-    navigate({ to: "/dashboard" });
-  };
-
-  const exportPDF = async () => {
-    if (!content || !rb) return;
-    setExporting(true);
-    try {
-      await exportRoadbookPDF(rb, content);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Export failed");
-    } finally {
-      setExporting(false);
+      .update({ content: next as any })
+      .eq("id", id);
+    if (error) {
+      toast.error("Échec de la sauvegarde : " + error.message);
+    } else {
+      toast.success("Modifications enregistrées", { duration: 2000 });
     }
   };
 
-  if (loading || !content || !rb) {
+  if (authLoading || loading || !rb) {
     return (
-      <AppShell>
-        <div className="grid min-h-[40vh] place-items-center">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      </AppShell>
+      <div className="grid min-h-screen place-items-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
     );
   }
 
-  const updateCover = (k: keyof RoadbookContent["cover"], v: string) =>
-    setContent({ ...content, cover: { ...content.cover, [k]: v } });
-
   return (
-    <AppShell>
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <Link to="/dashboard">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Button>
-        </Link>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={remove} className="gap-2 text-muted-foreground hover:text-destructive">
-            <Trash2 className="h-4 w-4" /> Delete
-          </Button>
-          <Button variant="outline" size="sm" onClick={save} disabled={saving} className="gap-2">
-            <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save"}
-          </Button>
-          <Button size="sm" onClick={exportPDF} disabled={exporting} className="gap-2">
-            <Download className="h-4 w-4" /> {exporting ? "Exporting…" : "Export PDF"}
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+          <Link to="/dashboard">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <ArrowLeft className="h-4 w-4" /> Retour au tableau de bord
+            </Button>
+          </Link>
+          <Button
+            size="sm"
+            onClick={() => toast.info("L'exportation PDF sera bientôt disponible.")}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" /> Exporter en PDF
           </Button>
         </div>
-      </div>
+      </header>
 
-      <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        {/* Cover */}
-        <div className="relative bg-gradient-to-br from-primary to-primary-light px-10 py-20 text-primary-foreground">
-          <div className="text-xs font-medium uppercase tracking-[0.25em] opacity-80">
-            Roadbook
-          </div>
-          <Editable
-            as="h1"
-            className="mt-3 text-5xl font-bold tracking-tight"
-            value={content.cover.title}
-            onChange={(v) => updateCover("title", v)}
-          />
-          <Editable
-            as="p"
-            className="mt-3 text-xl opacity-95"
-            value={content.cover.subtitle}
-            onChange={(v) => updateCover("subtitle", v)}
-          />
-          <Editable
-            as="p"
-            className="mt-1 text-sm opacity-80"
-            value={content.cover.tagline}
-            onChange={(v) => updateCover("tagline", v)}
-          />
-          {dateRange && <p className="mt-6 text-sm opacity-90">{dateRange}</p>}
-        </div>
+      <main className="mx-auto max-w-5xl px-6 py-12">
+        <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <CoverSection cover={rb.cover} onSave={(cover) => persist({ ...rb, cover })} />
 
-        <div className="space-y-12 px-10 py-12">
-          {/* Overview */}
-          <Section label="Trip overview">
-            <Editable
-              as="p"
-              multiline
-              className="whitespace-pre-wrap text-base leading-relaxed text-foreground/90"
-              value={content.overview}
-              onChange={(v) => setContent({ ...content, overview: v })}
+          <div className="space-y-14 px-8 py-12 sm:px-14">
+            <EditableTextSection
+              label="Vue d'ensemble"
+              value={rb.overview}
+              onSave={(overview) => persist({ ...rb, overview })}
             />
-          </Section>
 
-          {/* Days */}
-          <Section label="Day by day">
-            <ol className="space-y-6">
-              {content.days.map((d, idx) => (
-                <li key={idx} className="rounded-xl border border-border bg-secondary/30 p-5">
-                  <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-primary">
-                    <span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground">
-                      {d.day}
-                    </span>
-                    <Editable
-                      as="span"
-                      value={d.location}
-                      className="text-muted-foreground"
-                      onChange={(v) => {
-                        const days = [...content.days];
-                        days[idx] = { ...d, location: v };
-                        setContent({ ...content, days });
-                      }}
-                    />
-                  </div>
-                  <Editable
-                    as="h3"
-                    className="mt-2 text-lg font-semibold"
-                    value={d.title}
-                    onChange={(v) => {
-                      const days = [...content.days];
-                      days[idx] = { ...d, title: v };
-                      setContent({ ...content, days });
-                    }}
-                  />
-                  <Editable
-                    as="p"
-                    multiline
-                    className="mt-2 text-sm leading-relaxed text-foreground/80"
-                    value={d.description}
-                    onChange={(v) => {
-                      const days = [...content.days];
-                      days[idx] = { ...d, description: v };
-                      setContent({ ...content, days });
-                    }}
-                  />
-                  {d.activities.length > 0 && (
-                    <ul className="mt-3 space-y-1.5 text-sm">
-                      {d.activities.map((a, i) => (
-                        <li key={i} className="flex gap-2 text-foreground/85">
-                          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                          <Editable
-                            as="span"
-                            value={a}
-                            onChange={(v) => {
-                              const days = [...content.days];
-                              const acts = [...d.activities];
-                              acts[i] = v;
-                              days[idx] = { ...d, activities: acts };
-                              setContent({ ...content, days });
-                            }}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </Section>
+            <DaysTableSection
+              days={rb.days || []}
+              onSave={(days) => persist({ ...rb, days })}
+            />
 
-          {/* Accommodations */}
-          <Section label="Accommodations">
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {content.accommodations.map((a, i) => (
-                <li key={i} className="rounded-xl border border-border p-4">
-                  <Editable
-                    as="h4"
-                    className="font-semibold"
-                    value={a.name}
-                    onChange={(v) => {
-                      const list = [...content.accommodations];
-                      list[i] = { ...a, name: v };
-                      setContent({ ...content, accommodations: list });
-                    }}
-                  />
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {a.location} · {a.nights} {a.nights > 1 ? "nights" : "night"}
-                  </p>
-                  <Editable
-                    as="p"
-                    multiline
-                    className="mt-2 text-sm text-foreground/80"
-                    value={a.notes}
-                    onChange={(v) => {
-                      const list = [...content.accommodations];
-                      list[i] = { ...a, notes: v };
-                      setContent({ ...content, accommodations: list });
-                    }}
-                  />
-                </li>
-              ))}
-            </ul>
-          </Section>
+            <AccommodationsSection
+              items={rb.accommodations_summary || []}
+              onSave={(accommodations_summary) =>
+                persist({ ...rb, accommodations_summary })
+              }
+            />
 
-          {/* Contacts */}
-          <Section label="Contacts">
-            <dl className="grid gap-3 sm:grid-cols-2">
-              {content.contacts.map((c, i) => (
-                <div key={i} className="rounded-xl border border-border p-4">
-                  <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {c.label}
-                  </dt>
-                  <dd className="mt-1">
-                    <Editable
-                      as="span"
-                      value={c.value}
-                      onChange={(v) => {
-                        const list = [...content.contacts];
-                        list[i] = { ...c, value: v };
-                        setContent({ ...content, contacts: list });
-                      }}
-                    />
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </Section>
+            <ContactsSection
+              contacts={rb.contacts || []}
+              onSave={(contacts) => persist({ ...rb, contacts })}
+            />
 
-          {/* Tips */}
-          <Section label="Tips & good to know">
-            <ul className="space-y-2 text-sm">
-              {content.tips.map((t, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                  <Editable
-                    as="span"
-                    value={t}
-                    onChange={(v) => {
-                      const tips = [...content.tips];
-                      tips[i] = v;
-                      setContent({ ...content, tips });
-                    }}
-                  />
-                </li>
-              ))}
-            </ul>
-          </Section>
-        </div>
-      </article>
-    </AppShell>
+            <TipsSection tips={rb.tips || []} onSave={(tips) => persist({ ...rb, tips })} />
+          </div>
+        </article>
+      </main>
+    </div>
   );
 }
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
+/* ---------- Section header ---------- */
+
+function SectionHeader({
+  label,
+  editing,
+  onEdit,
+  onSave,
+  onCancel,
+}: {
+  label: string;
+  editing: boolean;
+  onEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
   return (
-    <section>
-      <div className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+    <div className="mb-5 flex items-center justify-between">
+      <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
         {label}
+      </h2>
+      {editing ? (
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" onClick={onCancel} className="gap-1.5 text-muted-foreground">
+            <X className="h-3.5 w-3.5" /> Annuler
+          </Button>
+          <Button size="sm" onClick={onSave} className="gap-1.5">
+            <Check className="h-3.5 w-3.5" /> Enregistrer
+          </Button>
+        </div>
+      ) : (
+        <Button size="sm" variant="ghost" onClick={onEdit} className="gap-1.5 text-muted-foreground hover:text-primary">
+          <Pencil className="h-3.5 w-3.5" /> Modifier
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Cover ---------- */
+
+function CoverSection({ cover, onSave }: { cover: Cover; onSave: (c: Cover) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(cover);
+
+  if (editing) {
+    return (
+      <div className="relative bg-[#0F6E56] px-8 py-20 text-white sm:px-14">
+        <div className="absolute right-6 top-6 flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setDraft(cover);
+              setEditing(false);
+            }}
+            className="gap-1.5 text-white/90 hover:bg-white/15 hover:text-white"
+          >
+            <X className="h-3.5 w-3.5" /> Annuler
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              onSave(draft);
+              setEditing(false);
+            }}
+            className="gap-1.5 bg-white text-[#0F6E56] hover:bg-white/90"
+          >
+            <Check className="h-3.5 w-3.5" /> Enregistrer
+          </Button>
+        </div>
+        <div className="mx-auto max-w-3xl space-y-3 pt-10">
+          <Input
+            value={draft.title}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            className="border-white/30 bg-white/15 text-2xl font-bold text-white placeholder:text-white/60"
+          />
+          <Input
+            value={draft.subtitle}
+            onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
+            className="border-white/30 bg-white/15 text-white placeholder:text-white/60"
+          />
+          <Input
+            value={draft.tagline}
+            onChange={(e) => setDraft({ ...draft, tagline: e.target.value })}
+            className="border-white/30 bg-white/15 text-white placeholder:text-white/60"
+          />
+          <Input
+            value={draft.dates_label}
+            onChange={(e) => setDraft({ ...draft, dates_label: e.target.value })}
+            className="border-white/30 bg-white/15 text-white placeholder:text-white/60"
+          />
+        </div>
       </div>
-      {children}
+    );
+  }
+
+  return (
+    <section className="relative bg-[#0F6E56] px-8 py-20 text-center text-white">
+      <div className="absolute right-6 top-6">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setEditing(true)}
+          className="gap-1.5 text-white/90 hover:bg-white/15 hover:text-white"
+        >
+          <Pencil className="h-3.5 w-3.5" /> Modifier
+        </Button>
+      </div>
+      <p className="mb-6 text-xs uppercase tracking-widest opacity-80">Carnet de voyage</p>
+      <h1 className="mb-4 text-7xl font-semibold leading-tight">{cover.title}</h1>
+      <p className="mb-3 text-2xl">{cover.subtitle}</p>
+      <p className="mb-6 text-lg italic opacity-85">{cover.tagline}</p>
+      <span className="inline-block rounded-full bg-white/15 px-5 py-2 text-sm">
+        {cover.dates_label}
+      </span>
     </section>
   );
 }
 
-function Editable({
-  as = "span",
+/* ---------- Editable plain text ---------- */
+
+function EditableTextSection({
+  label,
   value,
-  onChange,
-  className = "",
-  multiline = false,
+  onSave,
 }: {
-  as?: "h1" | "h3" | "h4" | "p" | "span";
+  label: string;
   value: string;
-  onChange: (v: string) => void;
-  className?: string;
-  multiline?: boolean;
+  onSave: (v: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
-  const Tag = as as React.ElementType;
-
-  if (editing) {
-    const commit = () => {
-      if (draft !== value) onChange(draft);
-      setEditing(false);
-    };
-    if (multiline) {
-      return (
-        <textarea
-          autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          rows={4}
-          className={`w-full rounded border border-primary/30 bg-primary-soft/40 px-1 outline-none focus:ring-1 focus:ring-primary/30 ${className}`}
-        />
-      );
-    }
-    return (
-      <input
-        autoFocus
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") {
-            setDraft(value);
-            setEditing(false);
-          }
-        }}
-        className={`w-full rounded border border-primary/30 bg-primary-soft/40 px-1 outline-none focus:ring-1 focus:ring-primary/30 ${className}`}
-      />
-    );
-  }
 
   return (
-    <Tag
-      onClick={() => {
-        setDraft(value);
-        setEditing(true);
-      }}
-      className={`cursor-text rounded px-0.5 -mx-0.5 hover:bg-primary-soft/40 ${className}`}
-    >
-      {value}
-    </Tag>
+    <section>
+      <SectionHeader
+        label={label}
+        editing={editing}
+        onEdit={() => {
+          setDraft(value);
+          setEditing(true);
+        }}
+        onSave={() => {
+          onSave(draft);
+          setEditing(false);
+        }}
+        onCancel={() => setEditing(false)}
+      />
+      {editing ? (
+        <Textarea rows={6} value={draft} onChange={(e) => setDraft(e.target.value)} />
+      ) : (
+        <p className="text-base leading-relaxed text-foreground/85">{value}</p>
+      )}
+    </section>
+  );
+}
+
+/* ---------- Days table ---------- */
+
+function renumberDays(list: Day[]): Day[] {
+  return list.map((d, i) => ({ ...d, day: i + 1 }));
+}
+
+function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(days);
+
+  const update = (i: number, patch: Partial<Day>) =>
+    setDraft((d) => d.map((day, idx) => (idx === i ? { ...day, ...patch } : day)));
+
+  const remove = (i: number) =>
+    setDraft((d) => renumberDays(d.filter((_, idx) => idx !== i)));
+
+  const add = () =>
+    setDraft((d) => renumberDays([...d, emptyDay(d.length + 1)]));
+
+  const list = editing ? draft : days;
+
+  return (
+    <section>
+      <SectionHeader
+        label="Itinéraire jour par jour"
+        editing={editing}
+        onEdit={() => {
+          setDraft(days);
+          setEditing(true);
+        }}
+        onSave={() => {
+          onSave(renumberDays(draft));
+          setEditing(false);
+        }}
+        onCancel={() => setEditing(false)}
+      />
+
+      <div className="overflow-hidden rounded-xl border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-3 py-3 w-12">Jour</th>
+              <th className="px-3 py-3 w-20">Date</th>
+              <th className="px-3 py-3">Étape</th>
+              <th className="px-3 py-3">Hébergement</th>
+              <th className="px-3 py-3 w-28">Type</th>
+              <th className="px-3 py-3">Vols / Transport</th>
+              <th className="px-3 py-3 w-24 text-right">Distance</th>
+              <th className="px-3 py-3 w-20 text-right">Route</th>
+              {editing && <th className="px-2 py-3 w-10" />}
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((d, i) => (
+              <Fragment key={`day-${i}`}>
+                <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+                  <td className="px-3 py-3 font-semibold text-primary">J{d.day}</td>
+                  <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
+                    {editing ? (
+                      <Input value={d.date} onChange={(e) => update(i, { date: e.target.value })} className="h-8" />
+                    ) : (
+                      formatShortDate(d.date)
+                    )}
+                  </td>
+                  <td className="px-3 py-3 font-medium">
+                    {editing ? (
+                      <Input value={d.stage} onChange={(e) => update(i, { stage: e.target.value })} className="h-8" />
+                    ) : (
+                      d.stage
+                    )}
+                  </td>
+                  <td className="px-3 py-3">
+                    {editing ? (
+                      <Input value={d.accommodation} onChange={(e) => update(i, { accommodation: e.target.value })} className="h-8" />
+                    ) : (
+                      d.accommodation
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-muted-foreground">
+                    {editing ? (
+                      <Input value={d.type} onChange={(e) => update(i, { type: e.target.value })} className="h-8" />
+                    ) : (
+                      d.type
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-muted-foreground">
+                    {editing ? (
+                      <Input value={d.flight} onChange={(e) => update(i, { flight: e.target.value })} className="h-8" />
+                    ) : (
+                      d.flight
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums">
+                    {editing ? (
+                      <Input
+                        type="number"
+                        value={d.distance_km}
+                        onChange={(e) => update(i, { distance_km: parseInt(e.target.value) || 0 })}
+                        className="h-8 w-20 ml-auto text-right"
+                      />
+                    ) : (
+                      <span>{d.distance_km} km</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums">
+                    {editing ? (
+                      <Input
+                        type="number"
+                        value={d.drive_hours}
+                        onChange={(e) => update(i, { drive_hours: parseInt(e.target.value) || 0 })}
+                        className="h-8 w-16 ml-auto text-right"
+                      />
+                    ) : (
+                      <span>{d.drive_hours} h</span>
+                    )}
+                  </td>
+                  {editing && (
+                    <td className="px-2 py-3 align-top">
+                      <button
+                        type="button"
+                        onClick={() => remove(i)}
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Supprimer ce jour"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+                <tr className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+                  <td colSpan={editing ? 9 : 8} className="px-3 pb-4 pt-0 italic text-foreground/70">
+                    {editing ? (
+                      <Textarea
+                        rows={2}
+                        value={d.narrative}
+                        onChange={(e) => update(i, { narrative: e.target.value })}
+                        className="italic"
+                      />
+                    ) : (
+                      d.narrative
+                    )}
+                  </td>
+                </tr>
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {editing && (
+        <Button type="button" variant="outline" size="sm" onClick={add} className="mt-3 gap-2">
+          <Plus className="h-3.5 w-3.5" /> Ajouter une étape
+        </Button>
+      )}
+    </section>
+  );
+}
+
+/* ---------- Accommodations ---------- */
+
+function AccommodationsSection({
+  items,
+  onSave,
+}: {
+  items: AccommodationSummary[];
+  onSave: (a: AccommodationSummary[]) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(items);
+  const update = (i: number, patch: Partial<AccommodationSummary>) =>
+    setDraft((d) => d.map((a, idx) => (idx === i ? { ...a, ...patch } : a)));
+  const remove = (i: number) => setDraft((d) => d.filter((_, idx) => idx !== i));
+  const add = () => setDraft((d) => [...d, emptyAccommodation()]);
+
+  const list = editing ? draft : items;
+
+  return (
+    <section>
+      <SectionHeader
+        label="Hébergements"
+        editing={editing}
+        onEdit={() => {
+          setDraft(items);
+          setEditing(true);
+        }}
+        onSave={() => {
+          onSave(draft);
+          setEditing(false);
+        }}
+        onCancel={() => setEditing(false)}
+      />
+
+      <div className="overflow-hidden rounded-xl border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">Lodge / Camp</th>
+              <th className="px-4 py-3">Localisation</th>
+              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3 text-right w-20">Nuits</th>
+              {editing && <th className="px-2 py-3 w-10" />}
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((a, i) => (
+              <tr key={i} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+                <td className="px-4 py-3 font-medium">
+                  {editing ? (
+                    <Input value={a.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8" />
+                  ) : (
+                    a.name
+                  )}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {editing ? (
+                    <Input value={a.location} onChange={(e) => update(i, { location: e.target.value })} className="h-8" />
+                  ) : (
+                    a.location
+                  )}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {editing ? (
+                    <Input value={a.type} onChange={(e) => update(i, { type: e.target.value })} className="h-8" />
+                  ) : (
+                    a.type
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  {editing ? (
+                    <Input
+                      type="number"
+                      min={1}
+                      value={a.nights}
+                      onChange={(e) => update(i, { nights: parseInt(e.target.value) || 1 })}
+                      className="h-8 w-16 ml-auto text-right"
+                    />
+                  ) : (
+                    a.nights
+                  )}
+                </td>
+                {editing && (
+                  <td className="px-2 py-3">
+                    <button
+                      type="button"
+                      onClick={() => remove(i)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Supprimer cet hébergement"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {editing && (
+        <Button type="button" variant="outline" size="sm" onClick={add} className="mt-3 gap-2">
+          <Plus className="h-3.5 w-3.5" /> Ajouter un hébergement
+        </Button>
+      )}
+    </section>
+  );
+}
+
+/* ---------- Contacts ---------- */
+
+function ContactsSection({
+  contacts,
+  onSave,
+}: {
+  contacts: Contact[];
+  onSave: (c: Contact[]) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(contacts);
+  const update = (i: number, patch: Partial<Contact>) =>
+    setDraft((d) => d.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const remove = (i: number) => setDraft((d) => d.filter((_, idx) => idx !== i));
+  const add = () => setDraft((d) => [...d, emptyContact()]);
+
+  const list = editing ? draft : contacts;
+
+  return (
+    <section>
+      <SectionHeader
+        label="Contacts pratiques"
+        editing={editing}
+        onEdit={() => {
+          setDraft(contacts);
+          setEditing(true);
+        }}
+        onSave={() => {
+          onSave(draft);
+          setEditing(false);
+        }}
+        onCancel={() => setEditing(false)}
+      />
+
+      <div className="overflow-hidden rounded-xl border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">Rôle</th>
+              <th className="px-4 py-3">Nom</th>
+              <th className="px-4 py-3">Téléphone</th>
+              <th className="px-4 py-3">Courriel</th>
+              {editing && <th className="px-2 py-3 w-10" />}
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((c, i) => (
+              <tr key={i} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {editing ? (
+                    <Input value={c.role} onChange={(e) => update(i, { role: e.target.value })} className="h-8" />
+                  ) : (
+                    c.role
+                  )}
+                </td>
+                <td className="px-4 py-3 font-medium">
+                  {editing ? (
+                    <Input value={c.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8" />
+                  ) : (
+                    c.name
+                  )}
+                </td>
+                <td className="px-4 py-3 tabular-nums">
+                  {editing ? (
+                    <Input value={c.phone} onChange={(e) => update(i, { phone: e.target.value })} className="h-8" />
+                  ) : (
+                    c.phone
+                  )}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {editing ? (
+                    <Input value={c.email ?? ""} onChange={(e) => update(i, { email: e.target.value })} className="h-8" />
+                  ) : (
+                    c.email || "—"
+                  )}
+                </td>
+                {editing && (
+                  <td className="px-2 py-3">
+                    <button
+                      type="button"
+                      onClick={() => remove(i)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Supprimer ce contact"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {editing && (
+        <Button type="button" variant="outline" size="sm" onClick={add} className="mt-3 gap-2">
+          <Plus className="h-3.5 w-3.5" /> Ajouter un contact
+        </Button>
+      )}
+    </section>
+  );
+}
+
+/* ---------- Tips ---------- */
+
+function TipsSection({ tips, onSave }: { tips: string[]; onSave: (t: string[]) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string[]>(tips);
+
+  const update = (i: number, v: string) =>
+    setDraft((d) => d.map((t, idx) => (idx === i ? v : t)));
+  const remove = (i: number) => setDraft((d) => d.filter((_, idx) => idx !== i));
+  const add = () => setDraft((d) => [...d, ""]);
+
+  return (
+    <section>
+      <SectionHeader
+        label="Conseils & recommandations"
+        editing={editing}
+        onEdit={() => {
+          setDraft(tips);
+          setEditing(true);
+        }}
+        onSave={() => {
+          onSave(draft.map((t) => t.trim()).filter(Boolean));
+          setEditing(false);
+        }}
+        onCancel={() => setEditing(false)}
+      />
+
+      {editing ? (
+        <div className="space-y-2">
+          {draft.map((t, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <Lightbulb className="mt-2.5 h-4 w-4 shrink-0 text-primary" />
+              <Textarea
+                rows={2}
+                value={t}
+                onChange={(e) => update(i, e.target.value)}
+                className="flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="mt-2 text-muted-foreground hover:text-destructive"
+                aria-label="Supprimer ce conseil"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={add} className="gap-2">
+            <Plus className="h-3.5 w-3.5" /> Ajouter un conseil
+          </Button>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {tips.map((t, i) => (
+            <li key={i} className="flex gap-3 text-sm leading-relaxed text-foreground/85">
+              <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span>{t}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
