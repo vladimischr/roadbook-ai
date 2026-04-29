@@ -49,7 +49,7 @@ export async function callClaudeAPI(
   });
 
   if (!resp.ok) {
-    let message = `Erreur ${resp.status}`;
+    let message = "Erreur génération roadbook";
     try {
       const j = await resp.json();
       if (j?.error) message = j.error;
@@ -59,5 +59,9 @@ export async function callClaudeAPI(
     throw new Error(message);
   }
 
-  return (await resp.json()) as GeneratedRoadbook;
+  try {
+    return (await resp.json()) as GeneratedRoadbook;
+  } catch {
+    throw new Error("Réponse invalide de l'IA, réessaie");
+  }
 }
