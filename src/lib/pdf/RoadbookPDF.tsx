@@ -670,7 +670,7 @@ export function RoadbookPDF({
         <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
           <>
             <Text>{pageMeta}</Text>
-            <Text>{`${pageNumber} / ${totalPages}`}</Text>
+            <Text>{`${pageNumber}`}</Text>
           </>
         )} />
       </Page>
@@ -692,7 +692,7 @@ export function RoadbookPDF({
           <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber} / ${totalPages}`}</Text>
+              <Text>{`${pageNumber}`}</Text>
             </>
           )} />
         </Page>
@@ -749,7 +749,7 @@ export function RoadbookPDF({
           <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber} / ${totalPages}`}</Text>
+              <Text>{`${pageNumber}`}</Text>
             </>
           )} />
         </Page>
@@ -788,7 +788,7 @@ export function RoadbookPDF({
           <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber} / ${totalPages}`}</Text>
+              <Text>{`${pageNumber}`}</Text>
             </>
           )} />
         </Page>
@@ -817,7 +817,7 @@ export function RoadbookPDF({
           <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber} / ${totalPages}`}</Text>
+              <Text>{`${pageNumber}`}</Text>
             </>
           )} />
         </Page>
@@ -842,7 +842,7 @@ export function RoadbookPDF({
           <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber} / ${totalPages}`}</Text>
+              <Text>{`${pageNumber}`}</Text>
             </>
           )} />
         </Page>
