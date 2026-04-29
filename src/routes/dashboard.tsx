@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Plus, MapPin, Calendar, FileText, MoreVertical, Trash2 } from "lucide-react";
+import { Plus, MapPin, Calendar, FileText, MoreVertical, Trash2, Upload } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
+import { ImportRoadbookDialog } from "@/components/ImportRoadbookDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -60,6 +61,7 @@ function Dashboard() {
   const [roadbooks, setRoadbooks] = useState<RoadbookRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [toDelete, setToDelete] = useState<RoadbookRow | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const refresh = async () => {
     const { data, error } = await supabase
@@ -102,13 +104,25 @@ function Dashboard() {
             Tous les voyages que vous avez conçus, en un seul endroit.
           </p>
         </div>
-        <Link to="/new">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nouveau roadbook
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            className="gap-2"
+            onClick={() => setImportOpen(true)}
+          >
+            <Upload className="h-4 w-4" />
+            Importer depuis un fichier
           </Button>
-        </Link>
+          <Link to="/new">
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nouveau roadbook
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      <ImportRoadbookDialog open={importOpen} onOpenChange={setImportOpen} />
 
       <div className="mt-8">
         {loading ? (
