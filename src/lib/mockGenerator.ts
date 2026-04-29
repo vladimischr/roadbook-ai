@@ -8,6 +8,7 @@ export interface RoadbookFormData {
   traveler_profile?: string;
   theme?: string;
   budget_range?: string;
+  travel_mode?: string;
   generation_mode: "ai" | "manual";
   agent_notes?: string;
   manual_steps?: { location: string; nights: number; activities: string }[];

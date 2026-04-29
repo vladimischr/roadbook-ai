@@ -16,6 +16,7 @@ Tu réponds UNIQUEMENT avec un objet JSON valide, sans aucun texte avant ou apr�
 "profile": string,
 "theme": string,
 "budget_range": string,
+"travel_mode": string,
 "cover": {
 "title": string,
 "subtitle": string,
@@ -88,6 +89,18 @@ Détails des champs :
 9. Si l'agent a fourni des étapes manuelles (mode "manual" avec manual_steps), respecte exactement ces étapes — n'en invente pas d'autres, n'en supprime pas.
 
 10. Cohérence distance/durée/narrative. Quand tu mentionnes "1h vol ou 6h trajet" dans le narrative d'un jour, les champs distance_km et drive_hours doivent refléter ces données (par exemple distance_km: 600, drive_hours: 6 pour 6h de trajet). Ne mets jamais 0 km / 0 h si le narrative parle d'un déplacement réel. Si l'étape est sur place sans déplacement, alors 0 km / 0 h est OK.
+
+11. Modalité de voyage. La modalité travel_mode change le ton et la nature des étapes :
+- "Autotour 4x4" : pistes, lodges en pleine nature, réserves, trajets longs OK, conduite hors-route mentionnée
+- "Autotour voiture" : routes asphaltées, hôtels et guesthouses, distances raisonnables
+- "Backpack / routard" : auberges/guesthouses prix raisonnable, transports locaux (bus, taxis collectifs), prix en monnaie locale, ambiance routard
+- "Voyage organisé" : guide accompagnateur mentionné, hôtels confort, transferts privés
+- "Trek / randonnée" : refuges/campements, dénivelés/distances de marche par jour, équipement nécessaire
+- "Croisière" : nuits à bord, escales jour, programme jour-nuit
+- "Vélo / cyclotourisme" : km vélo par jour, ravitaillement, hébergements avec garage vélo
+- "Combiné multi-transports" : mix avion/train/voiture/bateau
+- "Sur-mesure libre" : suit les autres paramètres
+Adapte tout (overview, days narrative, accommodations, tips) à la modalité.
 
 # Réponse
 

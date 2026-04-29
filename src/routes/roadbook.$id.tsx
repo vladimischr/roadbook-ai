@@ -21,7 +21,7 @@ import { useAuth } from "@/lib/auth";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
 import { RoadbookMap, type DirectionsSegment } from "@/components/RoadbookMap";
-import { PlacesAutocompleteInput } from "@/components/PlacesAutocompleteInput";
+import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
 import { geocodePlace } from "@/server/maps.functions";
 import {
   DndContext,
@@ -84,6 +84,7 @@ interface Roadbook {
   travelers?: number;
   profile?: string;
   theme?: string;
+  travel_mode?: string;
   budget_range?: string;
   cover: Cover;
   overview: string;
@@ -268,6 +269,35 @@ function RoadbookPage() {
     persistSilent({ ...cur, directions_segments: segs });
   };
 
+  // Ajouter une étape depuis un PlaceSelection (autocomplete ou recherche carte)
+  const addDayFromPlace = (place: PlaceSelection, position: number | null) => {
+    const cur = rbRef.current;
+    if (!cur) return;
+    const list = cur.days || [];
+    const insertIdx = position === null ? list.length : Math.max(0, Math.min(position, list.length));
+    const newDay: Day = {
+      ...emptyDay(insertIdx + 1),
+      stage: place.name,
+      accommodation: "À définir",
+      lat: place.lat ?? null,
+      lng: place.lng ?? null,
+    };
+    const nextDays = renumberDays([
+      ...list.slice(0, insertIdx),
+      newDay,
+      ...list.slice(insertIdx),
+    ]);
+    persist({ ...cur, days: nextDays });
+    toast.success(`${place.name} ajouté au roadbook`);
+  };
+
+  const removeDayByNumber = (dayNumber: number) => {
+    const cur = rbRef.current;
+    if (!cur) return;
+    const next = renumberDays((cur.days || []).filter((d) => d.day !== dayNumber));
+    persist({ ...cur, days: next });
+  };
+
   if (authLoading || loading || !rb) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
@@ -314,6 +344,8 @@ function RoadbookPage() {
         <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <CoverSection
             cover={rb.cover}
+            theme={rb.theme}
+            travelMode={rb.travel_mode}
             forceEdit={globalEdit}
             onSave={(cover) => persist({ ...rb, cover })}
             onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
@@ -337,6 +369,9 @@ function RoadbookPage() {
                   days={rb.days || []}
                   segments={rb.directions_segments ?? []}
                   onSegmentsChange={handleSegmentsChange}
+                  regionBias={rb.destination}
+                  onAddDay={addDayFromPlace}
+                  onRemoveDay={removeDayByNumber}
                 />
               ) : (
                 <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
@@ -351,6 +386,7 @@ function RoadbookPage() {
               forceEdit={globalEdit}
               onSave={(days) => persist({ ...rb, days })}
               onAutoSave={(days) => updateAndAutosave({ ...rb, days })}
+              onAddDayFromPlace={addDayFromPlace}
             />
 
             <AccommodationsSection
@@ -454,11 +490,15 @@ function SectionHeader({
 
 function CoverSection({
   cover,
+  theme,
+  travelMode,
   forceEdit,
   onSave,
   onAutoSave,
 }: {
   cover: Cover;
+  theme?: string;
+  travelMode?: string;
   forceEdit: boolean;
   onSave: (c: Cover) => void;
   onAutoSave: (c: Cover) => void;
@@ -554,9 +594,16 @@ function CoverSection({
       </h1>
       <p className="mb-3 text-2xl">{cover.subtitle}</p>
       <p className="mb-6 text-lg italic opacity-85">{cover.tagline}</p>
-      <span className="inline-block rounded-full bg-white/15 px-5 py-2 text-sm">
-        {cover.dates_label}
-      </span>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <span className="inline-block rounded-full bg-white/15 px-5 py-2 text-sm">
+          {cover.dates_label}
+        </span>
+        {(theme || travelMode) && (
+          <span className="inline-block rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-wider">
+            {[theme, travelMode].filter(Boolean).join(" · ")}
+          </span>
+        )}
+      </div>
     </section>
   );
 }
@@ -815,16 +862,21 @@ function DaysTableSection({
   onAutoSave,
   regionBias,
   forceEdit,
+  onAddDayFromPlace,
 }: {
   days: Day[];
   onSave: (d: Day[]) => void;
   onAutoSave: (d: Day[]) => void;
   regionBias?: string;
   forceEdit: boolean;
+  onAddDayFromPlace?: (place: PlaceSelection, position: number | null) => void;
 }) {
   const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(days);
   const editing = localEdit || forceEdit;
+  // Position où on est en train d'insérer un nouveau jour via autocomplete.
+  // null = panneau fermé, "end" = ajout en fin, number = insertion à cet index.
+  const [addingAt, setAddingAt] = useState<number | "end" | null>(null);
 
   useEffect(() => {
     if (forceEdit) setDraft(days);
@@ -920,16 +972,31 @@ function DaysTableSection({
             >
               <tbody>
                 {list.map((d, i) => (
-                  <DayRow
-                    key={`day-${d.day}`}
-                    day={d}
-                    index={i}
-                    editing={editing}
-                    regionBias={regionBias}
-                    onUpdate={(patch) => update(i, patch)}
-                    onRemove={() => remove(i)}
-                    isOdd={i % 2 === 1}
-                  />
+                  <Fragment key={`day-${d.day}`}>
+                    <DayRow
+                      day={d}
+                      index={i}
+                      editing={editing}
+                      regionBias={regionBias}
+                      onUpdate={(patch) => update(i, patch)}
+                      onRemove={() => remove(i)}
+                      isOdd={i % 2 === 1}
+                    />
+                    {editing && onAddDayFromPlace && i < list.length - 1 && (
+                      <tr>
+                        <td colSpan={10} className="p-0">
+                          <button
+                            type="button"
+                            onClick={() => setAddingAt(i + 1)}
+                            className="group flex w-full items-center justify-center gap-1.5 py-1 text-[11px] font-medium text-muted-foreground/60 transition hover:bg-primary/5 hover:text-primary"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Insérer une étape entre J{d.day} et J{list[i + 1].day}
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </SortableContext>
@@ -937,16 +1004,71 @@ function DaysTableSection({
         </table>
       </div>
 
+      {editing && onAddDayFromPlace && addingAt !== null && (
+        <div className="mt-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-sm font-medium text-foreground">
+              {addingAt === "end"
+                ? "Ajouter une étape à la fin du voyage"
+                : addingAt === 0
+                  ? `Insérer une étape avant J${list[0]?.day ?? 1}`
+                  : `Insérer une étape entre J${list[(addingAt as number) - 1]?.day} et J${list[addingAt as number]?.day}`}
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddingAt(null)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Annuler
+            </button>
+          </div>
+          <PlacesAutocompleteInput
+            value=""
+            onChange={() => {}}
+            onSelect={(p) => {
+              if (p.lat == null || p.lng == null) {
+                toast.error("Lieu sans coordonnées, choisis-en un autre.");
+                return;
+              }
+              const pos = addingAt === "end" ? null : (addingAt as number);
+              onAddDayFromPlace(p, pos);
+              setAddingAt(null);
+            }}
+            regionBias={regionBias}
+            placeholder="Tape un lieu : Etosha National Park, Swakopmund…"
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Sélectionne une suggestion : la nouvelle étape apparaîtra immédiatement sur la carte avec son tracé.
+          </p>
+        </div>
+      )}
+
       {editing && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={add}
-          className="mt-3 gap-2"
-        >
-          <Plus className="h-3.5 w-3.5" /> Ajouter un jour
-        </Button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {onAddDayFromPlace ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setAddingAt(addingAt === "end" ? null : "end")
+              }
+              className="gap-2"
+            >
+              <Plus className="h-3.5 w-3.5" /> Ajouter un jour
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={add}
+              className="gap-2"
+            >
+              <Plus className="h-3.5 w-3.5" /> Ajouter un jour
+            </Button>
+          )}
+        </div>
       )}
     </section>
   );
