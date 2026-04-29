@@ -846,7 +846,14 @@ function ContactsSection({
                 </td>
                 <td className="px-4 py-3 font-medium">
                   {editing ? (
-                    <Input value={c.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8" />
+                    <PlacesAutocompleteInput
+                      value={c.name}
+                      onChange={(v) => update(i, { name: v })}
+                      onSelect={(p) => update(i, { name: p.name })}
+                      regionBias={regionBias}
+                      types={["establishment"]}
+                      className="h-8"
+                    />
                   ) : (
                     c.name
                   )}
