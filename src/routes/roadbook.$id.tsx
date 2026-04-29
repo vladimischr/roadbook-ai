@@ -269,6 +269,35 @@ function RoadbookPage() {
     persistSilent({ ...cur, directions_segments: segs });
   };
 
+  // Ajouter une étape depuis un PlaceSelection (autocomplete ou recherche carte)
+  const addDayFromPlace = (place: PlaceSelection, position: number | null) => {
+    const cur = rbRef.current;
+    if (!cur) return;
+    const list = cur.days || [];
+    const insertIdx = position === null ? list.length : Math.max(0, Math.min(position, list.length));
+    const newDay: Day = {
+      ...emptyDay(insertIdx + 1),
+      stage: place.name,
+      accommodation: "À définir",
+      lat: place.lat ?? null,
+      lng: place.lng ?? null,
+    };
+    const nextDays = renumberDays([
+      ...list.slice(0, insertIdx),
+      newDay,
+      ...list.slice(insertIdx),
+    ]);
+    persist({ ...cur, days: nextDays });
+    toast.success(`${place.name} ajouté au roadbook`);
+  };
+
+  const removeDayByNumber = (dayNumber: number) => {
+    const cur = rbRef.current;
+    if (!cur) return;
+    const next = renumberDays((cur.days || []).filter((d) => d.day !== dayNumber));
+    persist({ ...cur, days: next });
+  };
+
   if (authLoading || loading || !rb) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
