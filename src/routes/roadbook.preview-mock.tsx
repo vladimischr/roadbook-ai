@@ -67,9 +67,9 @@ const MOCK: Roadbook = {
     { day: 7, date: "2026-09-21", stage: "Swakopmund → Brandberg", accommodation: "Brandberg White Lady Lodge", type: "Lodge", distance_km: 240, drive_hours: 3, narrative: "Route par Henties Bay et la Skeleton Coast jusqu'au pied du Brandberg, plus haut sommet de Namibie." },
     { day: 8, date: "2026-09-22", stage: "Brandberg - peintures rupestres", accommodation: "Brandberg White Lady Lodge", type: "Lodge", distance_km: 0, drive_hours: 0, narrative: "Marche guidée jusqu'à la White Lady, peinture rupestre vieille de 2000 ans. Après-midi détente." },
     { day: 9, date: "2026-09-23", stage: "Brandberg → Twyfelfontein → Khowarib", accommodation: "Khowarib Lodge", type: "Lodge", distance_km: 220, drive_hours: 4, narrative: "Visite du site UNESCO de Twyfelfontein, gravures rupestres dans le grès rouge." },
-    { day: 10, date: "2026-09-24", stage: "Khowarib → Etosha (porte sud)", accommodation: "Etosha Safari Lodge", type: "Lodge", distance_km: 280, drive_hours: 4, narrative: "Route vers Etosha. Premier game drive en fin d'après-midi autour des points d'eau." },
+    { day: 10, date: "2026-09-24", stage: "Khowarib → Etosha (porte sud)", accommodation: "Etosha Safari Lodge", type: "Lodge", distance_km: 280, drive_hours: 4, narrative: "Route vers Etosha. Premier safari en fin d'après-midi autour des points d'eau." },
     { day: 11, date: "2026-09-25", stage: "Etosha - safari journée pleine", accommodation: "Etosha Safari Lodge", type: "Lodge", distance_km: 180, drive_hours: 6, narrative: "Safari toute la journée dans le parc. Pause pique-nique à Halali. Retour en lodge au coucher du soleil." },
-    { day: 12, date: "2026-09-26", stage: "Etosha → Windhoek - vol retour", accommodation: "Vol", type: "Vol", distance_km: 480, drive_hours: 6, narrative: "Retour à Windhoek. Restitution du véhicule. Vol international en fin de journée." },
+    { day: 12, date: "26/09/2026", stage: "Etosha → Windhoek - vol retour", accommodation: "Vol", type: "Vol", distance_km: 480, drive_hours: 6, narrative: "Retour à Windhoek. Restitution du véhicule. Vol international en fin de journée." },
   ],
   accommodations_summary: [
     { name: "Hartmann Suites Apartments", location: "Windhoek", nights: 1, type: "Appartement" },
@@ -92,11 +92,12 @@ const MOCK: Roadbook = {
     "Pour les excursions à Sossusvlei, partir avant 6h pour profiter du lever de soleil sur les dunes.",
     "Prévoir des vêtements chauds : nuits fraîches dans le désert (5-10°C), chaudes en journée (25-30°C).",
     "Eau potable : préférer l'eau en bouteille ou filtrée. Pas de risque sanitaire majeur.",
-    "Pourboires : 50-100 NAD par jour pour les guides, 10-20 NAD pour les services lodges.",
+    "Pourboires : 50-100 NAD par jour pour les guides, 10-20 NAD pour les services en lodge.",
   ],
 };
 
 function formatShortDate(iso: string) {
+  if (iso.includes("/")) return iso;
   return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
