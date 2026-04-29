@@ -2293,7 +2293,7 @@ function TipsSection({
   return (
     <section>
       <SectionHeader
-        label="Conseils & recommandations"
+        label=""
         editing={editing}
         hideEditButton={forceEdit}
         onEdit={() => {
