@@ -166,11 +166,19 @@ function NewRoadbook() {
           <Section title="Voyageurs">
             <div className="grid grid-cols-2 gap-4">
               <Field label="Nombre de voyageurs">
-                <Input
-                  type="number"
-                  min={1}
-                  value={form.travelers_count}
-                  onChange={(e) => update("travelers_count", parseInt(e.target.value) || 1)}
+                <SelectField
+                  value={
+                    form.travelers_count === undefined || form.travelers_count === null
+                      ? undefined
+                      : form.travelers_count >= 8
+                        ? "8plus"
+                        : String(form.travelers_count)
+                  }
+                  onChange={(v) =>
+                    update("travelers_count", v === "8plus" ? 8 : parseInt(v) || 1)
+                  }
+                  options={TRAVELERS}
+                  placeholder="Choisir le nombre"
                 />
               </Field>
               <Field label="Profil">
