@@ -141,6 +141,20 @@ Génère le roadbook complet en JSON conforme à la structure définie dans ton 
 
           console.log("[generate-roadbook] Réponse Claude reçue, parsing...");
           const data = await resp.json();
+
+          if (data?.stop_reason === "max_tokens") {
+            console.error(
+              "[generate-roadbook] Claude tronqué — réponse incomplète",
+            );
+            return new Response(
+              JSON.stringify({
+                error:
+                  "La génération a été tronquée. Le voyage est trop long pour la limite actuelle. Réessaie ou contacte le support.",
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
           let rawText: string =
             data?.content?.[0]?.text ??
             data?.content?.map?.((c: any) => c.text).join("\n") ??
