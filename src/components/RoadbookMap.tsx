@@ -119,7 +119,14 @@ function clusterDays(
 
 /* ---------- Composant principal ---------- */
 
-export function RoadbookMap({ days, segments, onSegmentsChange }: Props) {
+export function RoadbookMap({
+  days,
+  segments,
+  onSegmentsChange,
+  regionBias,
+  onAddDay,
+  onRemoveDay,
+}: Props) {
   const points = useMemo(
     () =>
       days.filter(
@@ -134,37 +141,184 @@ export function RoadbookMap({ days, segments, onSegmentsChange }: Props) {
     ? { lat: points[0].lat, lng: points[0].lng }
     : { lat: 0, lng: 20 };
 
-  if (points.length === 0) {
-    return (
-      <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
-        Géocodage des étapes en cours… La carte apparaîtra dès que les lieux
-        seront localisés.
-      </div>
-    );
-  }
+  const [provisional, setProvisional] = useState<PlaceSelection | null>(null);
+  const [searchValue, setSearchValue] = useState("");
+
+  const canAdd = !!onAddDay;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border">
-      <GMap
-        mapId="roadbook-map"
-        style={{ width: "100%", height: "450px" }}
-        defaultCenter={center}
-        defaultZoom={5}
-        gestureHandling="greedy"
-        disableDefaultUI={false}
-      >
-        <FitBounds points={points} />
-        <RouteRenderer
-          days={days}
-          points={points}
-          segments={segments ?? []}
-          onSegmentsChange={onSegmentsChange}
-        />
-        {clusters.map((c, idx) => (
-          <ClusterMarker key={`m-${idx}`} cluster={c} />
-        ))}
-      </GMap>
+    <div className="space-y-3">
+      {canAdd && (
+        <div className="rounded-xl border border-border bg-card/60 p-3">
+          <PlacesAutocompleteInput
+            value={searchValue}
+            onChange={setSearchValue}
+            onSelect={(p) => {
+              if (p.lat == null || p.lng == null) return;
+              setProvisional(p);
+              setSearchValue(p.name);
+            }}
+            regionBias={regionBias}
+            placeholder="Rechercher un lieu à ajouter au voyage…"
+          />
+        </div>
+      )}
+
+      {points.length === 0 && !provisional ? (
+        <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
+          Géocodage des étapes en cours… La carte apparaîtra dès que les lieux
+          seront localisés.
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-border">
+          <GMap
+            mapId="roadbook-map"
+            style={{ width: "100%", height: "450px" }}
+            defaultCenter={
+              provisional && provisional.lat != null && provisional.lng != null
+                ? { lat: provisional.lat, lng: provisional.lng }
+                : center
+            }
+            defaultZoom={5}
+            gestureHandling="greedy"
+            disableDefaultUI={false}
+          >
+            <FitBounds points={points} />
+            <RouteRenderer
+              days={days}
+              points={points}
+              segments={segments ?? []}
+              onSegmentsChange={onSegmentsChange}
+            />
+            {clusters.map((c, idx) => (
+              <ClusterMarker
+                key={`m-${idx}`}
+                cluster={c}
+                onRemoveDay={onRemoveDay}
+              />
+            ))}
+            {provisional && provisional.lat != null && provisional.lng != null && (
+              <ProvisionalPin
+                place={provisional}
+                days={days}
+                onCancel={() => {
+                  setProvisional(null);
+                  setSearchValue("");
+                }}
+                onConfirm={(position) => {
+                  if (onAddDay) onAddDay(provisional, position);
+                  setProvisional(null);
+                  setSearchValue("");
+                }}
+              />
+            )}
+          </GMap>
+        </div>
+      )}
     </div>
+  );
+}
+
+/* ---------- Provisional pin ---------- */
+
+function ProvisionalPin({
+  place,
+  days,
+  onConfirm,
+  onCancel,
+}: {
+  place: PlaceSelection;
+  days: MapDay[];
+  onConfirm: (position: number | null) => void;
+  onCancel: () => void;
+}) {
+  const [showPositions, setShowPositions] = useState(false);
+  if (place.lat == null || place.lng == null) return null;
+  return (
+    <>
+      <AdvancedMarker position={{ lat: place.lat, lng: place.lng }}>
+        <div
+          style={{
+            background: AMBER,
+            color: "white",
+            width: 36,
+            height: 36,
+            borderRadius: 999,
+            display: "grid",
+            placeItems: "center",
+            fontSize: 18,
+            fontWeight: 700,
+            border: "2px solid white",
+            boxShadow: "0 4px 12px rgba(217, 119, 6, 0.45)",
+          }}
+        >
+          ＋
+        </div>
+      </AdvancedMarker>
+      <InfoWindow
+        position={{ lat: place.lat, lng: place.lng }}
+        pixelOffset={[0, -42]}
+        onCloseClick={onCancel}
+        headerDisabled
+      >
+        <div className="min-w-[240px] space-y-2 p-1">
+          <div className="text-sm font-semibold text-foreground">
+            {place.name}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Ajouter cette étape au roadbook ?
+          </div>
+          <div className="flex flex-col gap-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => onConfirm(null)}
+              className="rounded-md bg-[#0F6E56] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#0c5a47]"
+            >
+              Ajouter à la fin
+            </button>
+            {days.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowPositions((v) => !v)}
+                className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary/60"
+              >
+                Insérer à la position…
+              </button>
+            )}
+            {showPositions && (
+              <div className="max-h-32 overflow-y-auto rounded-md border border-border">
+                <button
+                  type="button"
+                  onClick={() => onConfirm(0)}
+                  className="block w-full px-3 py-1.5 text-left text-xs hover:bg-secondary/60"
+                >
+                  Avant J{days[0]?.day ?? 1}
+                </button>
+                {days.map((d, i) =>
+                  i < days.length - 1 ? (
+                    <button
+                      key={d.day}
+                      type="button"
+                      onClick={() => onConfirm(i + 1)}
+                      className="block w-full px-3 py-1.5 text-left text-xs hover:bg-secondary/60"
+                    >
+                      Entre J{d.day} et J{days[i + 1].day}
+                    </button>
+                  ) : null,
+                )}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary/60"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      </InfoWindow>
+    </>
   );
 }
 
