@@ -760,11 +760,54 @@ const PRINT_CSS = `
     .endpage { height: auto; padding: 60mm 24mm; }
   }
 
+  /* ============== On-screen banner (hidden when printing) ============== */
+  .screen-banner {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #0F6E56;
+    color: #fff;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  }
+  .screen-banner-inner {
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .screen-banner-text { font-size: 13px; line-height: 1.5; }
+  .screen-banner-text kbd {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: inherit;
+    font-size: 12px;
+  }
+  .screen-banner-btn {
+    background: #fff;
+    color: #0F6E56;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .screen-banner-btn:hover { background: #E1F5EE; }
+
   /* ============== Print-only adjustments ============== */
   @media print {
     body { background: #fff; padding: 0; }
     .print-doc { box-shadow: none; max-width: none; margin: 0; }
     .section { padding: 0; }
     .endpage { padding: 0; }
+    .no-print { display: none !important; }
   }
 `;
