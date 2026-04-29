@@ -1409,20 +1409,47 @@ function EditableTextSection({
 
   return (
     <section>
-      <SectionHeader
-        label={label}
-        editing={editing}
-        hideEditButton={forceEdit}
-        onEdit={() => {
-          setDraft(value);
-          setLocalEdit(true);
-        }}
-        onSave={() => {
-          onSave(draft);
-          setLocalEdit(false);
-        }}
-        onCancel={() => setLocalEdit(false)}
-      />
+      {!hideHeader && (
+        <SectionHeader
+          label={label}
+          editing={editing}
+          hideEditButton={forceEdit}
+          onEdit={() => {
+            setDraft(value);
+            setLocalEdit(true);
+          }}
+          onSave={() => {
+            onSave(draft);
+            setLocalEdit(false);
+          }}
+          onCancel={() => setLocalEdit(false)}
+        />
+      )}
+      {hideHeader && !forceEdit && !localEdit && (
+        <div className="mb-4 flex justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setDraft(value);
+              setLocalEdit(true);
+            }}
+            className="gap-1.5 text-muted-foreground hover:text-primary"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Modifier
+          </Button>
+        </div>
+      )}
+      {hideHeader && (localEdit || forceEdit) && !forceEdit && (
+        <div className="mb-3 flex justify-end gap-1">
+          <Button size="sm" variant="ghost" onClick={() => setLocalEdit(false)} className="gap-1.5 text-muted-foreground">
+            <X className="h-3.5 w-3.5" /> Annuler
+          </Button>
+          <Button size="sm" onClick={() => { onSave(draft); setLocalEdit(false); }} className="gap-1.5">
+            <Check className="h-3.5 w-3.5" /> Enregistrer
+          </Button>
+        </div>
+      )}
       {editing ? (
         <Textarea
           rows={6}
@@ -1434,7 +1461,7 @@ function EditableTextSection({
           }}
         />
       ) : (
-        <p className="font-display max-w-[68ch] text-[17px] italic leading-[1.7] text-foreground/85">
+        <p className="font-display max-w-[68ch] text-[18px] italic leading-[1.7] text-foreground/90">
           {value}
         </p>
       )}
