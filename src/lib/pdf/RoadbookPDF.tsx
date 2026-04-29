@@ -10,30 +10,31 @@ import {
 import React from "react";
 
 // ---------- Fonts ----------
-// Use TTF mirrors (react-pdf doesn't support woff2).
+// Use WOFF files: Fontsource v5 exposes .woff/.woff2 on CDN, not .ttf.
+// react-pdf supports .woff, while .woff2 is not reliable here.
 export let FONTS_LOADED = false;
 try {
   Font.register({
     family: "Inter",
     fonts: [
       {
-        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-400-normal.ttf",
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-400-normal.woff",
         fontWeight: 400,
       },
       {
-        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-500-normal.ttf",
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-500-normal.woff",
         fontWeight: 500,
       },
       {
-        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-600-normal.ttf",
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-600-normal.woff",
         fontWeight: 600,
       },
       {
-        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-700-normal.ttf",
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-700-normal.woff",
         fontWeight: 700,
       },
       {
-        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-400-italic.ttf",
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-400-italic.woff",
         fontWeight: 400,
         fontStyle: "italic",
       },
@@ -44,19 +45,19 @@ try {
     family: "Playfair",
     fonts: [
       {
-        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-400-normal.ttf",
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-400-normal.woff",
         fontWeight: 400,
       },
       {
-        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-600-normal.ttf",
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-600-normal.woff",
         fontWeight: 600,
       },
       {
-        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-700-normal.ttf",
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-700-normal.woff",
         fontWeight: 700,
       },
       {
-        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-400-italic.ttf",
+        src: "https://cdn.jsdelivr.net/npm/@fontsource/playfair-display/files/playfair-display-latin-400-italic.woff",
         fontWeight: 400,
         fontStyle: "italic",
       },
