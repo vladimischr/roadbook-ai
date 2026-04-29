@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  ChevronDown,
   Download,
   Pencil,
   Check,
@@ -12,7 +13,14 @@ import {
   Trash2,
   GripVertical,
   Sparkles,
+  Map as MapIcon,
+  Clock,
+  Plane,
+  Phone,
+  Mail,
+  BedDouble,
 } from "lucide-react";
+import { useScrollReveal, staggerStyle } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
