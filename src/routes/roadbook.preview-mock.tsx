@@ -25,6 +25,7 @@ interface Day {
   type: string;
   distance_km: number;
   drive_hours: number;
+  flight: string;
   narrative: string;
 }
 interface AccommodationSummary {
