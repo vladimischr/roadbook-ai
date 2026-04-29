@@ -231,15 +231,15 @@ function RoadbookCard({ rb, index = 0, onDelete }: { rb: RoadbookRow; index?: nu
           </div>
 
           {/* Title overlay */}
-          <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-12 text-white">
-            <h3 className="font-display text-2xl font-semibold leading-tight drop-shadow-sm">
-              {rb.destination}
-            </h3>
-            <p className="mt-1 text-sm font-medium text-white/85">
+          <div className="absolute inset-x-0 bottom-0 px-6 pb-6 pt-16 text-white">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75">
               {rb.client_name}
             </p>
+            <h3 className="font-display text-[28px] font-semibold leading-[1.05] drop-shadow-sm sm:text-[32px]">
+              {rb.destination}
+            </h3>
             {dateRange && (
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white/95 backdrop-blur-sm">
+              <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium text-white/95 backdrop-blur-sm">
                 <Calendar className="h-3 w-3" />
                 {dateRange}
               </div>
