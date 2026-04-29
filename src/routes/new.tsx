@@ -13,9 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
-import { callClaudeAPI, type RoadbookFormData } from "@/lib/mockGenerator";
+import type { RoadbookFormData } from "@/lib/mockGenerator";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/new")({
