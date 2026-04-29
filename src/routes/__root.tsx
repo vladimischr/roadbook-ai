@@ -36,12 +36,19 @@ export const Route = createRootRoute({
         content:
           "AI-powered roadbook generator for independent travel designers. Beautiful PDF itineraries in 5 minutes instead of 8 hours.",
       },
-      { property: "og:title", content: "Roadbook.ai" },
+      { property: "og:title", content: "Roadbook.ai — Travel roadbooks in 5 minutes" },
       {
         property: "og:description",
         content: "AI-powered roadbook generator for travel designers.",
       },
       { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "Roadbook.ai — Travel roadbooks in 5 minutes" },
+      { name: "description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
+      { property: "og:description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
+      { name: "twitter:description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1f7cd519-4193-4c47-b6d2-35474d5fc242/id-preview-837973a4--12d93a8e-2eb8-4c04-b489-c670094e0f37.lovable.app-1777492976344.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1f7cd519-4193-4c47-b6d2-35474d5fc242/id-preview-837973a4--12d93a8e-2eb8-4c04-b489-c670094e0f37.lovable.app-1777492976344.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
