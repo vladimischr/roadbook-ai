@@ -54,12 +54,12 @@ export const Route = createFileRoute("/api/export-pdf/$id")({
 
         const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
-        const stream = await renderToStream(
-          React.createElement(RoadbookPDF, {
-            roadbook: merged,
-            mapsApiKey: apiKey,
-          }) as unknown as React.ReactElement,
-        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const element: any = React.createElement(RoadbookPDF, {
+          roadbook: merged,
+          mapsApiKey: apiKey,
+        });
+        const stream = await renderToStream(element);
 
         const chunks: Uint8Array[] = [];
         for await (const chunk of stream as unknown as AsyncIterable<Uint8Array>) {
