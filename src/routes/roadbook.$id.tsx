@@ -469,7 +469,15 @@ function renumberDays(list: Day[]): Day[] {
   return list.map((d, i) => ({ ...d, day: i + 1 }));
 }
 
-function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) => void }) {
+function DaysTableSection({
+  days,
+  onSave,
+  regionBias,
+}: {
+  days: Day[];
+  onSave: (d: Day[]) => void;
+  regionBias?: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(days);
 
@@ -529,14 +537,41 @@ function DaysTableSection({ days, onSave }: { days: Day[]; onSave: (d: Day[]) =>
                   </td>
                   <td className="px-3 py-3 font-medium">
                     {editing ? (
-                      <Input value={d.stage} onChange={(e) => update(i, { stage: e.target.value })} className="h-8" />
+                      <PlacesAutocompleteInput
+                        value={d.stage}
+                        onChange={(v) => update(i, { stage: v })}
+                        onSelect={(p) =>
+                          update(i, {
+                            stage: p.name,
+                            lat: p.lat,
+                            lng: p.lng,
+                          })
+                        }
+                        regionBias={regionBias}
+                        className="h-8"
+                      />
                     ) : (
                       d.stage
                     )}
                   </td>
                   <td className="px-3 py-3">
                     {editing ? (
-                      <Input value={d.accommodation} onChange={(e) => update(i, { accommodation: e.target.value })} className="h-8" />
+                      <PlacesAutocompleteInput
+                        value={d.accommodation}
+                        onChange={(v) => update(i, { accommodation: v })}
+                        onSelect={(p) =>
+                          update(i, {
+                            accommodation: p.name,
+                            // Si l'étape n'a pas encore de coords, on les hérite de l'hébergement
+                            ...(typeof d.lat !== "number" && p.lat != null
+                              ? { lat: p.lat, lng: p.lng }
+                              : {}),
+                          })
+                        }
+                        regionBias={regionBias}
+                        types={["establishment"]}
+                        className="h-8"
+                      />
                     ) : (
                       d.accommodation
                     )}
