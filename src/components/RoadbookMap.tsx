@@ -661,17 +661,35 @@ function ClusterMarker({
   );
 }
 
-function DayInfoBlock({ day }: { day: MapDay }) {
+function DayInfoBlock({
+  day,
+  onRemove,
+}: {
+  day: MapDay;
+  onRemove?: () => void;
+}) {
   const showDistance =
     (day.distance_km ?? 0) > 0 || (day.drive_hours ?? 0) > 0;
   const showFlight = day.flight && day.flight.trim() && day.flight !== "—";
   return (
-    <div className="space-y-1 border-b border-border/50 pb-2 last:border-0 last:pb-0">
-      <div
-        className="text-[10px] font-semibold uppercase tracking-[0.18em]"
-        style={{ color: TEAL }}
-      >
-        Jour {day.day}
+    <div className="group relative space-y-1 border-b border-border/50 pb-2 last:border-0 last:pb-0">
+      <div className="flex items-start justify-between gap-2">
+        <div
+          className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+          style={{ color: TEAL }}
+        >
+          Jour {day.day}
+        </div>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-[10px] text-muted-foreground hover:text-destructive"
+            title="Supprimer cette étape du roadbook"
+          >
+            ⋯ Supprimer
+          </button>
+        )}
       </div>
       <div className="text-sm font-semibold leading-tight text-foreground">
         {day.stage || "—"}
