@@ -19,6 +19,7 @@ import { Route as ApiRecomputeRoadbookRouteImport } from './routes/api/recompute
 import { Route as ApiImportRoadbookRouteImport } from './routes/api/import-roadbook'
 import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
 import { Route as RoadbookIdPrintRouteImport } from './routes/roadbook.$id.print'
+import { Route as ApiExportPdfIdRouteImport } from './routes/api/export-pdf.$id'
 
 const NewRoute = NewRouteImport.update({
   id: '/new',
@@ -70,6 +71,11 @@ const RoadbookIdPrintRoute = RoadbookIdPrintRouteImport.update({
   path: '/print',
   getParentRoute: () => RoadbookIdRoute,
 } as any)
+const ApiExportPdfIdRoute = ApiExportPdfIdRouteImport.update({
+  id: '/api/export-pdf/$id',
+  path: '/api/export-pdf/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRouteWithChildren
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
+  '/api/export-pdf/$id': typeof ApiExportPdfIdRoute
   '/roadbook/$id/print': typeof RoadbookIdPrintRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRouteWithChildren
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
+  '/api/export-pdf/$id': typeof ApiExportPdfIdRoute
   '/roadbook/$id/print': typeof RoadbookIdPrintRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRouteWithChildren
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
+  '/api/export-pdf/$id': typeof ApiExportPdfIdRoute
   '/roadbook/$id/print': typeof RoadbookIdPrintRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
+    | '/api/export-pdf/$id'
     | '/roadbook/$id/print'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
+    | '/api/export-pdf/$id'
     | '/roadbook/$id/print'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
+    | '/api/export-pdf/$id'
     | '/roadbook/$id/print'
   fileRoutesById: FileRoutesById
 }
@@ -157,6 +169,7 @@ export interface RootRouteChildren {
   ApiRecomputeRoadbookRoute: typeof ApiRecomputeRoadbookRoute
   RoadbookIdRoute: typeof RoadbookIdRouteWithChildren
   RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
+  ApiExportPdfIdRoute: typeof ApiExportPdfIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoadbookIdPrintRouteImport
       parentRoute: typeof RoadbookIdRoute
     }
+    '/api/export-pdf/$id': {
+      id: '/api/export-pdf/$id'
+      path: '/api/export-pdf/$id'
+      fullPath: '/api/export-pdf/$id'
+      preLoaderRoute: typeof ApiExportPdfIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -256,7 +276,17 @@ const rootRouteChildren: RootRouteChildren = {
   ApiRecomputeRoadbookRoute: ApiRecomputeRoadbookRoute,
   RoadbookIdRoute: RoadbookIdRouteWithChildren,
   RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
+  ApiExportPdfIdRoute: ApiExportPdfIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
