@@ -687,17 +687,29 @@ function RoadbookPage() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Button
-              size="sm"
-              onClick={() => {
-                toast.info("Génération du PDF en cours…", { duration: 2500 });
-                const url = `/roadbook/${id}/print?auto=1`;
-                window.open(url, "_blank", "noopener,noreferrer");
-              }}
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" /> Exporter en PDF
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      toast.info(
+                        "Une nouvelle fenêtre s'ouvre pour l'impression. Choisis « Enregistrer en PDF » comme destination.",
+                        { duration: 5000 },
+                      );
+                      const url = `/roadbook/${id}/print?auto=1`;
+                      window.open(url, "_blank", "noopener,noreferrer");
+                    }}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" /> Exporter en PDF
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  Ouvre la fenêtre d'impression pour sauvegarder en PDF.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </header>
