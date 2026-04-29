@@ -1514,7 +1514,7 @@ function DayRow({
       <tr
         ref={setNodeRef}
         style={style}
-        className={isOdd ? "bg-secondary/25" : ""}
+        className="border-t border-border/40"
       >
         {editing && (
           <td className="px-1 py-3 align-top">
@@ -1644,7 +1644,7 @@ function DayRow({
           </td>
         )}
       </tr>
-      <tr className={isOdd ? "bg-secondary/25" : ""}>
+      <tr className="border-t border-border/40">
         <td
           colSpan={editing ? 10 : 8}
           className="px-3 pb-4 pt-0 italic text-foreground/70"
@@ -1759,9 +1759,9 @@ function DaysTableSection({
         onCancel={() => setLocalEdit(false)}
       />
 
-      <div className="overflow-hidden rounded-xl border border-border">
+      <div className="overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-soft">
         <table className="w-full text-sm">
-          <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <thead className="border-b border-border/60 bg-surface-warm/60 text-left text-[10.5px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             <tr>
               {editing && <th className="px-1 py-3 w-6" />}
               <th className="px-3 py-3 w-12">Jour</th>
@@ -1993,9 +1993,9 @@ function AccommodationsSection({
         onCancel={() => setLocalEdit(false)}
       />
 
-      <div className="overflow-hidden rounded-xl border border-border">
+      <div className="overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-soft">
         <table className="w-full text-sm">
-          <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <thead className="border-b border-border/60 bg-surface-warm/60 text-left text-[10.5px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Lodge / Camp</th>
               <th className="px-4 py-3">Localisation</th>
@@ -2008,7 +2008,7 @@ function AccommodationsSection({
           </thead>
           <tbody>
             {list.map((a, i) => (
-              <tr key={i} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+              <tr key={i} className="border-t border-border/40">
                 <td className="px-4 py-3 font-medium">
                   {editing ? (
                     <PlacesAutocompleteInput
@@ -2160,9 +2160,9 @@ function ContactsSection({
         onCancel={() => setLocalEdit(false)}
       />
 
-      <div className="overflow-hidden rounded-xl border border-border">
+      <div className="overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-soft">
         <table className="w-full text-sm">
-          <thead className="bg-secondary/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <thead className="border-b border-border/60 bg-surface-warm/60 text-left text-[10.5px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Rôle</th>
               <th className="px-4 py-3">Nom</th>
@@ -2173,7 +2173,7 @@ function ContactsSection({
           </thead>
           <tbody>
             {list.map((c, i) => (
-              <tr key={i} className={i % 2 === 1 ? "bg-secondary/25" : ""}>
+              <tr key={i} className="border-t border-border/40">
                 <td className="px-4 py-3 text-muted-foreground">
                   {editing ? (
                     <Input
