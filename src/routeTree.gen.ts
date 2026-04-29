@@ -18,7 +18,6 @@ import { Route as RoadbookIdRouteImport } from './routes/roadbook.$id'
 import { Route as ApiRecomputeRoadbookRouteImport } from './routes/api/recompute-roadbook'
 import { Route as ApiImportRoadbookRouteImport } from './routes/api/import-roadbook'
 import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
-import { Route as ApiExportPdfIdRouteImport } from './routes/api/export-pdf.$id'
 
 const NewRoute = NewRouteImport.update({
   id: '/new',
@@ -65,11 +64,6 @@ const ApiGenerateRoadbookRoute = ApiGenerateRoadbookRouteImport.update({
   path: '/api/generate-roadbook',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiExportPdfIdRoute = ApiExportPdfIdRouteImport.update({
-  id: '/api/export-pdf/$id',
-  path: '/api/export-pdf/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,7 +75,6 @@ export interface FileRoutesByFullPath {
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
-  '/api/export-pdf/$id': typeof ApiExportPdfIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -93,7 +86,6 @@ export interface FileRoutesByTo {
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
-  '/api/export-pdf/$id': typeof ApiExportPdfIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,7 +98,6 @@ export interface FileRoutesById {
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
-  '/api/export-pdf/$id': typeof ApiExportPdfIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -120,7 +111,6 @@ export interface FileRouteTypes {
     | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
-    | '/api/export-pdf/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -132,7 +122,6 @@ export interface FileRouteTypes {
     | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
-    | '/api/export-pdf/$id'
   id:
     | '__root__'
     | '/'
@@ -144,7 +133,6 @@ export interface FileRouteTypes {
     | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
-    | '/api/export-pdf/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -157,7 +145,6 @@ export interface RootRouteChildren {
   ApiRecomputeRoadbookRoute: typeof ApiRecomputeRoadbookRoute
   RoadbookIdRoute: typeof RoadbookIdRoute
   RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
-  ApiExportPdfIdRoute: typeof ApiExportPdfIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -225,13 +212,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGenerateRoadbookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/export-pdf/$id': {
-      id: '/api/export-pdf/$id'
-      path: '/api/export-pdf/$id'
-      fullPath: '/api/export-pdf/$id'
-      preLoaderRoute: typeof ApiExportPdfIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -245,8 +225,16 @@ const rootRouteChildren: RootRouteChildren = {
   ApiRecomputeRoadbookRoute: ApiRecomputeRoadbookRoute,
   RoadbookIdRoute: RoadbookIdRoute,
   RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
-  ApiExportPdfIdRoute: ApiExportPdfIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
