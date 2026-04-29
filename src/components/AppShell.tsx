@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (loading || !user) {
     return (
       <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">
-        Loading…
+        Chargement…
       </div>
     );
   }
@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               }}
             >
               <LogOut className="h-4 w-4" />
-              Sign out
+              Se déconnecter
             </Button>
           </div>
         </div>
