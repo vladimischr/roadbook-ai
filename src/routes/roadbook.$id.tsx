@@ -44,6 +44,8 @@ interface Day {
   drive_hours: number;
   flight: string;
   narrative: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 interface AccommodationSummary {
   name: string;
