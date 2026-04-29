@@ -18,11 +18,11 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/new")({
   component: NewRoadbook,
-  head: () => ({ meta: [{ title: "New roadbook — Roadbook.ai" }] }),
+  head: () => ({ meta: [{ title: "Nouveau roadbook — Roadbook.ai" }] }),
 });
 
-const THEMES = ["Luxury safari", "Cultural", "Adventure", "Beach", "Road trip", "Custom"];
-const PROFILES = ["Couple", "Family", "Solo", "Friends"];
+const THEMES = ["Safari premium", "Culture", "Aventure", "Plage", "Autotour", "Sur mesure"];
+const PROFILES = ["Couple", "Famille", "Solo", "Amis"];
 const BUDGETS = ["3–5k €", "5–8k €", "8–12k €", "12–15k €", "15k €+"];
 
 function NewRoadbook() {
@@ -67,14 +67,13 @@ function NewRoadbook() {
   const onGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.client_name || !form.destination) {
-      toast.error("Client name and destination are required.");
+      toast.error("Le nom du client et la destination sont obligatoires.");
       return;
     }
 
     setSubmitting(true);
-    // Simulate generation latency, then redirect to mock preview.
     await new Promise((r) => setTimeout(r, 1200));
-    toast.success("Roadbook generated");
+    toast.success("Roadbook généré");
     navigate({ to: "/roadbook/preview-mock" });
   };
 
@@ -84,9 +83,9 @@ function NewRoadbook() {
         <div className="grid min-h-[60vh] place-items-center text-center">
           <div>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <h2 className="mt-6 text-xl font-semibold">Crafting your roadbook…</h2>
+            <h2 className="mt-6 text-xl font-semibold">Création du roadbook…</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Designing the itinerary, picking the rhythm, polishing the prose.
+              Construction de l’itinéraire, réglage du rythme, mise en forme du récit.
             </p>
           </div>
         </div>
