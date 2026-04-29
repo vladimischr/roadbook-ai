@@ -1979,7 +1979,7 @@ function AccommodationsSection({
   return (
     <section>
       <SectionHeader
-        label="Hébergements"
+        label=""
         editing={editing}
         hideEditButton={forceEdit}
         onEdit={() => {
