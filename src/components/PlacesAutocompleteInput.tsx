@@ -133,7 +133,13 @@ export function PlacesAutocompleteInput({
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [value, autocompleteService, regionBias, types]);
+    // regionBias est intentionnellement non utilisé dans la requête (cf. note
+    // ci-dessus) — on l'exclut donc des deps pour ne pas relancer une requête
+    // identique quand le bias change. types[] est passé via JSON.stringify
+    // pour stabiliser la comparaison (sinon un nouveau tableau à chaque
+    // render relancerait la requête en boucle).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, autocompleteService, JSON.stringify(types)]);
 
   const selectPrediction = (
     p: google.maps.places.AutocompletePrediction,
