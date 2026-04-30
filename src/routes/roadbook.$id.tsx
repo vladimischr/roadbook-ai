@@ -2471,6 +2471,8 @@ function DaysTableSection({
         </div>
       )}
     </section>
+    {locateDialog}
+    </>
   );
 }
 
