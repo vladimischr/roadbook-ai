@@ -867,9 +867,25 @@ function RoadbookPage() {
         (cur.days || []).map((d) => d.stage),
       );
 
+      // Récupère le bearer token pour authentifier l'appel — la route est
+      // protégée pour éviter qu'un utilisateur non connecté brûle le quota
+      // Anthropic.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast.error("Session expirée. Reconnecte-toi pour recalculer.");
+        setRecomputing(false);
+        return;
+      }
+
       const res = await fetch("/api/recompute-roadbook", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           roadbook: cur,
           preserveModifiedNarratives: preserveModified,
