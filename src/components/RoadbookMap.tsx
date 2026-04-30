@@ -150,6 +150,8 @@ export function RoadbookMap({
   regionBias,
   onAddDay,
   onRemoveDay,
+  geocodeStatus,
+  onRetryGeocode,
 }: Props) {
   const points = useMemo(
     () =>
@@ -170,6 +172,21 @@ export function RoadbookMap({
 
   const canAdd = !!onAddDay;
 
+  // Conditions d'affichage :
+  // - Si on a au moins 2 points → on montre la carte (le géocodage continue
+  //   en arrière-plan pour les jours restants)
+  // - Si on a 0-1 point ET un géocodage en cours → loader
+  // - Si on a 0 point ET échec → message d'erreur + retry
+  const hasEnoughPoints = points.length >= 2;
+  const noPoints = points.length === 0;
+  const showFailed = noPoints && geocodeStatus === "failed";
+  const showLoading =
+    !hasEnoughPoints &&
+    !provisional &&
+    (geocodeStatus === "running" || geocodeStatus === "idle") &&
+    !showFailed;
+  const showMap = hasEnoughPoints || provisional || (points.length > 0 && geocodeStatus === "done");
+
   return (
     <div className="space-y-3">
       {canAdd && (
@@ -188,15 +205,35 @@ export function RoadbookMap({
         </div>
       )}
 
-      {points.length === 0 && !provisional ? (
-        <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
-          Géocodage des étapes en cours… La carte apparaîtra dès que les lieux
-          seront localisés.
+      {showFailed ? (
+        <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 p-6 text-center text-sm text-muted-foreground">
+          <div className="space-y-3 max-w-md">
+            <p>
+              Impossible de localiser les étapes. Vérifie que les noms de
+              lieux sont reconnaissables (ex&nbsp;: «&nbsp;Arusha,
+              Tanzanie&nbsp;» au lieu de juste «&nbsp;Arusha&nbsp;»).
+            </p>
+            {onRetryGeocode && (
+              <button
+                type="button"
+                onClick={onRetryGeocode}
+                className="rounded-md border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-secondary/60"
+              >
+                Re-géocoder les étapes
+              </button>
+            )}
+          </div>
         </div>
-      ) : (
+      ) : showLoading ? (
+        <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <span className="inline-block h-3 w-3 animate-pulse rounded-full bg-[#0F6E56]" />
+            Géocodage en cours…
+          </div>
+        </div>
+      ) : showMap ? (
         <div className="overflow-hidden rounded-xl border border-border">
           <GMap
-            mapId="roadbook-map"
             style={{ width: "100%", height: "450px" }}
             defaultCenter={
               provisional && provisional.lat != null && provisional.lng != null
@@ -206,6 +243,7 @@ export function RoadbookMap({
             defaultZoom={5}
             gestureHandling="greedy"
             disableDefaultUI={false}
+            styles={EDITORIAL_MAP_STYLE}
           >
             <FitBounds points={points} />
             <RouteRenderer
@@ -237,6 +275,10 @@ export function RoadbookMap({
               />
             )}
           </GMap>
+        </div>
+      ) : (
+        <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
+          Aucune étape à afficher.
         </div>
       )}
     </div>
