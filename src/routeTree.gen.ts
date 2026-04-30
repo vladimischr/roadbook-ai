@@ -18,6 +18,7 @@ import { Route as RoadbookIdRouteImport } from './routes/roadbook.$id'
 import { Route as ApiRecomputeRoadbookRouteImport } from './routes/api/recompute-roadbook'
 import { Route as ApiImportRoadbookRouteImport } from './routes/api/import-roadbook'
 import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
+import { Route as ApiMapsKeyRouteImport } from './routes/api/maps-key'
 
 const NewRoute = NewRouteImport.update({
   id: '/new',
