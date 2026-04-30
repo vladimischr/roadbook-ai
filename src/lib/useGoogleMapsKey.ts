@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getGoogleMapsApiKey } from "@/server/maps.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 let cached: string | null = null;
 let inflight: Promise<string> | null = null;
@@ -7,19 +7,38 @@ let inflight: Promise<string> | null = null;
 async function loadKey(): Promise<string> {
   if (cached) return cached;
   if (!inflight) {
-    inflight = getGoogleMapsApiKey()
-      .then((r) => {
-        cached = r.apiKey;
-        return r.apiKey;
-      })
-      .catch((err) => {
-        // Sans ce reset, un échec réseau ou une clé manquante côté serveur
-        // gèlerait définitivement le hook : tous les appels suivants
-        // recevraient la même promesse rejetée. On nettoie pour permettre
-        // un retry au prochain mount.
-        inflight = null;
-        throw err;
+    inflight = (async () => {
+      // Récupère le token de session Supabase pour authentifier l'appel.
+      // Sans ce gate côté API, n'importe quel visiteur du site (ou un bot)
+      // pourrait récupérer la clé Maps. La sécurité réelle de la clé reste
+      // portée par les HTTP referrer restrictions Google Cloud, mais ce
+      // gate empêche les appels triviaux.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Non authentifié");
+
+      const res = await fetch("/api/maps-key", {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        throw new Error(`maps-key HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as { apiKey?: string; error?: string };
+      if (!json.apiKey) {
+        throw new Error(json.error || "apiKey absente de la réponse");
+      }
+      cached = json.apiKey;
+      return json.apiKey;
+    })().catch((err) => {
+      // Sans ce reset, un échec réseau ou une clé manquante côté serveur
+      // gèlerait définitivement le hook : tous les appels suivants
+      // recevraient la même promesse rejetée. On nettoie pour permettre
+      // un retry au prochain mount.
+      inflight = null;
+      throw err;
+    });
   }
   return inflight;
 }

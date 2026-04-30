@@ -1,6 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+// Validation minimale du body — on ne valide pas la forme complète du
+// roadbook (trop coûteux et instable dans le temps), juste qu'on a bien un
+// objet contenant un tableau days non vide. Ça suffit pour bloquer les
+// appels poubelle qui essaieraient juste de faire travailler Anthropic.
+const bodySchema = z.object({
+  roadbook: z
+    .object({
+      days: z.array(z.unknown()).min(1).max(120),
+    })
+    .passthrough(),
+  preserveModifiedNarratives: z.boolean().optional(),
+});
 
 function stripMarkdownFence(text: string): string {
   const trimmed = text.trim();
@@ -56,18 +70,25 @@ export const Route = createFileRoute("/api/recompute-roadbook")({
             );
           }
 
-          const body = await request.json();
-          const { roadbook, preserveModifiedNarratives } = body as {
-            roadbook: Record<string, unknown>;
-            preserveModifiedNarratives?: boolean;
-          };
-
-          if (!roadbook) {
+          const rawBody = await request.json().catch(() => null);
+          const parsed = bodySchema.safeParse(rawBody);
+          if (!parsed.success) {
+            console.warn(
+              "[recompute-roadbook] Body invalide:",
+              parsed.error.issues,
+            );
             return new Response(
-              JSON.stringify({ error: "roadbook manquant" }),
+              JSON.stringify({
+                error: "Payload invalide",
+                issues: parsed.error.issues,
+              }),
               { status: 400, headers: { "Content-Type": "application/json" } },
             );
           }
+          const { roadbook, preserveModifiedNarratives } = parsed.data as {
+            roadbook: Record<string, unknown>;
+            preserveModifiedNarratives?: boolean;
+          };
 
           const preserveBlock = preserveModifiedNarratives
             ? `\n\nPRÉSERVATION STRICTE : pour chaque jour où narrative_user_modified === true, tu DOIS recopier le narrative existant TEL QUEL, sans aucune modification. Tu ne touches pas à ces narratives.`

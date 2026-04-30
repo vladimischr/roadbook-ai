@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 
 /**
- * Renvoie la clé Google Maps au client (chargée côté navigateur dans
- * <APIProvider>). La sécurité réelle vient des restrictions HTTP referrer
- * configurées dans Google Cloud Console — pas du stockage de la clé.
+ * @deprecated Remplacé par la route `/api/maps-key` qui exige un Bearer token
+ * Supabase. Conservé temporairement pour ne rien casser d'externe — supprimer
+ * dans une PR suivante après vérification qu'aucun consommateur ne l'importe.
  */
 export const getGoogleMapsApiKey = createServerFn({ method: "GET" }).handler(
   async () => {

@@ -8,6 +8,16 @@ import {
 } from "@vis.gl/react-google-maps";
 import { getDirectionsSegment } from "@/server/maps.functions";
 import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export interface MapDay {
   day: number;
@@ -468,13 +478,42 @@ function RouteRenderer({
   const sessionRef = useRef<Map<string, DirectionsSegment>>(new Map());
   // Map des paires consécutives présentes dans days (pour invalider les
   // segments cachés dont la pair n'existe plus après réorganisation).
+  // Signature stable : on ne recalcule que si la liste des paires (ou les
+  // numéros) change réellement, pas à chaque re-render parent qui crée
+  // un nouveau `days` par référence.
+  const validKeysSig = useMemo(
+    () =>
+      days
+        .slice(0, -1)
+        .map((d, i) => segmentKey(d.day, days[i + 1].day))
+        .join("|"),
+    [days],
+  );
   const validKeys = useMemo(() => {
     const set = new Set<string>();
     for (let i = 0; i < days.length - 1; i++) {
       set.add(segmentKey(days[i].day, days[i + 1].day));
     }
     return set;
-  }, [days]);
+    // validKeysSig capture déjà la signature pertinente
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validKeysSig]);
+
+  // Signature de routing : ce qui décide si on doit relancer le calcul
+  // Directions API. Capture le numéro, lat, lng et flag avion de chaque jour.
+  // Mêmes valeurs → on ne touche pas aux polylines existantes.
+  const routingSig = useMemo(
+    () =>
+      days
+        .map(
+          (d) =>
+            `${d.day}:${typeof d.lat === "number" ? d.lat.toFixed(5) : ""}:${typeof d.lng === "number" ? d.lng.toFixed(5) : ""}:${looksLikeFlight(d) ? "F" : "D"}`,
+        )
+        .join("|"),
+    [days],
+  );
+  // points est désormais inutile dans les deps — il dérive de days
+  void points;
 
   // Nettoie le cache de segments obsolètes (paires qui n'existent plus)
   useEffect(() => {
@@ -485,8 +524,11 @@ function RouteRenderer({
     if (cleaned.length !== segments.length) {
       onSegmentsChange(cleaned);
     }
+    // segments / onSegmentsChange volontairement omis : on ne veut nettoyer
+    // que quand la signature des paires change. Ajouter `segments` créerait
+    // une boucle infinie (filter → setState → re-render → filter → …).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validKeys]);
+  }, [validKeysSig]);
 
   useEffect(() => {
     if (!map) return;
@@ -663,9 +705,12 @@ function RouteRenderer({
       drawnRef.current.forEach((p) => p.setMap(null));
       drawnRef.current = [];
     };
-    // points est inclus pour redessiner si lat/lng changent
+    // routingSig : signature qui capture exactement ce qui doit déclencher un
+    // recalcul (paires + lat/lng + flag avion). Sans ça, n'importe quel
+    // re-render parent (ex: tick d'auto-save) relancerait toute la boucle
+    // Directions API et brûlerait du quota Google Maps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, points, days]);
+  }, [map, routingSig]);
 
   return null;
 }
@@ -681,6 +726,8 @@ function ClusterMarker({
 }) {
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState(false);
+  // Étape en attente de confirmation de suppression (remplace confirm()).
+  const [pendingRemove, setPendingRemove] = useState<MapDay | null>(null);
   const sortedDays = [...cluster.days].sort((a, b) => a.day - b.day);
   const isMulti = sortedDays.length > 1;
   const label = isMulti
@@ -738,24 +785,44 @@ function ClusterMarker({
                 key={d.day}
                 day={d}
                 onRemove={
-                  onRemoveDay
-                    ? () => {
-                        if (
-                          confirm(
-                            `Supprimer J${d.day} (${d.stage || "étape"}) du roadbook ?`,
-                          )
-                        ) {
-                          onRemoveDay(d.day);
-                          setOpen(false);
-                        }
-                      }
-                    : undefined
+                  onRemoveDay ? () => setPendingRemove(d) : undefined
                 }
               />
             ))}
           </div>
         </InfoWindow>
       )}
+      {/* Confirmation de suppression — remplace l'ancien confirm() bloquant. */}
+      <AlertDialog
+        open={!!pendingRemove}
+        onOpenChange={(o) => !o && setPendingRemove(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette étape ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingRemove
+                ? `Jour ${pendingRemove.day} — ${pendingRemove.stage || "étape sans nom"} sera retiré du roadbook. Les segments de route adjacents seront recalculés.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingRemove && onRemoveDay) {
+                  onRemoveDay(pendingRemove.day);
+                  setOpen(false);
+                }
+                setPendingRemove(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

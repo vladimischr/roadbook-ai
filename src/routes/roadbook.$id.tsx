@@ -318,8 +318,15 @@ function RoadbookPage() {
   const [geocodeStatus, setGeocodeStatus] = useState<"idle" | "running" | "done" | "failed">("idle");
   const [geocodeAttempt, setGeocodeAttempt] = useState(0);
   const { apiKey } = useGoogleMapsKey();
+  // rbRef : miroir mutable de rb pour les callbacks asynchrones (géocodage,
+  // segments, etc.) qui ne doivent pas dépendre de la closure de render.
+  // L'assignation passe par un useEffect (au lieu d'être faite en pleine
+  // phase de rendu, ce qui violerait les règles de React 18+ avec le
+  // concurrent mode).
   const rbRef = useRef<Roadbook | null>(null);
-  rbRef.current = rb;
+  useEffect(() => {
+    rbRef.current = rb;
+  }, [rb]);
 
   // Auto-save debounce
   const dirtyRef = useRef<Roadbook | null>(null);
@@ -787,10 +794,20 @@ function RoadbookPage() {
       directions_segments: newSegments,
     };
     setRb(final);
-    await supabase
+    // Cette deuxième sauvegarde n'écrasait silencieusement aucune erreur :
+    // si elle échouait, le RoadbookMap affichait des polylines basées sur un
+    // état non persisté (re-fetch au prochain reload). On affiche désormais
+    // un toast pour que l'utilisateur sache que les distances/durées
+    // calculées ne sont pas en DB.
+    const { error: persistErr } = await supabase
       .from("roadbooks")
       .update({ content: final as never })
       .eq("id", id);
+    if (persistErr) {
+      toast.error(
+        "Étape ajoutée mais distances non sauvegardées : " + persistErr.message,
+      );
+    }
   };
 
 

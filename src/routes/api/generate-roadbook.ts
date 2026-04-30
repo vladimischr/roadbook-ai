@@ -1,6 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+// Schéma Zod aligné sur RoadbookFormData (côté client) — refuse les payloads
+// invalides AVANT d'appeler Anthropic, pour ne pas brûler du quota sur du
+// garbage. Bornes strictes (longueurs max) pour éviter les attaques par
+// inflation de prompt.
+const formSchema = z.object({
+  client_name: z.string().min(1).max(200),
+  destination: z.string().min(1).max(200),
+  start_date: z.string().max(40).optional().nullable(),
+  end_date: z.string().max(40).optional().nullable(),
+  travelers_count: z.number().int().min(0).max(50).optional().nullable(),
+  traveler_profile: z.string().max(80).optional().nullable(),
+  theme: z.string().max(80).optional().nullable(),
+  budget_range: z.string().max(40).optional().nullable(),
+  travel_mode: z.string().max(80).optional().nullable(),
+  generation_mode: z.enum(["ai", "manual"]),
+  agent_notes: z.string().max(4000).optional().nullable(),
+  manual_steps: z
+    .array(
+      z.object({
+        location: z.string().max(200),
+        nights: z.number().int().min(0).max(60),
+        activities: z.string().max(1000),
+      }),
+    )
+    .max(60)
+    .optional(),
+});
 
 function daysBetween(a?: string, b?: string): number {
   if (!a || !b) return 7;
@@ -80,7 +109,22 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             );
           }
 
-          const formData = await request.json();
+          const rawBody = await request.json().catch(() => null);
+          const parsed = formSchema.safeParse(rawBody);
+          if (!parsed.success) {
+            console.warn(
+              "[generate-roadbook] Body invalide:",
+              parsed.error.issues,
+            );
+            return new Response(
+              JSON.stringify({
+                error: "Payload invalide",
+                issues: parsed.error.issues,
+              }),
+              { status: 400, headers: { "Content-Type": "application/json" } },
+            );
+          }
+          const formData = parsed.data;
           console.log(
             "[generate-roadbook] Reçu form:",
             JSON.stringify(formData),
