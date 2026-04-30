@@ -102,6 +102,12 @@ Détails des champs :
 - "Sur-mesure libre" : suit les autres paramètres
 Adapte tout (overview, days narrative, accommodations, tips) à la modalité.
 
+12. Noms d'étapes géocodables. Quand tu génères les "stage" et "accommodation" des jours, privilégie des noms qui pourront être reconnus par Google Maps :
+- Préfère "Cratère du Ngorongoro, Tanzanie" plutôt que juste "Cratère"
+- Utilise les noms officiels en VO : "Serengeti National Park" plutôt que "Plaine du Serengeti"
+- Pour les étapes complexes ("Sesriem - dunes du Sossusvlei"), utilise un nom principal reconnaissable (ex: "Sossusvlei, Namibie")
+- Pour les hébergements, cite le nom EXACT et complet du lodge/camp/hôtel comme il apparaît sur Google Maps (ex: "Brandberg White Lady Lodge" pas "Brandberg Lodge")
+
 # Réponse
 
 Tu réponds avec le JSON brut, rien d'autre. Pas de "Voici votre roadbook :", pas de markdown, pas de commentaire. Le JSON commence directement par { et finit par }.
