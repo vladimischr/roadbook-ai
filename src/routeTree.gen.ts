@@ -65,6 +65,11 @@ const ApiGenerateRoadbookRoute = ApiGenerateRoadbookRouteImport.update({
   path: '/api/generate-roadbook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMapsKeyRoute = ApiMapsKeyRouteImport.update({
+  id: '/api/maps-key',
+  path: '/api/maps-key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
