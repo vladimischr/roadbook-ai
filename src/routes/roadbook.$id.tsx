@@ -1276,6 +1276,8 @@ function RoadbookBody({
   removeDayByNumber,
   persist,
   updateAndAutosave,
+  geocodeStatus,
+  onRetryGeocode,
 }: {
   rb: Roadbook;
   apiKey: string | null;
@@ -1288,6 +1290,8 @@ function RoadbookBody({
   removeDayByNumber: (dayNumber: number) => void;
   persist: (next: Roadbook) => void;
   updateAndAutosave: (next: Roadbook) => void;
+  geocodeStatus: "idle" | "running" | "done" | "failed";
+  onRetryGeocode: () => void;
 }) {
   const revealRef = useScrollReveal<HTMLDivElement>();
 
