@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 function stripMarkdownFence(text: string): string {
   const trimmed = text.trim();
@@ -32,6 +33,26 @@ export const Route = createFileRoute("/api/recompute-roadbook")({
             return new Response(
               JSON.stringify({ error: "ANTHROPIC_API_KEY manquante" }),
               { status: 500, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          // Auth — protège le quota Anthropic d'un usage non-authentifié.
+          const authHeader = request.headers.get("Authorization") || "";
+          const token = authHeader.startsWith("Bearer ")
+            ? authHeader.slice(7)
+            : null;
+          if (!token) {
+            return new Response(
+              JSON.stringify({ error: "Authentification requise." }),
+              { status: 401, headers: { "Content-Type": "application/json" } },
+            );
+          }
+          const { data: userData, error: userErr } =
+            await supabaseAdmin.auth.getUser(token);
+          if (userErr || !userData?.user) {
+            return new Response(
+              JSON.stringify({ error: "Session invalide." }),
+              { status: 401, headers: { "Content-Type": "application/json" } },
             );
           }
 
