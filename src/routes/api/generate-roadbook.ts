@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 function daysBetween(a?: string, b?: string): number {
   if (!a || !b) return 7;
@@ -54,6 +55,28 @@ export const Route = createFileRoute("/api/generate-roadbook")({
                 error: "ANTHROPIC_API_KEY manquante côté serveur.",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          // Auth — sans cette vérification, n'importe qui peut taper sur cet
+          // endpoint et brûler le quota Anthropic. Le bearer token est récupéré
+          // via supabase pour identifier l'utilisateur connecté.
+          const authHeader = request.headers.get("Authorization") || "";
+          const token = authHeader.startsWith("Bearer ")
+            ? authHeader.slice(7)
+            : null;
+          if (!token) {
+            return new Response(
+              JSON.stringify({ error: "Authentification requise." }),
+              { status: 401, headers: { "Content-Type": "application/json" } },
+            );
+          }
+          const { data: userData, error: userErr } =
+            await supabaseAdmin.auth.getUser(token);
+          if (userErr || !userData?.user) {
+            return new Response(
+              JSON.stringify({ error: "Session invalide." }),
+              { status: 401, headers: { "Content-Type": "application/json" } },
             );
           }
 
