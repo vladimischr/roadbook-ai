@@ -200,20 +200,26 @@ function Dashboard() {
             <div className="flex flex-wrap items-center gap-3">
               <Button
                 variant="outline"
-                className="h-11 gap-2 rounded-full border-border/70 px-5 text-[14px] font-medium transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
+                className="h-11 gap-2 rounded-full border-primary/30 bg-surface px-5 text-[14px] font-medium text-foreground transition-smooth hover:border-primary/50 hover:bg-primary-soft hover:text-primary hover:shadow-soft"
                 onClick={() => setImportOpen(true)}
               >
                 <Upload className="h-4 w-4" />
-                Importer
+                Importer un Excel
               </Button>
               <Link to="/new">
                 <Button className="h-11 gap-2 rounded-full px-5 text-[14px] font-medium transition-smooth hover:scale-[1.02] hover:shadow-soft-md">
                   <Plus className="h-4 w-4" />
-                  Nouveau roadbook
+                  Composer un roadbook
                 </Button>
               </Link>
             </div>
           </div>
+
+          <p className="mt-5 max-w-xl text-[13.5px] leading-relaxed text-muted-foreground">
+            Trois façons de démarrer&nbsp;: laisser l'IA proposer une trame,
+            saisir vos étapes à la main, ou importer un fichier Excel
+            existant.
+          </p>
 
           {subInfo && (
             <UsageBanner

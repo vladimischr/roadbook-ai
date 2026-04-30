@@ -92,8 +92,10 @@ function Pricing() {
                 Choisissez le plan adapté à votre volume.
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-[16px] leading-[1.65] text-muted-foreground sm:text-[17.5px]">
-                Tous les plans payants démarrent par 14 jours d'essai gratuit.
-                Annulation en un clic depuis le portail Stripe.
+                Tous les plans incluent les <strong className="text-foreground">trois modes de
+                composition</strong> — IA, saisie manuelle ou import Excel. Le quota
+                porte sur le nombre de roadbooks créés, peu importe la
+                méthode. 14 jours d'essai gratuit, annulation en un clic.
               </p>
             </div>
           </div>
@@ -141,8 +143,8 @@ function Pricing() {
 
                   <p className="mt-2 text-[12.5px] text-muted-foreground">
                     {plan.monthlyRoadbookLimit === null
-                      ? "Roadbooks illimités"
-                      : `${plan.monthlyRoadbookLimit} roadbooks par mois`}
+                      ? "Roadbooks illimités, tous modes"
+                      : `${plan.monthlyRoadbookLimit} roadbooks/mois, tous modes`}
                   </p>
 
                   <ul className="mt-7 space-y-2.5 text-[13.5px] leading-relaxed text-foreground/85">
@@ -203,8 +205,8 @@ function Pricing() {
                 a: "Au bout de 14 jours, le premier prélèvement a lieu sauf si vous annulez avant. Aucun engagement.",
               },
               {
-                q: "Que comptent mes « roadbooks générés » ?",
-                a: "Chaque génération IA compte pour un. L'édition manuelle, les recalculs et l'export PDF n'entament pas votre quota.",
+                q: "Que comptent mes « roadbooks composés » ?",
+                a: "Chaque nouveau roadbook compte pour un — qu'il soit généré par l'IA, saisi manuellement ou importé d'Excel. Les modifications, les recalculs et les exports PDF n'entament pas votre quota.",
               },
               {
                 q: "Mes clients voient-ils Roadbook.ai ?",

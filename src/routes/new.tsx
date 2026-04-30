@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Trash2, Sparkles, PenLine, ChevronDown, Check } from "lucide-react";
+import { Loader2, Plus, Trash2, Sparkles, PenLine, ChevronDown, Check, Upload } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Paywall } from "@/components/Paywall";
 import { useSubscription } from "@/lib/useSubscription";
+import { ImportRoadbookDialog } from "@/components/ImportRoadbookDialog";
 
 export const Route = createFileRoute("/new")({
   component: NewRoadbook,
@@ -68,6 +69,7 @@ function NewRoadbook() {
   const [submitting, setSubmitting] = useState(false);
   const [stepKey, setStepKey] = useState<GenerationStep>("prompt");
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const [form, setForm] = useState<RoadbookFormData>({
     client_name: "",
@@ -214,11 +216,37 @@ function NewRoadbook() {
             <span className="eyebrow">Nouveau voyage</span>
           </div>
           <h1 className="mt-5 font-display text-[42px] font-semibold leading-[1.05] tracking-tight text-foreground sm:text-[52px]">
-            Créer un nouveau roadbook
+            Composer un nouveau roadbook
           </h1>
           <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-muted-foreground">
-            Renseignez le voyage — nous préparons la trame du programme.
+            Trois manières de démarrer — choisissez celle qui correspond
+            à votre matière.
           </p>
+
+          {/* Choix du mode — bloc éducatif en haut, avant le formulaire */}
+          <div className="mt-10 grid gap-3 sm:grid-cols-3">
+            <ModeCard
+              active={form.generation_mode === "ai"}
+              onClick={() => update("generation_mode", "ai")}
+              icon={<Sparkles className="h-4 w-4" />}
+              title="L'IA propose"
+              body="Brief court, l'IA dessine le squelette. Pour défricher rapidement."
+            />
+            <ModeCard
+              active={form.generation_mode === "manual"}
+              onClick={() => update("generation_mode", "manual")}
+              icon={<PenLine className="h-4 w-4" />}
+              title="Vous composez"
+              body="Vos étapes, vos lodges. L'IA met en forme autour. Pour vos coins secrets."
+            />
+            <ModeCard
+              active={false}
+              onClick={() => setImportOpen(true)}
+              icon={<Upload className="h-4 w-4" />}
+              title="Importer Excel"
+              body="Votre programme existe déjà ? On le passe au format éditorial."
+            />
+          </div>
 
         <form onSubmit={onGenerate} className="mt-10 space-y-10">
           <Section title="Client et destination">
@@ -311,25 +339,12 @@ function NewRoadbook() {
             </Field>
           </Section>
 
-          <Section title="Mode d’itinéraire">
-            <div className="grid grid-cols-2 gap-3">
-              <ModeCard
-                active={form.generation_mode === "ai"}
-                onClick={() => update("generation_mode", "ai")}
-                icon={<Sparkles className="h-4 w-4" />}
-                title="Génération automatique"
-                body="Création d’un programme jour par jour à partir du brief."
-              />
-              <ModeCard
-                active={form.generation_mode === "manual"}
-                onClick={() => update("generation_mode", "manual")}
-                icon={<PenLine className="h-4 w-4" />}
-                title="Saisie manuelle"
-                body="Ajoutez vos propres étapes, nuits et activités."
-              />
-            </div>
-
-            {form.generation_mode === "manual" && (
+          {form.generation_mode === "manual" && (
+            <Section title="Vos étapes">
+              <p className="-mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                Saisissez les lieux, le nombre de nuits, et les activités
+                clés. L'IA composera la trame éditoriale autour.
+              </p>
               <div className="space-y-3 rounded-xl border border-border bg-secondary/40 p-4">
                 {(form.manual_steps || []).map((step, i) => (
                   <div key={i} className="rounded-lg border border-border bg-card p-3">
@@ -350,7 +365,7 @@ function NewRoadbook() {
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       <Input
                         className="col-span-2"
-                        placeholder="Lieu"
+                        placeholder="Lieu (ex : Sesriem, Brandberg White Lady Lodge)"
                         value={step.location}
                         onChange={(e) => updateStep(i, { location: e.target.value })}
                       />
@@ -375,8 +390,8 @@ function NewRoadbook() {
                   <Plus className="h-3.5 w-3.5" /> Ajouter une étape
                 </Button>
               </div>
-            )}
-          </Section>
+            </Section>
+          )}
 
           <Section title="Notes personnelles facultatives">
             <Textarea
@@ -402,7 +417,9 @@ function NewRoadbook() {
               className="gap-2 px-8 shadow-[0_4px_14px_-4px_rgba(15,110,86,0.4)] transition-smooth hover:shadow-[0_6px_18px_-4px_rgba(15,110,86,0.55)]"
             >
               <Sparkles className="h-4 w-4" />
-              Générer un roadbook
+              {form.generation_mode === "manual"
+                ? "Composer le roadbook"
+                : "Générer un roadbook"}
             </Button>
           </div>
         </form>
@@ -422,6 +439,8 @@ function NewRoadbook() {
           }
         />
       )}
+
+      <ImportRoadbookDialog open={importOpen} onOpenChange={setImportOpen} />
     </AppShell>
   );
 }
@@ -496,17 +515,31 @@ function ModeCard({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl border p-4 text-left transition ${
+      className={`flex h-full flex-col rounded-xl border p-5 text-left transition-smooth hover:-translate-y-0.5 ${
         active
-          ? "border-primary bg-primary-soft"
-          : "border-border bg-card hover:border-primary/40"
+          ? "border-primary bg-primary-soft shadow-soft"
+          : "border-border bg-card hover:border-primary/40 hover:shadow-soft"
       }`}
     >
-      <div className={`flex items-center gap-2 text-sm font-semibold ${active ? "text-primary" : "text-foreground"}`}>
+      <div
+        className={`grid h-9 w-9 place-items-center rounded-full ${
+          active
+            ? "bg-primary text-primary-foreground"
+            : "bg-primary-soft text-primary"
+        }`}
+      >
         {icon}
-        {title}
       </div>
-      <p className="mt-1.5 text-xs text-muted-foreground">{body}</p>
+      <p
+        className={`mt-4 text-[14px] font-semibold ${
+          active ? "text-primary" : "text-foreground"
+        }`}
+      >
+        {title}
+      </p>
+      <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
+        {body}
+      </p>
     </button>
   );
 }

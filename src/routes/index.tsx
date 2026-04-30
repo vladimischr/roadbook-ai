@@ -7,6 +7,7 @@ import {
   PenLine,
   MapPin,
   Quote,
+  Upload,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ function Landing() {
       <SiteHeader />
       <main>
         <Hero />
+        <ThreeWays />
         <Pillars />
         <HowItWorks />
         <ShowcaseStrip />
@@ -108,17 +110,17 @@ function Hero() {
           </div>
 
           <h1 className="font-display mt-8 text-[44px] font-semibold leading-[1.02] tracking-tight text-foreground sm:text-[68px] lg:text-[84px]">
-            Des roadbooks
+            Vos itinéraires,
             <br className="hidden sm:block" />{" "}
-            <span className="italic text-primary">qui se lisent</span>
+            <span className="italic text-primary">en livret</span>
             <br className="hidden sm:block" />{" "}
-            comme un récit.
+            éditorial.
           </h1>
 
           <p className="mx-auto mt-8 max-w-xl text-[16px] leading-[1.65] text-muted-foreground sm:text-[18px]">
-            Roadbook.ai compose en quelques minutes le programme jour par
-            jour, l'itinéraire et les conseils pratiques. Vous gardez la main
-            sur chaque étape, l'IA fait le reste.
+            IA, saisie manuelle ou import Excel — apportez votre matière,
+            Roadbook.ai en fait un document beau à lire et prêt à livrer
+            à vos voyageurs.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -132,10 +134,10 @@ function Hero() {
               </Button>
             </Link>
             <a
-              href="#fonctionnement"
+              href="#trois-facons"
               className="text-[13px] font-medium text-muted-foreground transition hover:text-foreground"
             >
-              Comment ça marche →
+              Voir les trois modes →
             </a>
           </div>
 
@@ -235,6 +237,106 @@ function HeroPreview() {
   );
 }
 
+/* ---------- Three input modes ---------- */
+
+function ThreeWays() {
+  const ways = [
+    {
+      icon: Sparkles,
+      eyebrow: "Mode 01 — IA",
+      title: "L'IA propose une trame",
+      body:
+        "Vous donnez le brief — destination, dates, profil, modalité. L'IA dessine le squelette du voyage en quelques secondes. Idéal pour défricher une nouvelle destination ou partir d'un brouillon.",
+      footer: "Pour démarrer rapidement.",
+    },
+    {
+      icon: PenLine,
+      eyebrow: "Mode 02 — Manuel",
+      title: "Vous composez à la main",
+      body:
+        "Vous connaissez les lodges qu'aucune IA n'a référencés, les chemins de traverse, les gens à appeler. Vous saisissez les étapes, l'IA met le tout en forme éditoriale autour.",
+      footer: "Pour vos coins secrets.",
+      highlighted: true,
+    },
+    {
+      icon: Upload,
+      eyebrow: "Mode 03 — Import",
+      title: "Vous importez votre Excel",
+      body:
+        "Votre programme existe déjà sur tableur ? Vous le déposez tel quel, on le passe au format éditorial, vous corrigez si besoin. Quelques minutes au lieu d'une demi-journée de copier-coller.",
+      footer: "Pour vos programmes existants.",
+    },
+  ];
+
+  return (
+    <section
+      id="trois-facons"
+      className="border-t border-border/40 bg-background"
+    >
+      <div className="container-editorial px-6 py-24 sm:px-10 sm:py-32">
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="inline-flex items-center gap-3">
+            <span className="rule-warm" aria-hidden />
+            <span className="eyebrow">Trois façons de composer</span>
+            <span className="rule-warm" aria-hidden />
+          </div>
+          <h2 className="font-display mt-6 text-[34px] font-semibold leading-[1.05] tracking-tight text-foreground sm:text-[44px]">
+            L'outil s'adapte à votre matière, pas l'inverse.
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-[15.5px] leading-relaxed text-muted-foreground">
+            Roadbook.ai n'est pas qu'un outil de génération IA. C'est la
+            <em> couche de design </em>
+            qui transforme votre programme — d'où qu'il vienne — en livret
+            éditorial.
+          </p>
+        </div>
+
+        <div className="mt-14 grid gap-5 lg:grid-cols-3">
+          {ways.map((w) => (
+            <article
+              key={w.title}
+              className={`relative flex flex-col rounded-2xl border bg-surface p-7 transition-smooth hover:-translate-y-0.5 ${
+                w.highlighted
+                  ? "border-primary/40 shadow-soft-md"
+                  : "border-border/60 shadow-soft"
+              }`}
+            >
+              <div
+                className={`grid h-11 w-11 place-items-center rounded-full ${
+                  w.highlighted
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-primary-soft text-primary"
+                }`}
+              >
+                <w.icon className="h-4.5 w-4.5" strokeWidth={1.6} />
+              </div>
+              <p className="mt-7 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-accent-warm">
+                {w.eyebrow}
+              </p>
+              <h3 className="font-display mt-3 text-[22px] font-semibold leading-tight text-foreground">
+                {w.title}
+              </h3>
+              <p className="mt-3 text-[14.5px] leading-relaxed text-muted-foreground">
+                {w.body}
+              </p>
+              <div className="flex-1" />
+              <p className="mt-6 border-t border-border/50 pt-4 text-[12.5px] font-medium italic text-foreground/70">
+                {w.footer}
+              </p>
+            </article>
+          ))}
+        </div>
+
+        <p className="mx-auto mt-10 max-w-xl text-center text-[13.5px] leading-relaxed text-muted-foreground">
+          Quel que soit le mode choisi, vous arrivez sur le même livret —
+          modifiable étape par étape, exportable en PDF, partageable en
+          ligne.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 /* ---------- Pillars (3 promises) ---------- */
 
 function Pillars() {
@@ -244,21 +346,21 @@ function Pillars() {
       eyebrow: "Trame éditoriale",
       title: "Un récit, pas un tableur",
       body:
-        "Chaque jour est rédigé comme une page de carnet : narrative concise, hébergement nommé, conseils ancrés dans le réel.",
+        "Chaque jour est rédigé comme une page de carnet : narrative concise, hébergement nommé, conseils ancrés dans le réel — quelle que soit la source de vos étapes.",
     },
     {
       icon: MapPin,
-      eyebrow: "Géographie réelle",
-      title: "Distances, durées, lodges existants",
+      eyebrow: "Carte intégrée",
+      title: "Distances, durées, tracés réels",
       body:
-        "L'IA propose des établissements crédibles et calcule les transitions. Vous corrigez, vous ajoutez, vous décalez.",
+        "Géocodage automatique des étapes via Google Maps. Tracé routier calculé entre chaque jour. Vous éditez, ça se met à jour.",
     },
     {
       icon: FileText,
       eyebrow: "Sortie PDF",
       title: "Prêt à envoyer au client",
       body:
-        "Export PDF éditorial avec couverture, carte, jours, hébergements et carnet de contacts. En un clic.",
+        "Export PDF éditorial avec couverture, carte, jours, hébergements et carnet de contacts. En un clic, en haute qualité.",
     },
   ];
 
@@ -268,11 +370,11 @@ function Pillars() {
         <div className="mx-auto max-w-2xl text-center">
           <div className="inline-flex items-center gap-3">
             <span className="rule-warm" aria-hidden />
-            <span className="eyebrow">Trois promesses</span>
+            <span className="eyebrow">Le résultat, toujours</span>
             <span className="rule-warm" aria-hidden />
           </div>
           <h2 className="font-display mt-6 text-[34px] font-semibold leading-[1.05] tracking-tight text-foreground sm:text-[44px]">
-            Le travail invisible, fait pour vous.
+            Le même livret premium, peu importe la source.
           </h2>
         </div>
 
@@ -308,15 +410,15 @@ function HowItWorks() {
   const steps = [
     {
       n: "01",
-      title: "Le brief",
+      title: "Vous apportez votre matière",
       body:
-        "Client, destination, dates, profil, budget, modalité de voyage. Trois minutes pour cadrer.",
+        "Brief pour l'IA, étapes saisies à la main, ou fichier Excel. Trois entrées, un même destin éditorial.",
     },
     {
       n: "02",
-      title: "L'IA compose",
+      title: "Le livret prend forme",
       body:
-        "Itinéraire jour par jour, distances, hébergements nommés, conseils pratiques de terrain.",
+        "L'outil structure chaque jour, calcule les distances, géocode les étapes, dessine la carte.",
     },
     {
       n: "03",
