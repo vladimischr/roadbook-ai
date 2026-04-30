@@ -68,15 +68,31 @@ export async function callClaudeAPI(
   const text = await res.text();
   console.log("Réponse serveur brute:", text, "Status:", res.status);
 
-  if (!res.ok) {
-    throw new Error(
-      "Serveur a retourné " + res.status + ": " + text.substring(0, 500),
-    );
+  // Le serveur renvoie toujours du JSON, même en erreur — on essaie de
+  // récupérer le message lisible plutôt que d'afficher le texte brut.
+  let parsed: unknown = null;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    /* fallthrough — sera traité plus bas */
   }
 
-  try {
-    return JSON.parse(text) as GeneratedRoadbook;
-  } catch {
-    throw new Error("JSON invalide reçu: " + text.substring(0, 500));
+  if (!res.ok) {
+    const msg =
+      (parsed && typeof parsed === "object" && (parsed as any).error) ||
+      text.substring(0, 500);
+    throw new Error(String(msg));
   }
+
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("Réponse invalide du serveur (JSON manquant).");
+  }
+
+  const roadbook = parsed as GeneratedRoadbook;
+  if (!Array.isArray(roadbook.days) || roadbook.days.length === 0) {
+    throw new Error(
+      "L'IA a renvoyé un roadbook sans étapes. Réessaye dans quelques secondes.",
+    );
+  }
+  return roadbook;
 }

@@ -18,6 +18,7 @@ import { Route as RoadbookIdRouteImport } from './routes/roadbook.$id'
 import { Route as ApiRecomputeRoadbookRouteImport } from './routes/api/recompute-roadbook'
 import { Route as ApiImportRoadbookRouteImport } from './routes/api/import-roadbook'
 import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
+import { Route as ApiMapsKeyRouteImport } from './routes/api/maps-key'
 
 const NewRoute = NewRouteImport.update({
   id: '/new',
@@ -62,6 +63,11 @@ const ApiImportRoadbookRoute = ApiImportRoadbookRouteImport.update({
 const ApiGenerateRoadbookRoute = ApiGenerateRoadbookRouteImport.update({
   id: '/api/generate-roadbook',
   path: '/api/generate-roadbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMapsKeyRoute = ApiMapsKeyRouteImport.update({
+  id: '/api/maps-key',
+  path: '/api/maps-key',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -142,6 +148,7 @@ export interface RootRouteChildren {
   NewRoute: typeof NewRoute
   ApiGenerateRoadbookRoute: typeof ApiGenerateRoadbookRoute
   ApiImportRoadbookRoute: typeof ApiImportRoadbookRoute
+  ApiMapsKeyRoute: typeof ApiMapsKeyRoute
   ApiRecomputeRoadbookRoute: typeof ApiRecomputeRoadbookRoute
   RoadbookIdRoute: typeof RoadbookIdRoute
   RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
@@ -212,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGenerateRoadbookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/maps-key': {
+      id: '/api/maps-key'
+      path: '/api/maps-key'
+      fullPath: '/api/maps-key'
+      preLoaderRoute: typeof ApiMapsKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -222,6 +236,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewRoute: NewRoute,
   ApiGenerateRoadbookRoute: ApiGenerateRoadbookRoute,
   ApiImportRoadbookRoute: ApiImportRoadbookRoute,
+  ApiMapsKeyRoute: ApiMapsKeyRoute,
   ApiRecomputeRoadbookRoute: ApiRecomputeRoadbookRoute,
   RoadbookIdRoute: RoadbookIdRoute,
   RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,

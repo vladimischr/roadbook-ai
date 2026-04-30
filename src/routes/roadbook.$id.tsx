@@ -2238,6 +2238,55 @@ function DaysTableSection({
     </Dialog>
   );
 
+  // Empty state — affiché si la génération IA n'a renvoyé aucune étape.
+  // Sans ce fallback, la page reste blanche sans message ni recours.
+  if (!editing && list.length === 0) {
+    return (
+      <>
+        <section>
+          <SectionHeader
+            label=""
+            editing={false}
+            hideEditButton={false}
+            onEdit={() => {
+              setDraft(days);
+              setLocalEdit(true);
+            }}
+            onSave={() => {}}
+            onCancel={() => {}}
+          />
+          <div className="rounded-2xl border border-dashed border-amber-500/40 bg-amber-50/60 px-8 py-12 text-center dark:bg-amber-500/10">
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <h3 className="font-display mt-5 text-[22px] font-semibold text-foreground">
+              Aucune étape n'a été générée
+            </h3>
+            <p className="mx-auto mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
+              L'IA n'a pas réussi à composer le programme jour par jour. Vous
+              pouvez ajouter manuellement vos étapes ci-dessous, ou
+              relancer une génération depuis la création d'un nouveau roadbook.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setDraft(days);
+                setLocalEdit(true);
+              }}
+              className="mt-6 gap-2 rounded-full"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Ajouter une première étape
+            </Button>
+          </div>
+        </section>
+        {locateDialog}
+      </>
+    );
+  }
+
   // Editorial vertical timeline (read mode only).
   if (!editing) {
     return (

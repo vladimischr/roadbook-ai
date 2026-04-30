@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Loader2, Plus, Trash2, Sparkles, PenLine, ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Plus, Trash2, Sparkles, PenLine, ChevronDown, Check } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,10 +57,13 @@ const MODES = [
   "Sur-mesure libre",
 ];
 
+type GenerationStep = "prompt" | "ai" | "save" | "done";
+
 function NewRoadbook() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  const [stepKey, setStepKey] = useState<GenerationStep>("prompt");
 
   const [form, setForm] = useState<RoadbookFormData>({
     client_name: "",
@@ -111,14 +114,27 @@ function NewRoadbook() {
     }
 
     setSubmitting(true);
+    setStepKey("prompt");
     try {
+      // Petit délai visuel pour que l'utilisateur enregistre l'étape "prompt"
+      // avant le passage à "ai" (l'appel Claude met 30-60s).
+      await new Promise((r) => setTimeout(r, 350));
+      setStepKey("ai");
       const roadbook = await callClaudeAPI(form);
+
+      // callClaudeAPI valide déjà days non vide. On vérifie en double — si
+      // jamais un futur changement casse cet invariant, on ne créé pas un
+      // roadbook fantôme en base.
+      if (!Array.isArray((roadbook as any).days) || (roadbook as any).days.length === 0) {
+        throw new Error("Le roadbook généré n'a pas d'étapes. Réessaye.");
+      }
 
       // Garantir la présence de travel_mode dans content même si Claude l'oublie
       if (form.travel_mode && !(roadbook as any).travel_mode) {
         (roadbook as any).travel_mode = form.travel_mode;
       }
 
+      setStepKey("save");
       const destination = (roadbook as any).destination || form.destination;
       const clientName = (roadbook as any).client_name || form.client_name;
       const startDate = (roadbook as any).start_date || form.start_date || null;
@@ -150,9 +166,11 @@ function NewRoadbook() {
         return;
       }
 
+      setStepKey("done");
       navigate({ to: "/roadbook/$id", params: { id: data.id } });
     } catch (error: any) {
       setSubmitting(false);
+      setStepKey("prompt");
       toast.error("Erreur de génération : " + (error?.message || "inconnue"));
       console.error("Erreur génération:", error);
     }
@@ -161,17 +179,7 @@ function NewRoadbook() {
   if (submitting) {
     return (
       <AppShell>
-        <div className="container-editorial px-6 sm:px-10 lg:px-14">
-          <div className="grid min-h-[60vh] place-items-center text-center">
-            <div>
-              <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-              <h2 className="mt-6 text-xl font-semibold">Création du roadbook…</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Construction de l'itinéraire, réglage du rythme, mise en forme du récit.
-              </p>
-            </div>
-          </div>
-        </div>
+        <GenerationLoader step={stepKey} destination={form.destination} />
       </AppShell>
     );
   }
@@ -465,5 +473,104 @@ function ModeCard({
       </div>
       <p className="mt-1.5 text-xs text-muted-foreground">{body}</p>
     </button>
+  );
+}
+
+const GENERATION_STEPS: { key: GenerationStep; label: string; hint: string }[] = [
+  { key: "prompt", label: "Préparation du brief", hint: "Mise en forme des données du voyage." },
+  { key: "ai", label: "Composition par l'IA", hint: "30 à 60 secondes — Claude rédige les jours, hébergements et conseils." },
+  { key: "save", label: "Mise au propre", hint: "Sauvegarde du roadbook dans votre atelier." },
+];
+
+function GenerationLoader({
+  step,
+  destination,
+}: {
+  step: GenerationStep;
+  destination: string;
+}) {
+  const activeIdx = Math.max(
+    0,
+    GENERATION_STEPS.findIndex((s) => s.key === step),
+  );
+  // Compteur d'attente pour rassurer l'utilisateur quand l'API met 60s.
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const t0 = Date.now();
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - t0) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="container-editorial px-6 sm:px-10 lg:px-14">
+      <div className="grid min-h-[70vh] place-items-center text-center">
+        <div className="w-full max-w-md">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-primary-soft">
+            <Sparkles className="h-7 w-7 animate-pulse text-primary" />
+          </div>
+          <p className="eyebrow mt-8">Génération en cours</p>
+          <h2 className="font-display mt-4 text-[34px] font-semibold leading-[1.05] tracking-tight text-foreground sm:text-[40px]">
+            {destination ? `Roadbook ${destination}` : "Roadbook en préparation"}
+          </h2>
+          <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+            L'IA pose les jalons du voyage : itinéraire, rythme, hébergements
+            et conseils sur place.
+          </p>
+
+          <ol className="mx-auto mt-10 space-y-4 text-left">
+            {GENERATION_STEPS.map((s, i) => {
+              const done = i < activeIdx;
+              const active = i === activeIdx;
+              return (
+                <li
+                  key={s.key}
+                  className={`flex items-start gap-3 rounded-xl border px-4 py-3 transition ${
+                    active
+                      ? "border-primary/40 bg-primary-soft/60"
+                      : done
+                        ? "border-border/60 bg-surface"
+                        : "border-border/40 bg-surface/60 opacity-60"
+                  }`}
+                >
+                  <div
+                    className={`mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-full transition ${
+                      done
+                        ? "bg-primary text-primary-foreground"
+                        : active
+                          ? "bg-primary/20 text-primary"
+                          : "bg-muted text-muted-foreground/50"
+                    }`}
+                  >
+                    {done ? (
+                      <Check className="h-3 w-3" strokeWidth={3} />
+                    ) : active ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className={`text-[14px] font-medium ${
+                        active || done ? "text-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      {s.label}
+                    </p>
+                    <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">
+                      {s.hint}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+
+          <p className="mt-8 text-[12px] text-text-soft">
+            Temps écoulé&nbsp;: {elapsed}s · Ne fermez pas l'onglet.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

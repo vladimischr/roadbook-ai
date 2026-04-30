@@ -130,8 +130,8 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             JSON.stringify(formData),
           );
           const duration_days = daysBetween(
-            formData.start_date,
-            formData.end_date,
+            formData.start_date ?? undefined,
+            formData.end_date ?? undefined,
           );
           const inputs = { ...formData, duration_days };
 
@@ -240,9 +240,9 @@ Génère le roadbook complet en JSON conforme à la structure définie dans ton 
             rawText.substring(0, 200),
           );
 
-          let roadbook: unknown;
+          let roadbook: Record<string, unknown>;
           try {
-            roadbook = JSON.parse(rawText);
+            roadbook = JSON.parse(rawText) as Record<string, unknown>;
           } catch (e: any) {
             console.error("[generate-roadbook] Parsing JSON échoué:", e);
             console.error(
@@ -258,6 +258,48 @@ Génère le roadbook complet en JSON conforme à la structure définie dans ton 
                   rawText.substring(0, 300),
               }),
               { status: 500, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          // Garde-fous : Claude peut renvoyer un JSON parsable mais sans days
+          // (ou avec un tableau vide), ce qui amène l'utilisateur sur une page
+          // de roadbook vide sans message d'erreur. On rejette explicitement.
+          const days = Array.isArray((roadbook as any).days)
+            ? ((roadbook as any).days as unknown[])
+            : null;
+          if (!days || days.length === 0) {
+            console.error(
+              "[generate-roadbook] Réponse sans days valides:",
+              rawText.substring(0, 500),
+            );
+            return new Response(
+              JSON.stringify({
+                error:
+                  "L'IA a renvoyé un roadbook sans étapes. Réessaye, ou ajuste la destination / les dates si le problème persiste.",
+              }),
+              { status: 502, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          // Si la durée est très éloignée de ce qui était demandé, on renvoie
+          // une 502 plutôt que de persister un roadbook tronqué (1 jour quand
+          // l'utilisateur en a demandé 14, par exemple).
+          if (
+            duration_days >= 2 &&
+            (days.length < Math.max(2, Math.floor(duration_days * 0.5)) ||
+              days.length > duration_days * 1.5 + 2)
+          ) {
+            console.error(
+              "[generate-roadbook] Mismatch durée — attendu",
+              duration_days,
+              "reçu",
+              days.length,
+            );
+            return new Response(
+              JSON.stringify({
+                error: `L'IA a renvoyé ${days.length} jour(s) au lieu des ${duration_days} attendus. Réessaye.`,
+              }),
+              { status: 502, headers: { "Content-Type": "application/json" } },
             );
           }
 
