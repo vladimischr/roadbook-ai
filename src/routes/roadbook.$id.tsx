@@ -1245,7 +1245,7 @@ function RoadbookBody({
       </section>
 
       {/* Itinéraire */}
-      <section className="reveal mt-24" style={staggerStyle(3)}>
+      <section className="reveal mt-32" style={staggerStyle(3)}>
         <div className="mb-6 flex items-center gap-4">
           <span className="rule-warm" />
           <span className="eyebrow">Itinéraire jour par jour</span>
