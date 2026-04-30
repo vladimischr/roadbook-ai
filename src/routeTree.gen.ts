@@ -148,6 +148,7 @@ export interface RootRouteChildren {
   NewRoute: typeof NewRoute
   ApiGenerateRoadbookRoute: typeof ApiGenerateRoadbookRoute
   ApiImportRoadbookRoute: typeof ApiImportRoadbookRoute
+  ApiMapsKeyRoute: typeof ApiMapsKeyRoute
   ApiRecomputeRoadbookRoute: typeof ApiRecomputeRoadbookRoute
   RoadbookIdRoute: typeof RoadbookIdRoute
   RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
