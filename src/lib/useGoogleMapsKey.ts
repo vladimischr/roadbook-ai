@@ -7,10 +7,19 @@ let inflight: Promise<string> | null = null;
 async function loadKey(): Promise<string> {
   if (cached) return cached;
   if (!inflight) {
-    inflight = getGoogleMapsApiKey().then((r) => {
-      cached = r.apiKey;
-      return r.apiKey;
-    });
+    inflight = getGoogleMapsApiKey()
+      .then((r) => {
+        cached = r.apiKey;
+        return r.apiKey;
+      })
+      .catch((err) => {
+        // Sans ce reset, un échec réseau ou une clé manquante côté serveur
+        // gèlerait définitivement le hook : tous les appels suivants
+        // recevraient la même promesse rejetée. On nettoie pour permettre
+        // un retry au prochain mount.
+        inflight = null;
+        throw err;
+      });
   }
   return inflight;
 }
