@@ -909,15 +909,17 @@ function RoadbookPage() {
   const content = (
     <AppShell breadcrumb={breadcrumb} topbarSlot={topbarSlot}>
       {/* Cover full-bleed */}
-      <CoverSection
-        cover={rb.cover}
-        destination={rb.destination}
-        theme={rb.theme}
-        travelMode={rb.travel_mode}
-        forceEdit={globalEdit}
-        onSave={(cover) => persist({ ...rb, cover })}
-        onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
-      />
+      <SectionErrorBoundary name="Couverture">
+        <CoverSection
+          cover={rb.cover}
+          destination={rb.destination}
+          theme={rb.theme}
+          travelMode={rb.travel_mode}
+          forceEdit={globalEdit}
+          onSave={(cover) => persist({ ...rb, cover })}
+          onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
+        />
+      </SectionErrorBoundary>
 
       {/* Editorial body */}
       <RoadbookBody
