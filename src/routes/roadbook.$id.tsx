@@ -306,6 +306,8 @@ function RoadbookPage() {
   const [status, setStatus] = useState<RoadbookStatus>("draft");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [savingState, setSavingState] = useState<"idle" | "saving">("idle");
+  const [geocodeStatus, setGeocodeStatus] = useState<"idle" | "running" | "done" | "failed">("idle");
+  const [geocodeAttempt, setGeocodeAttempt] = useState(0);
   const { apiKey } = useGoogleMapsKey();
   const rbRef = useRef<Roadbook | null>(null);
   rbRef.current = rb;
