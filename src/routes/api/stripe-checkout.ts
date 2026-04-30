@@ -103,6 +103,15 @@ export const Route = createFileRoute("/api/stripe-checkout")({
             // Permet à Stripe de gérer la TVA EU automatiquement (si Stripe
             // Tax est activé dans le dashboard). Sinon ignoré.
             automatic_tax: { enabled: true },
+            // Indispensable avec automatic_tax + customer existant : sans ça
+            // Stripe refuse parce que le customer n'a pas encore d'adresse,
+            // et il ne sait pas où récupérer l'adresse facturation entrée
+            // dans Checkout. "auto" = utilise l'adresse saisie dans Checkout
+            // pour mettre à jour le customer.
+            customer_update: {
+              address: "auto",
+              name: "auto",
+            },
             allow_promotion_codes: true,
             billing_address_collection: "required",
             success_url: `${origin}/billing?status=success&session_id={CHECKOUT_SESSION_ID}`,
