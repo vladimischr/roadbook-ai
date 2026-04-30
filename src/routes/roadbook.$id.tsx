@@ -1198,7 +1198,7 @@ function RoadbookBody({
       </section>
 
       {/* Tracé du voyage */}
-      <section className="reveal mt-24" style={staggerStyle(2)}>
+      <section className="reveal mt-32" style={staggerStyle(2)}>
         <div className="mb-6 flex items-center gap-4">
           <span className="rule-warm" />
           <span className="eyebrow">Tracé du voyage</span>
