@@ -1079,6 +1079,7 @@ function RoadbookPage() {
         updateAndAutosave={updateAndAutosave}
         geocodeStatus={geocodeStatus}
         onRetryGeocode={handleRetryGeocode}
+        onManualLocate={handleManualLocate}
       />
 
       {/* Footer */}
