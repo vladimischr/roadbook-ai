@@ -331,7 +331,7 @@ function RoadbookPage() {
           navigate({ to: "/dashboard" });
           return;
         }
-        const content = data.content as unknown as Roadbook;
+        const content = normalizeRoadbookContent(data.content);
         if (!content.destination && data.destination) {
           content.destination = data.destination;
         }
