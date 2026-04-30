@@ -2094,6 +2094,8 @@ function DaysTableSection({
   regionBias,
   forceEdit,
   onAddDayFromPlace,
+  onManualLocate,
+  regionBiasForLocate,
 }: {
   days: Day[];
   onSave: (d: Day[]) => void;
@@ -2101,6 +2103,8 @@ function DaysTableSection({
   regionBias?: string;
   forceEdit: boolean;
   onAddDayFromPlace?: (place: PlaceSelection, position: number | null) => void;
+  onManualLocate?: (dayNumber: number, place: PlaceSelection) => void | Promise<void>;
+  regionBiasForLocate?: string;
 }) {
   const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(days);
