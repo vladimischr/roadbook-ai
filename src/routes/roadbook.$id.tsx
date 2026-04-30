@@ -1372,7 +1372,7 @@ function RoadbookBody({
                 onAddDay={addDayFromPlace}
                 onRemoveDay={removeDayByNumber}
                 geocodeStatus={geocodeStatus}
-                onRetryGeocode={handleRetryGeocode}
+                onRetryGeocode={onRetryGeocode}
               />
             ) : (
               <div className="grid h-[450px] place-items-center bg-surface-warm text-sm text-muted-foreground">
