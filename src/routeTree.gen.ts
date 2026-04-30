@@ -218,7 +218,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGenerateRoadbookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/maps-key': {
+      id: '/api/maps-key'
+      path: '/api/maps-key'
+      fullPath: '/api/maps-key'
+      preLoaderRoute: typeof ApiMapsKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
+}
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
+  LoginRoute: LoginRoute,
+  NewRoute: NewRoute,
+  ApiGenerateRoadbookRoute: ApiGenerateRoadbookRoute,
+  ApiImportRoadbookRoute: ApiImportRoadbookRoute,
+  ApiMapsKeyRoute: ApiMapsKeyRoute,
+  ApiRecomputeRoadbookRoute: ApiRecomputeRoadbookRoute,
+  RoadbookIdRoute: RoadbookIdRoute,
+  RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
 }
 
 const rootRouteChildren: RootRouteChildren = {
