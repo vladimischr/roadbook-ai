@@ -1198,7 +1198,7 @@ function RoadbookBody({
       </section>
 
       {/* Tracé du voyage */}
-      <section className="reveal mt-24" style={staggerStyle(2)}>
+      <section className="reveal mt-32" style={staggerStyle(2)}>
         <div className="mb-6 flex items-center gap-4">
           <span className="rule-warm" />
           <span className="eyebrow">Tracé du voyage</span>
@@ -1245,7 +1245,7 @@ function RoadbookBody({
       </section>
 
       {/* Itinéraire */}
-      <section className="reveal mt-24" style={staggerStyle(3)}>
+      <section className="reveal mt-32" style={staggerStyle(3)}>
         <div className="mb-6 flex items-center gap-4">
           <span className="rule-warm" />
           <span className="eyebrow">Itinéraire jour par jour</span>
@@ -1485,16 +1485,10 @@ function CoverSection({
       {/* Content — centered vertically at ~60% */}
       <div className="relative z-0 flex h-full w-full items-end justify-center pb-[28%] sm:pb-[22%]">
         <div className="mx-auto max-w-4xl px-6 text-center sm:px-10">
-          <p
-            className="reveal eyebrow-light mb-6"
-            style={{ ...staggerStyle(0, 100), animation: "none" }}
-          >
-            Roadbook
-          </p>
+          <p className="eyebrow-light mb-6">Roadbook</p>
           <h1
-            className="reveal font-display font-bold leading-[0.95] text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.25)]"
+            className="font-display font-bold leading-[0.95] text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.25)]"
             style={{
-              ...staggerStyle(1, 100),
               fontSize: "clamp(56px, 8vw, 120px)",
               maxWidth: "16ch",
               margin: "0 auto",
@@ -1503,25 +1497,16 @@ function CoverSection({
             {cover.title}
           </h1>
           {cover.subtitle && (
-            <p
-              className="reveal font-display mx-auto mt-6 max-w-[600px] text-[20px] italic leading-snug text-white/95 sm:text-[24px]"
-              style={staggerStyle(2, 100)}
-            >
+            <p className="font-display mx-auto mt-6 max-w-[600px] text-[20px] italic leading-snug text-white/95 sm:text-[24px]">
               {cover.subtitle}
             </p>
           )}
           {cover.tagline && (
-            <p
-              className="reveal mx-auto mt-4 max-w-[560px] text-[14px] italic leading-relaxed text-white/80"
-              style={staggerStyle(3, 100)}
-            >
+            <p className="mx-auto mt-4 max-w-[560px] text-[14px] italic leading-relaxed text-white/80">
               {cover.tagline}
             </p>
           )}
-          <div
-            className="reveal mt-8 flex flex-wrap items-center justify-center gap-2"
-            style={staggerStyle(4, 100)}
-          >
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
             {cover.dates_label && (
               <span className="inline-block rounded-full border border-white/25 bg-white/10 px-[18px] py-2 text-[13px] font-medium text-white backdrop-blur-md">
                 {cover.dates_label}
