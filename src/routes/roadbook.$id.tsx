@@ -2112,6 +2112,9 @@ function DaysTableSection({
   // Position où on est en train d'insérer un nouveau jour via autocomplete.
   // null = panneau fermé, "end" = ajout en fin, number = insertion à cet index.
   const [addingAt, setAddingAt] = useState<number | "end" | null>(null);
+  // Jour pour lequel on a ouvert la modale de localisation manuelle.
+  const [locatingDay, setLocatingDay] = useState<Day | null>(null);
+  const [locateValue, setLocateValue] = useState("");
 
   // Resync local draft whenever the parent days prop changes. Évite la
   // divergence quand une étape est ajoutée/supprimée via la carte ou via
