@@ -130,8 +130,8 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             JSON.stringify(formData),
           );
           const duration_days = daysBetween(
-            formData.start_date,
-            formData.end_date,
+            formData.start_date ?? undefined,
+            formData.end_date ?? undefined,
           );
           const inputs = { ...formData, duration_days };
 
