@@ -1520,6 +1520,8 @@ function RoadbookBody({
             onSave={(days) => persist({ ...rb, days })}
             onAutoSave={(days) => updateAndAutosave({ ...rb, days })}
             onAddDayFromPlace={addDayFromPlace}
+            onManualLocate={onManualLocate}
+            regionBiasForLocate={rb?.destination}
           />
         </section>
       </SectionErrorBoundary>
