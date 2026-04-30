@@ -50,6 +50,15 @@ function SiteHeader() {
       <div className="container-editorial flex items-center justify-between px-6 py-4 sm:px-10">
         <Logo />
         <nav className="flex items-center gap-2 sm:gap-3">
+          <Link to="/pricing">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-[13px]"
+            >
+              Tarifs
+            </Button>
+          </Link>
           <Link to="/login">
             <Button
               variant="ghost"

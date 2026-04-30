@@ -62,6 +62,9 @@ import { useDestinationCover } from "@/lib/useDestinationCover";
 import { RoadbookMap, type DirectionsSegment } from "@/components/RoadbookMap";
 import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
 import { geocodePlace, getDirectionsSegment } from "@/lib/api";
+import { Paywall } from "@/components/Paywall";
+import { useSubscription } from "@/lib/useSubscription";
+import { getPlan } from "@/lib/plans";
 import {
   DndContext,
   closestCenter,
@@ -306,12 +309,18 @@ function RoadbookPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { info: subInfo, refetch: refetchSub } = useSubscription();
   const [rb, setRb] = useState<Roadbook | null>(null);
   const [loading, setLoading] = useState(true);
   const [globalEdit, setGlobalEdit] = useState(false);
   const [recomputeOpen, setRecomputeOpen] = useState(false);
   const [preserveModified, setPreserveModified] = useState(true);
   const [recomputing, setRecomputing] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallContext, setPaywallContext] = useState<{
+    title: string;
+    subtitle: string;
+  } | null>(null);
   const [status, setStatus] = useState<RoadbookStatus>("draft");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [savingState, setSavingState] = useState<"idle" | "saving">("idle");
@@ -910,9 +919,25 @@ function RoadbookPage() {
       const text = await res.text();
       if (!res.ok) {
         let msg = text;
+        let code: string | undefined;
         try {
-          msg = JSON.parse(text).error || text;
+          const parsed = JSON.parse(text);
+          msg = parsed.error || text;
+          code = parsed.code;
         } catch {}
+        // 402 → paywall plutôt que toast d'erreur
+        if (res.status === 402) {
+          await refetchSub();
+          setPaywallContext({
+            title:
+              code === "feature_locked"
+                ? "Recalcul IA — plan Pro"
+                : "Action bloquée",
+            subtitle: msg,
+          });
+          setPaywallOpen(true);
+          return;
+        }
         toast.error("Échec du recalcul : " + msg.slice(0, 200));
         return;
       }
@@ -996,6 +1021,20 @@ function RoadbookPage() {
   }
 
   const handleExportPdf = async () => {
+    // Gate PDF — uniquement les plans payants peuvent exporter en haute
+    // qualité. Le free tier voit le paywall.
+    if (subInfo) {
+      const plan = getPlan(subInfo.planKey);
+      if (!plan.allowsPdfExport) {
+        setPaywallContext({
+          title: "Export PDF — plan Pro",
+          subtitle:
+            "Le PDF éditorial est réservé aux plans payants. Démarre avec Solo (14j d'essai) pour livrer à tes clients.",
+        });
+        setPaywallOpen(true);
+        return;
+      }
+    }
     const toastId = toast.loading("Génération du PDF en cours…");
     try {
       const [{ pdf }, { RoadbookPDF }] = await Promise.all([
@@ -1167,6 +1206,16 @@ function RoadbookPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {subInfo && (
+        <Paywall
+          open={paywallOpen}
+          onOpenChange={setPaywallOpen}
+          currentPlanKey={subInfo.planKey}
+          title={paywallContext?.title}
+          subtitle={paywallContext?.subtitle}
+        />
       )}
     </AppShell>
   );

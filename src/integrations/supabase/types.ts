@@ -71,6 +71,48 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          email: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          plan_key: string
+          plan_status: string
+          current_period_end: string | null
+          trial_ends_at: string | null
+          cancel_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          plan_key?: string
+          plan_status?: string
+          current_period_end?: string | null
+          trial_ends_at?: string | null
+          cancel_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          plan_key?: string
+          plan_status?: string
+          current_period_end?: string | null
+          trial_ends_at?: string | null
+          cancel_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

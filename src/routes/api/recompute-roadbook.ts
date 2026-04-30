@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { getUserSubscriptionInfo } from "@/lib/subscription.server";
+import { getPlan } from "@/lib/plans";
 
 // Validation minimale du body — on ne valide pas la forme complète du
 // roadbook (trop coûteux et instable dans le temps), juste qu'on a bien un
@@ -67,6 +69,38 @@ export const Route = createFileRoute("/api/recompute-roadbook")({
             return new Response(
               JSON.stringify({ error: "Session invalide." }),
               { status: 401, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          // Recompute = appel Claude facturable. On le bloque sur les plans
+          // qui n'autorisent pas le recalcul (= free uniquement) et sur les
+          // abos en past_due. Le compteur d'usage n'est PAS incrémenté ici
+          // (le recompute ne crée pas de nouveau roadbook), mais on protège
+          // quand même le quota Anthropic.
+          const subInfo = await getUserSubscriptionInfo(userData.user.id);
+          const plan = getPlan(subInfo.planKey);
+          if (!plan.allowsRecompute) {
+            return new Response(
+              JSON.stringify({
+                error: `Le recalcul IA n'est pas inclus dans le plan ${plan.name}. Passe au plan Solo ou supérieur.`,
+                code: "feature_locked",
+                subscription: subInfo,
+              }),
+              { status: 402, headers: { "Content-Type": "application/json" } },
+            );
+          }
+          if (
+            subInfo.planStatus === "past_due" ||
+            subInfo.planStatus === "unpaid"
+          ) {
+            return new Response(
+              JSON.stringify({
+                error:
+                  "Ton paiement a échoué — mets à jour ta carte bancaire pour reprendre.",
+                code: "payment_required",
+                subscription: subInfo,
+              }),
+              { status: 402, headers: { "Content-Type": "application/json" } },
             );
           }
 

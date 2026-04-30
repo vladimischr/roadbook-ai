@@ -2,8 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BookOpen,
   Plus,
-  Upload,
-  User,
+  CreditCard,
   LogOut,
   Menu,
   X,
@@ -49,6 +48,10 @@ export function useFocusMode() {
 const NAV_ITEMS = [
   { to: "/dashboard" as const, label: "Vos roadbooks", icon: BookOpen },
   { to: "/new" as const, label: "Nouveau", icon: Plus },
+];
+
+const SECONDARY_NAV_ITEMS = [
+  { to: "/billing" as const, label: "Mon abonnement", icon: CreditCard },
 ];
 
 /* ---------- AppShell ---------- */
@@ -212,9 +215,11 @@ function SidebarContent({
         <div className="mx-3 my-5 h-px bg-border/60" />
 
         <ul className="space-y-0.5">
-          <li>
-            <SidebarLink to="/dashboard" icon={User} label="Profil" disabled />
-          </li>
+          {SECONDARY_NAV_ITEMS.map((item) => (
+            <li key={item.to}>
+              <SidebarLink to={item.to} icon={item.icon} label={item.label} />
+            </li>
+          ))}
         </ul>
       </nav>
 
@@ -245,7 +250,7 @@ function SidebarLink({
   label,
   disabled = false,
 }: {
-  to: "/dashboard" | "/new";
+  to: "/dashboard" | "/new" | "/billing";
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   disabled?: boolean;
@@ -305,13 +310,23 @@ function DefaultBreadcrumb({ path }: { path: string }) {
       />
     );
   }
+  if (path.startsWith("/billing")) {
+    return (
+      <BreadcrumbLine
+        items={[
+          { label: "Vos roadbooks", to: "/dashboard" },
+          { label: "Mon abonnement" },
+        ]}
+      />
+    );
+  }
   return <BreadcrumbLine items={[{ label: "" }]} />;
 }
 
 export function BreadcrumbLine({
   items,
 }: {
-  items: Array<{ label: string; to?: "/dashboard" | "/new" }>;
+  items: Array<{ label: string; to?: "/dashboard" | "/new" | "/billing" }>;
 }) {
   return (
     <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-[13px] text-muted-foreground">

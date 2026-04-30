@@ -10,6 +10,8 @@ import { callClaudeAPI, type RoadbookFormData } from "@/lib/mockGenerator";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { Paywall } from "@/components/Paywall";
+import { useSubscription } from "@/lib/useSubscription";
 
 export const Route = createFileRoute("/new")({
   component: NewRoadbook,
@@ -62,8 +64,10 @@ type GenerationStep = "prompt" | "ai" | "save" | "done";
 function NewRoadbook() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { info: subInfo, refetch: refetchSub } = useSubscription();
   const [submitting, setSubmitting] = useState(false);
   const [stepKey, setStepKey] = useState<GenerationStep>("prompt");
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   const [form, setForm] = useState<RoadbookFormData>({
     client_name: "",
@@ -110,6 +114,14 @@ function NewRoadbook() {
 
     if (!user) {
       toast.error("Vous devez être connecté pour générer un roadbook.");
+      return;
+    }
+
+    // Pré-check quota côté client (UX) — le serveur fait le check définitif.
+    // Évite l'attente de 30s sur l'API Claude pour rien si l'utilisateur sait
+    // déjà qu'il est bloqué.
+    if (subInfo && !subInfo.canGenerate) {
+      setPaywallOpen(true);
       return;
     }
 
@@ -171,6 +183,15 @@ function NewRoadbook() {
     } catch (error: any) {
       setSubmitting(false);
       setStepKey("prompt");
+      // 402 quota_exceeded / feature_locked → ouvrir le paywall, pas un toast
+      // brutal. Le serveur a déjà rendu le message human-readable mais le
+      // paywall est un meilleur appel à l'action.
+      if (error?.status === 402) {
+        await refetchSub();
+        setPaywallOpen(true);
+        toast.message(error.message ?? "Quota atteint", { duration: 4000 });
+        return;
+      }
       toast.error("Erreur de génération : " + (error?.message || "inconnue"));
       console.error("Erreur génération:", error);
     }
@@ -387,6 +408,20 @@ function NewRoadbook() {
         </form>
         </div>
       </div>
+
+      {subInfo && (
+        <Paywall
+          open={paywallOpen}
+          onOpenChange={setPaywallOpen}
+          currentPlanKey={subInfo.planKey}
+          title="Quota atteint"
+          subtitle={
+            subInfo.limit !== null
+              ? `Tu as utilisé ${subInfo.used} / ${subInfo.limit} roadbooks ce mois sur le plan ${subInfo.planKey}. Passe au plan supérieur pour continuer.`
+              : "Ton abonnement n'autorise pas la génération de nouveaux roadbooks."
+          }
+        />
+      )}
     </AppShell>
   );
 }

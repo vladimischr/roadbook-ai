@@ -81,7 +81,17 @@ export async function callClaudeAPI(
     const msg =
       (parsed && typeof parsed === "object" && (parsed as any).error) ||
       text.substring(0, 500);
-    throw new Error(String(msg));
+    const code =
+      parsed && typeof parsed === "object"
+        ? ((parsed as any).code as string | undefined)
+        : undefined;
+    const err = new Error(String(msg)) as Error & {
+      code?: string;
+      status?: number;
+    };
+    err.code = code;
+    err.status = res.status;
+    throw err;
   }
 
   if (!parsed || typeof parsed !== "object") {

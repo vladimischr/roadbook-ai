@@ -15,10 +15,13 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImportRoadbookDialog } from "@/components/ImportRoadbookDialog";
+import { Paywall } from "@/components/Paywall";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { useDestinationCover } from "@/lib/useDestinationCover";
+import { useSubscription } from "@/lib/useSubscription";
+import { getPlan } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -85,10 +88,12 @@ function formatDateRange(start: string | null, end: string | null) {
 
 function Dashboard() {
   const { user } = useAuth();
+  const { info: subInfo } = useSubscription();
   const [roadbooks, setRoadbooks] = useState<RoadbookRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [toDelete, setToDelete] = useState<RoadbookRow | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   // Filters / search / sort
   const [query, setQuery] = useState("");
@@ -209,6 +214,13 @@ function Dashboard() {
               </Link>
             </div>
           </div>
+
+          {subInfo && (
+            <UsageBanner
+              info={subInfo}
+              onUpgradeClick={() => setPaywallOpen(true)}
+            />
+          )}
 
           {/* Search + filters bar */}
           {(loading || roadbooks.length > 0) && (
@@ -331,7 +343,102 @@ function Dashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {subInfo && (
+        <Paywall
+          open={paywallOpen}
+          onOpenChange={setPaywallOpen}
+          currentPlanKey={subInfo.planKey}
+        />
+      )}
     </AppShell>
+  );
+}
+
+/* ---------- Usage banner ---------- */
+
+function UsageBanner({
+  info,
+  onUpgradeClick,
+}: {
+  info: NonNullable<ReturnType<typeof useSubscription>["info"]>;
+  onUpgradeClick: () => void;
+}) {
+  const plan = getPlan(info.planKey);
+  const isUnlimited = info.limit === null;
+  const isFree = info.planKey === "free";
+  const isPastDue =
+    info.planStatus === "past_due" || info.planStatus === "unpaid";
+  const isLow =
+    !isUnlimited &&
+    info.remaining !== null &&
+    info.remaining > 0 &&
+    info.remaining <= Math.max(1, Math.floor((info.limit ?? 1) * 0.2));
+  const isExceeded =
+    !isUnlimited && info.remaining !== null && info.remaining === 0;
+
+  // On masque le bandeau pour les plans illimités sans souci de paiement.
+  if (isUnlimited && !isPastDue) return null;
+
+  const tone = isPastDue
+    ? "destructive"
+    : isExceeded
+      ? "destructive"
+      : isLow
+        ? "warm"
+        : "neutral";
+
+  const styles = {
+    destructive: "border-destructive/40 bg-destructive/5",
+    warm: "border-amber-500/40 bg-amber-50/60 dark:bg-amber-500/10",
+    neutral: "border-border/60 bg-surface",
+  } as const;
+
+  return (
+    <div
+      className={cn(
+        "mt-8 flex flex-col gap-3 rounded-2xl border px-5 py-4 sm:flex-row sm:items-center sm:justify-between",
+        styles[tone],
+      )}
+    >
+      <div className="flex items-baseline gap-3">
+        <span className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          {plan.name}
+        </span>
+        <span className="text-[14px] text-foreground/85">
+          {isPastDue ? (
+            "Paiement en échec — mets à jour ta CB pour reprendre."
+          ) : isUnlimited ? (
+            "Génération illimitée."
+          ) : (
+            <>
+              <strong className="text-foreground">{info.used}</strong>
+              <span className="text-muted-foreground"> / {info.limit}</span>
+              <span className="ml-1 text-muted-foreground">
+                roadbooks ce mois
+              </span>
+            </>
+          )}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Link
+          to="/billing"
+          className="text-[12.5px] text-muted-foreground transition hover:text-foreground"
+        >
+          Voir détails
+        </Link>
+        {(isFree || isLow || isExceeded || isPastDue) && (
+          <Button
+            size="sm"
+            onClick={onUpgradeClick}
+            className="h-8 gap-1.5 rounded-full px-3.5 text-[12.5px]"
+          >
+            {isPastDue ? "Réactiver" : isFree ? "Passer Pro" : "Passer au supérieur"}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
 

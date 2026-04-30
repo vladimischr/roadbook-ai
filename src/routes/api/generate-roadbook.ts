@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { getUserSubscriptionInfo } from "@/lib/subscription.server";
 
 // Schéma Zod aligné sur RoadbookFormData (côté client) — refuse les payloads
 // invalides AVANT d'appeler Anthropic, pour ne pas brûler du quota sur du
@@ -106,6 +107,29 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             return new Response(
               JSON.stringify({ error: "Session invalide." }),
               { status: 401, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          // Quota check — refuse l'appel Anthropic si l'utilisateur a épuisé
+          // son plan, OU si son abo est past_due / unpaid (CB à mettre à
+          // jour). On répond 402 (Payment Required) avec un payload
+          // explicite que le client utilise pour ouvrir le paywall.
+          const subInfo = await getUserSubscriptionInfo(userData.user.id);
+          if (!subInfo.canGenerate) {
+            const reason =
+              subInfo.planStatus === "past_due" ||
+              subInfo.planStatus === "unpaid"
+                ? "Ton paiement a échoué — mets à jour ta carte bancaire dans le portail de facturation pour reprendre."
+                : subInfo.limit !== null && subInfo.used >= subInfo.limit
+                  ? `Tu as utilisé ${subInfo.used} / ${subInfo.limit} roadbooks ce mois sur le plan ${subInfo.planKey}. Passe au plan supérieur pour continuer.`
+                  : "Ton abonnement n'autorise pas la génération de roadbooks.";
+            return new Response(
+              JSON.stringify({
+                error: reason,
+                code: "quota_exceeded",
+                subscription: subInfo,
+              }),
+              { status: 402, headers: { "Content-Type": "application/json" } },
             );
           }
 
