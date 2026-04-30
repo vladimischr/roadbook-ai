@@ -257,6 +257,17 @@ export function RoadbookMap({
       ) : showMap ? (
         <div className="overflow-hidden rounded-xl border border-border">
           <GMap
+            // mapId est OBLIGATOIRE pour que les <AdvancedMarker> s'affichent
+            // (sinon Google Maps émet juste un warning console et les markers
+            // ne sont pas rendus — c'est ce qui causait la "carte sans pins").
+            // Valeur surchargeable via VITE_GOOGLE_MAP_ID si l'utilisateur a
+            // configuré un style éditorial cloud-based dans Google Cloud Console.
+            // Note : quand mapId est défini, la prop `styles` (JSON) est ignorée
+            // par Google ; le style éditorial doit être appliqué côté Cloud Console.
+            mapId={
+              (import.meta as unknown as { env?: Record<string, string> }).env
+                ?.VITE_GOOGLE_MAP_ID || "DEMO_MAP_ID"
+            }
             style={{ width: "100%", height: "450px" }}
             defaultCenter={
               provisional && provisional.lat != null && provisional.lng != null
@@ -266,7 +277,6 @@ export function RoadbookMap({
             defaultZoom={5}
             gestureHandling="greedy"
             disableDefaultUI={false}
-            styles={EDITORIAL_MAP_STYLE}
           >
             <FitBounds points={points} />
             <RouteRenderer
