@@ -44,12 +44,36 @@ interface Props {
   onAddDay?: (place: PlaceSelection, position: number | null) => void;
   /** Supprimer une étape du roadbook par son numéro de jour. */
   onRemoveDay?: (dayNumber: number) => void;
+  /** État du géocodage parent (pour afficher loader/erreur). */
+  geocodeStatus?: "idle" | "running" | "done" | "failed";
+  /** Force un nouveau passage de géocodage. */
+  onRetryGeocode?: () => void;
 }
 
 const AMBER = "#D97706";
 
 const TEAL = "#0F6E56";
 const TEAL_LIGHT = "#1D9E75";
+
+/* ---------- Style éditorial sable / teal ---------- */
+const EDITORIAL_MAP_STYLE: google.maps.MapTypeStyle[] = [
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#D6E5DC" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#5A7A6A" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#FAF5EC" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#F0E9D6" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#D8E5C9" }] },
+  { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#5C7A47" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#F5EDD8" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#E8D5A8" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#7A6A4A" }] },
+  { featureType: "poi", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", elementType: "geometry", stylers: [{ color: "#E5DCC0" }] },
+  { featureType: "transit.station", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative.country", elementType: "geometry.stroke", stylers: [{ color: "#C99263" }, { weight: 1 }] },
+  { featureType: "administrative.province", elementType: "geometry.stroke", stylers: [{ color: "#D4B896" }, { weight: 0.5 }] },
+  { featureType: "administrative", elementType: "labels.text.fill", stylers: [{ color: "#1F3D2E" }] },
+];
 
 /* ---------- Utilitaires ---------- */
 
@@ -126,6 +150,8 @@ export function RoadbookMap({
   regionBias,
   onAddDay,
   onRemoveDay,
+  geocodeStatus,
+  onRetryGeocode,
 }: Props) {
   const points = useMemo(
     () =>
@@ -146,6 +172,21 @@ export function RoadbookMap({
 
   const canAdd = !!onAddDay;
 
+  // Conditions d'affichage :
+  // - Si on a au moins 2 points → on montre la carte (le géocodage continue
+  //   en arrière-plan pour les jours restants)
+  // - Si on a 0-1 point ET un géocodage en cours → loader
+  // - Si on a 0 point ET échec → message d'erreur + retry
+  const hasEnoughPoints = points.length >= 2;
+  const noPoints = points.length === 0;
+  const showFailed = noPoints && geocodeStatus === "failed";
+  const showLoading =
+    !hasEnoughPoints &&
+    !provisional &&
+    (geocodeStatus === "running" || geocodeStatus === "idle") &&
+    !showFailed;
+  const showMap = hasEnoughPoints || provisional || (points.length > 0 && geocodeStatus === "done");
+
   return (
     <div className="space-y-3">
       {canAdd && (
@@ -164,15 +205,35 @@ export function RoadbookMap({
         </div>
       )}
 
-      {points.length === 0 && !provisional ? (
-        <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
-          Géocodage des étapes en cours… La carte apparaîtra dès que les lieux
-          seront localisés.
+      {showFailed ? (
+        <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 p-6 text-center text-sm text-muted-foreground">
+          <div className="space-y-3 max-w-md">
+            <p>
+              Impossible de localiser les étapes. Vérifie que les noms de
+              lieux sont reconnaissables (ex&nbsp;: «&nbsp;Arusha,
+              Tanzanie&nbsp;» au lieu de juste «&nbsp;Arusha&nbsp;»).
+            </p>
+            {onRetryGeocode && (
+              <button
+                type="button"
+                onClick={onRetryGeocode}
+                className="rounded-md border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-secondary/60"
+              >
+                Re-géocoder les étapes
+              </button>
+            )}
+          </div>
         </div>
-      ) : (
+      ) : showLoading ? (
+        <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <span className="inline-block h-3 w-3 animate-pulse rounded-full bg-[#0F6E56]" />
+            Géocodage en cours…
+          </div>
+        </div>
+      ) : showMap ? (
         <div className="overflow-hidden rounded-xl border border-border">
           <GMap
-            mapId="roadbook-map"
             style={{ width: "100%", height: "450px" }}
             defaultCenter={
               provisional && provisional.lat != null && provisional.lng != null
@@ -182,6 +243,7 @@ export function RoadbookMap({
             defaultZoom={5}
             gestureHandling="greedy"
             disableDefaultUI={false}
+            styles={EDITORIAL_MAP_STYLE}
           >
             <FitBounds points={points} />
             <RouteRenderer
@@ -213,6 +275,10 @@ export function RoadbookMap({
               />
             )}
           </GMap>
+        </div>
+      ) : (
+        <div className="grid h-[450px] place-items-center rounded-xl border border-dashed border-border bg-secondary/30 text-sm text-muted-foreground">
+          Aucune étape à afficher.
         </div>
       )}
     </div>
@@ -605,18 +671,18 @@ function ClusterMarker({
           style={{
             background: TEAL,
             color: "white",
-            minWidth: isMulti ? 48 : 34,
-            height: 34,
-            padding: isMulti ? "0 10px" : 0,
+            minWidth: isMulti ? 54 : 38,
+            height: 38,
+            padding: isMulti ? "0 12px" : 0,
             borderRadius: 999,
             display: "grid",
             placeItems: "center",
-            fontSize: isMulti ? 11 : 12,
+            fontSize: isMulti ? 12 : 13,
             fontWeight: 700,
             letterSpacing: 0.2,
-            border: "2px solid white",
+            border: "2px solid #FFFFFF",
             boxShadow:
-              "0 4px 10px rgba(15, 110, 86, 0.35), 0 1px 3px rgba(0,0,0,0.18)",
+              "0 6px 14px rgba(15, 110, 86, 0.45), 0 2px 4px rgba(0,0,0,0.25)",
             transform: hover ? "scale(1.15)" : "scale(1)",
             transition: "transform 180ms cubic-bezier(.2,.7,.3,1.2)",
             cursor: "pointer",

@@ -306,6 +306,8 @@ function RoadbookPage() {
   const [status, setStatus] = useState<RoadbookStatus>("draft");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [savingState, setSavingState] = useState<"idle" | "saving">("idle");
+  const [geocodeStatus, setGeocodeStatus] = useState<"idle" | "running" | "done" | "failed">("idle");
+  const [geocodeAttempt, setGeocodeAttempt] = useState(0);
   const { apiKey } = useGoogleMapsKey();
   const rbRef = useRef<Roadbook | null>(null);
   rbRef.current = rb;
@@ -417,9 +419,27 @@ function RoadbookPage() {
       .map((d, idx) => ({ d, idx }))
       .filter(({ d }) => typeof d.lat !== "number" || typeof d.lng !== "number")
       .filter(({ d }) => (d.stage || d.accommodation || "").trim().length > 0);
-    if (missing.length === 0) return;
+    if (missing.length === 0) {
+      setGeocodeStatus((s) => (s === "running" ? "done" : s));
+      return;
+    }
 
     let cancelled = false;
+    setGeocodeStatus("running");
+    let geocodedCount = 0;
+
+    const timeoutId = setTimeout(() => {
+      if (cancelled) return;
+      // Si après 30s on n'a rien obtenu, marque échec
+      const cur = rbRef.current;
+      const anyLocated = cur?.days?.some(
+        (d) => typeof d.lat === "number" && typeof d.lng === "number",
+      );
+      if (!anyLocated && geocodedCount === 0) {
+        setGeocodeStatus("failed");
+      }
+    }, 30000);
+
     (async () => {
       let working = rbRef.current;
       if (!working) return;
@@ -436,6 +456,7 @@ function RoadbookPage() {
           });
           if (cancelled) return;
           if (res.lat == null || res.lng == null) continue;
+          geocodedCount += 1;
           const nextDays: Day[] = working.days.map((d, i) =>
             i === idx ? { ...d, lat: res.lat, lng: res.lng } : d,
           );
@@ -445,13 +466,35 @@ function RoadbookPage() {
           console.error("Geocode error:", e);
         }
       }
+      if (!cancelled) {
+        clearTimeout(timeoutId);
+        const cur = rbRef.current;
+        const anyLocated = cur?.days?.some(
+          (d) => typeof d.lat === "number" && typeof d.lng === "number",
+        );
+        setGeocodeStatus(anyLocated ? "done" : "failed");
+      }
     })();
 
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rb?.days?.length, id]);
+  }, [rb?.days?.length, id, geocodeAttempt]);
+
+  // Force un nouveau passage de géocodage (efface lat/lng de tous les days)
+  const handleRetryGeocode = async () => {
+    const cur = rbRef.current;
+    if (!cur) return;
+    const cleared: Roadbook = {
+      ...cur,
+      days: cur.days.map((d) => ({ ...d, lat: undefined, lng: undefined })),
+    };
+    setGeocodeStatus("running");
+    await persistSilent(cleared);
+    setGeocodeAttempt((n) => n + 1);
+  };
 
   // Persistance segments cache (silencieuse)
   const handleSegmentsChange = (segs: DirectionsSegment[]) => {
@@ -934,6 +977,8 @@ function RoadbookPage() {
         removeDayByNumber={removeDayByNumber}
         persist={persist}
         updateAndAutosave={updateAndAutosave}
+        geocodeStatus={geocodeStatus}
+        onRetryGeocode={handleRetryGeocode}
       />
 
       {/* Footer */}
@@ -1233,6 +1278,8 @@ function RoadbookBody({
   removeDayByNumber,
   persist,
   updateAndAutosave,
+  geocodeStatus,
+  onRetryGeocode,
 }: {
   rb: Roadbook;
   apiKey: string | null;
@@ -1245,6 +1292,8 @@ function RoadbookBody({
   removeDayByNumber: (dayNumber: number) => void;
   persist: (next: Roadbook) => void;
   updateAndAutosave: (next: Roadbook) => void;
+  geocodeStatus: "idle" | "running" | "done" | "failed";
+  onRetryGeocode: () => void;
 }) {
   const revealRef = useScrollReveal<HTMLDivElement>();
 
@@ -1322,6 +1371,8 @@ function RoadbookBody({
                 regionBias={rb?.destination}
                 onAddDay={addDayFromPlace}
                 onRemoveDay={removeDayByNumber}
+                geocodeStatus={geocodeStatus}
+                onRetryGeocode={onRetryGeocode}
               />
             ) : (
               <div className="grid h-[450px] place-items-center bg-surface-warm text-sm text-muted-foreground">
