@@ -2166,9 +2166,49 @@ function DaysTableSection({
     [list],
   );
 
+  // Modale de localisation manuelle (réutilisée en lecture et édition).
+  const locateDialog = (
+    <Dialog
+      open={!!locatingDay}
+      onOpenChange={(open) => {
+        if (!open) {
+          setLocatingDay(null);
+          setLocateValue("");
+        }
+      }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Localiser cette étape</DialogTitle>
+          <DialogDescription>
+            {locatingDay
+              ? `Jour ${locatingDay.day} — ${locatingDay.stage || locatingDay.accommodation || "étape sans nom"}. Recherche le lieu correct sur Google Maps.`
+              : ""}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="pt-2">
+          <PlacesAutocompleteInput
+            value={locateValue}
+            onChange={setLocateValue}
+            onSelect={(p) => {
+              if (locatingDay && onManualLocate && p.lat != null && p.lng != null) {
+                onManualLocate(locatingDay.day, p);
+                setLocatingDay(null);
+                setLocateValue("");
+              }
+            }}
+            regionBias={regionBiasForLocate}
+            placeholder="Saisir un lieu, lodge, ville…"
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   // Editorial vertical timeline (read mode only).
   if (!editing) {
     return (
+      <>
       <section>
         <SectionHeader
           label=""
