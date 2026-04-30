@@ -102,6 +102,10 @@ interface Day {
   lat?: number | null;
   lng?: number | null;
   narrative_user_modified?: boolean;
+  /** "ok" si geocodé avec succès, "failed" si toutes les variantes ont échoué, "manual" si fixé par l'utilisateur. */
+  geocoding_status?: "ok" | "failed" | "manual";
+  /** Variante (query) qui a permis le géocodage — utile pour debug. */
+  geocoded_from?: string;
 }
 interface AccommodationSummary {
   name: string;
