@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useScrollReveal, staggerStyle } from "@/lib/animations";
 import { AppShell, useTopbarSlot, BreadcrumbLine } from "@/components/AppShell";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -191,6 +192,105 @@ function renumberDays(list: Day[]): Day[] {
   return list.map((d, i) => ({ ...d, day: i + 1 }));
 }
 
+/* ---------- Normalize legacy/incomplete roadbook content ---------- */
+
+function asNumber(v: unknown, fallback = 0): number {
+  const n = typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN;
+  return Number.isFinite(n) ? n : fallback;
+}
+function asString(v: unknown, fallback = ""): string {
+  return typeof v === "string" ? v : fallback;
+}
+
+/**
+ * Garantit qu'un objet content respecte la forme `Roadbook` complète, avec des
+ * valeurs par défaut sûres pour tout champ manquant. Indispensable pour les
+ * roadbooks créés avant la refonte (anciennes structures incomplètes) afin
+ * d'éviter les crashs au rendu (ex: `.toFixed`, `.map` sur undefined).
+ */
+function normalizeRoadbookContent(raw: unknown): Roadbook {
+  const c = (raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {}) as Record<string, unknown>;
+  const cover = (c.cover && typeof c.cover === "object" ? (c.cover as Record<string, unknown>) : {}) as Record<string, unknown>;
+  const destination = asString(c.destination);
+  const daysRaw = Array.isArray(c.days) ? (c.days as unknown[]) : [];
+  const days: Day[] = daysRaw.map((d, idx) => {
+    const x = (d && typeof d === "object" ? (d as Record<string, unknown>) : {}) as Record<string, unknown>;
+    const lat = typeof x.lat === "number" ? (x.lat as number) : null;
+    const lng = typeof x.lng === "number" ? (x.lng as number) : null;
+    return {
+      day: asNumber(x.day, idx + 1),
+      date: asString(x.date),
+      stage: asString(x.stage ?? x.location),
+      accommodation: asString(x.accommodation),
+      type: asString(x.type),
+      distance_km: asNumber(x.distance_km, 0),
+      drive_hours: asNumber(x.drive_hours, 0),
+      flight: asString(x.flight, "—"),
+      narrative: asString(x.narrative ?? x.description),
+      lat,
+      lng,
+      narrative_user_modified: x.narrative_user_modified === true,
+    };
+  });
+
+  const accommodations_summary: AccommodationSummary[] = (
+    Array.isArray(c.accommodations_summary) ? (c.accommodations_summary as unknown[]) : []
+  ).map((a) => {
+    const x = (a && typeof a === "object" ? (a as Record<string, unknown>) : {}) as Record<string, unknown>;
+    return {
+      name: asString(x.name),
+      location: asString(x.location),
+      nights: asNumber(x.nights, 1),
+      type: asString(x.type),
+    };
+  });
+
+  const contacts: Contact[] = (
+    Array.isArray(c.contacts) ? (c.contacts as unknown[]) : []
+  ).map((ct) => {
+    const x = (ct && typeof ct === "object" ? (ct as Record<string, unknown>) : {}) as Record<string, unknown>;
+    return {
+      role: asString(x.role),
+      name: asString(x.name),
+      phone: asString(x.phone),
+      email: asString(x.email),
+    };
+  });
+
+  const tips: string[] = (Array.isArray(c.tips) ? (c.tips as unknown[]) : [])
+    .map((t) => (typeof t === "string" ? t : ""))
+    .filter((t) => t.length > 0);
+
+  const directions_segments = Array.isArray(c.directions_segments)
+    ? (c.directions_segments as DirectionsSegment[])
+    : [];
+
+  return {
+    client_name: asString(c.client_name),
+    destination,
+    start_date: asString(c.start_date),
+    end_date: asString(c.end_date),
+    duration_days: typeof c.duration_days === "number" ? c.duration_days : days.length || undefined,
+    travelers: typeof c.travelers === "number" ? c.travelers : undefined,
+    profile: asString(c.profile) || undefined,
+    theme: asString(c.theme) || undefined,
+    travel_mode: asString(c.travel_mode) || undefined,
+    budget_range: asString(c.budget_range) || undefined,
+    cover: {
+      title: asString(cover.title) || destination || "Voyage",
+      subtitle: asString(cover.subtitle),
+      tagline: asString(cover.tagline),
+      dates_label: asString(cover.dates_label),
+    },
+    overview: asString(c.overview),
+    days,
+    accommodations_summary,
+    contacts,
+    tips,
+    directions_segments,
+  };
+}
+
 /* ---------- Page ---------- */
 
 function RoadbookPage() {
@@ -231,7 +331,7 @@ function RoadbookPage() {
           navigate({ to: "/dashboard" });
           return;
         }
-        const content = data.content as unknown as Roadbook;
+        const content = normalizeRoadbookContent(data.content);
         if (!content.destination && data.destination) {
           content.destination = data.destination;
         }
@@ -809,15 +909,17 @@ function RoadbookPage() {
   const content = (
     <AppShell breadcrumb={breadcrumb} topbarSlot={topbarSlot}>
       {/* Cover full-bleed */}
-      <CoverSection
-        cover={rb.cover}
-        destination={rb.destination}
-        theme={rb.theme}
-        travelMode={rb.travel_mode}
-        forceEdit={globalEdit}
-        onSave={(cover) => persist({ ...rb, cover })}
-        onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
-      />
+      <SectionErrorBoundary name="Couverture">
+        <CoverSection
+          cover={rb.cover}
+          destination={rb.destination}
+          theme={rb.theme}
+          travelMode={rb.travel_mode}
+          forceEdit={globalEdit}
+          onSave={(cover) => persist({ ...rb, cover })}
+          onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
+        />
+      </SectionErrorBoundary>
 
       {/* Editorial body */}
       <RoadbookBody
@@ -1149,164 +1251,178 @@ function RoadbookBody({
   return (
     <div ref={revealRef} className="mx-auto max-w-[880px] px-6 pb-32 pt-24 sm:px-10 sm:pt-32">
       {/* Vue d'ensemble */}
-      <section className="reveal" style={staggerStyle(0)}>
-        <div className="mb-6 flex items-center gap-4">
-          <span className="rule-warm" />
-          <span className="eyebrow">Vue d'ensemble</span>
-        </div>
-        <EditableTextSection
-          label=""
-          value={rb.overview}
-          forceEdit={globalEdit}
-          onSave={(overview) => persist({ ...rb, overview })}
-          onAutoSave={(overview) => updateAndAutosave({ ...rb, overview })}
-          hideHeader
-        />
-      </section>
+      <SectionErrorBoundary name="Vue d'ensemble">
+        <section className="reveal" style={staggerStyle(0)}>
+          <div className="mb-6 flex items-center gap-4">
+            <span className="rule-warm" />
+            <span className="eyebrow">Vue d'ensemble</span>
+          </div>
+          <EditableTextSection
+            label=""
+            value={rb?.overview ?? ""}
+            forceEdit={globalEdit}
+            onSave={(overview) => persist({ ...rb, overview })}
+            onAutoSave={(overview) => updateAndAutosave({ ...rb, overview })}
+            hideHeader
+          />
+        </section>
+      </SectionErrorBoundary>
 
       {/* En bref — stats */}
-      <section className="reveal mt-24" style={staggerStyle(1)}>
-        <div className="mb-6 flex items-center gap-4">
-          <span className="rule-warm" />
-          <span className="eyebrow">En bref</span>
-        </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
-          <StatCell
-            label="Durée"
-            value={
-              rb.duration_days
-                ? `${rb.duration_days} j`
-                : rb.days
-                  ? `${rb.days.length} j`
-                  : "—"
-            }
-          />
-          <StatCell
-            label="Voyageurs"
-            value={
-              rb.travelers
-                ? `${rb.travelers}${rb.profile ? ` · ${rb.profile}` : ""}`
-                : rb.profile || "—"
-            }
-          />
-          <StatCell label="Modalité" value={rb.travel_mode || "—"} />
-          <StatCell
-            label="Distance"
-            value={totalDistance > 0 ? `${totalDistance} km` : "—"}
-          />
-        </div>
-      </section>
+      <SectionErrorBoundary name="En bref">
+        <section className="reveal mt-24" style={staggerStyle(1)}>
+          <div className="mb-6 flex items-center gap-4">
+            <span className="rule-warm" />
+            <span className="eyebrow">En bref</span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+            <StatCell
+              label="Durée"
+              value={
+                rb?.duration_days
+                  ? `${rb.duration_days} j`
+                  : Array.isArray(rb?.days) && rb.days.length > 0
+                    ? `${rb.days.length} j`
+                    : "—"
+              }
+            />
+            <StatCell
+              label="Voyageurs"
+              value={
+                rb?.travelers
+                  ? `${rb.travelers}${rb?.profile ? ` · ${rb.profile}` : ""}`
+                  : rb?.profile || "—"
+              }
+            />
+            <StatCell label="Modalité" value={rb?.travel_mode || "—"} />
+            <StatCell
+              label="Distance"
+              value={totalDistance > 0 ? `${totalDistance} km` : "—"}
+            />
+          </div>
+        </section>
+      </SectionErrorBoundary>
 
       {/* Tracé du voyage */}
-      <section className="reveal mt-32" style={staggerStyle(2)}>
-        <div className="mb-6 flex items-center gap-4">
-          <span className="rule-warm" />
-          <span className="eyebrow">Tracé du voyage</span>
-        </div>
-        <h2 className="font-display mb-8 text-3xl font-semibold leading-tight text-foreground sm:text-[32px]">
-          Vue d'ensemble de l'itinéraire
-        </h2>
-        <div className="overflow-hidden rounded-2xl shadow-soft-lg">
-          {apiKey ? (
-            <RoadbookMap
-              days={rb.days || []}
-              segments={rb.directions_segments ?? []}
-              onSegmentsChange={handleSegmentsChange}
-              regionBias={rb.destination}
-              onAddDay={addDayFromPlace}
-              onRemoveDay={removeDayByNumber}
-            />
-          ) : (
-            <div className="grid h-[450px] place-items-center bg-surface-warm text-sm text-muted-foreground">
-              Chargement de la carte…
-            </div>
-          )}
-        </div>
-        <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 text-[13px] text-muted-foreground">
-          <span>
-            Distance totale&nbsp;:{" "}
-            <span className="font-semibold text-foreground">
-              {totalDistance} km
+      <SectionErrorBoundary name="Tracé du voyage">
+        <section className="reveal mt-32" style={staggerStyle(2)}>
+          <div className="mb-6 flex items-center gap-4">
+            <span className="rule-warm" />
+            <span className="eyebrow">Tracé du voyage</span>
+          </div>
+          <h2 className="font-display mb-8 text-3xl font-semibold leading-tight text-foreground sm:text-[32px]">
+            Vue d'ensemble de l'itinéraire
+          </h2>
+          <div className="overflow-hidden rounded-2xl shadow-soft-lg">
+            {apiKey ? (
+              <RoadbookMap
+                days={Array.isArray(rb?.days) ? rb.days : []}
+                segments={rb?.directions_segments ?? []}
+                onSegmentsChange={handleSegmentsChange}
+                regionBias={rb?.destination}
+                onAddDay={addDayFromPlace}
+                onRemoveDay={removeDayByNumber}
+              />
+            ) : (
+              <div className="grid h-[450px] place-items-center bg-surface-warm text-sm text-muted-foreground">
+                Chargement de la carte…
+              </div>
+            )}
+          </div>
+          <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 text-[13px] text-muted-foreground">
+            <span>
+              Distance totale&nbsp;:{" "}
+              <span className="font-semibold text-foreground">
+                {totalDistance} km
+              </span>
             </span>
-          </span>
-          <span>
-            Route totale&nbsp;:{" "}
-            <span className="font-semibold text-foreground">
-              {totalDriveHours.toFixed(1)} h
+            <span>
+              Route totale&nbsp;:{" "}
+              <span className="font-semibold text-foreground">
+                {(totalDriveHours ?? 0).toFixed(1)} h
+              </span>
             </span>
-          </span>
-          <span>
-            Hébergements&nbsp;:{" "}
-            <span className="font-semibold text-foreground">
-              {accommodationCount}
+            <span>
+              Hébergements&nbsp;:{" "}
+              <span className="font-semibold text-foreground">
+                {accommodationCount}
+              </span>
             </span>
-          </span>
-        </div>
-      </section>
+          </div>
+        </section>
+      </SectionErrorBoundary>
 
       {/* Itinéraire */}
-      <section className="reveal mt-32" style={staggerStyle(3)}>
-        <div className="mb-6 flex items-center gap-4">
-          <span className="rule-warm" />
-          <span className="eyebrow">Itinéraire jour par jour</span>
-        </div>
-        <DaysTableSection
-          days={rb.days || []}
-          regionBias={rb.destination}
-          forceEdit={globalEdit}
-          onSave={(days) => persist({ ...rb, days })}
-          onAutoSave={(days) => updateAndAutosave({ ...rb, days })}
-          onAddDayFromPlace={addDayFromPlace}
-        />
-      </section>
+      <SectionErrorBoundary name="Itinéraire jour par jour">
+        <section className="reveal mt-32" style={staggerStyle(3)}>
+          <div className="mb-6 flex items-center gap-4">
+            <span className="rule-warm" />
+            <span className="eyebrow">Itinéraire jour par jour</span>
+          </div>
+          <DaysTableSection
+            days={Array.isArray(rb?.days) ? rb.days : []}
+            regionBias={rb?.destination}
+            forceEdit={globalEdit}
+            onSave={(days) => persist({ ...rb, days })}
+            onAutoSave={(days) => updateAndAutosave({ ...rb, days })}
+            onAddDayFromPlace={addDayFromPlace}
+          />
+        </section>
+      </SectionErrorBoundary>
 
       {/* Hébergements */}
-      <section className="reveal mt-24" style={staggerStyle(4)}>
-        <div className="mb-6 flex items-center gap-4">
-          <span className="rule-warm" />
-          <span className="eyebrow">Hébergements</span>
-        </div>
-        <AccommodationsSection
-          items={rb.accommodations_summary || []}
-          regionBias={rb.destination}
-          forceEdit={globalEdit}
-          onSave={(accommodations_summary) =>
-            persist({ ...rb, accommodations_summary })
-          }
-          onAutoSave={(accommodations_summary) =>
-            updateAndAutosave({ ...rb, accommodations_summary })
-          }
-        />
-      </section>
+      <SectionErrorBoundary name="Hébergements">
+        <section className="reveal mt-24" style={staggerStyle(4)}>
+          <div className="mb-6 flex items-center gap-4">
+            <span className="rule-warm" />
+            <span className="eyebrow">Hébergements</span>
+          </div>
+          <AccommodationsSection
+            items={Array.isArray(rb?.accommodations_summary) ? rb.accommodations_summary : []}
+            regionBias={rb?.destination}
+            forceEdit={globalEdit}
+            onSave={(accommodations_summary) =>
+              persist({ ...rb, accommodations_summary })
+            }
+            onAutoSave={(accommodations_summary) =>
+              updateAndAutosave({ ...rb, accommodations_summary })
+            }
+          />
+        </section>
+      </SectionErrorBoundary>
 
       {/* Contacts */}
-      <section className="reveal mt-24" style={staggerStyle(5)}>
-        <div className="mb-6 flex items-center gap-4">
-          <span className="rule-warm" />
-          <span className="eyebrow">Contacts pratiques</span>
-        </div>
-        <ContactsSection
-          contacts={rb.contacts || []}
-          regionBias={rb.destination}
-          forceEdit={globalEdit}
-          onSave={(contacts) => persist({ ...rb, contacts })}
-          onAutoSave={(contacts) => updateAndAutosave({ ...rb, contacts })}
-        />
-      </section>
+      <SectionErrorBoundary name="Contacts pratiques">
+        <section className="reveal mt-24" style={staggerStyle(5)}>
+          <div className="mb-6 flex items-center gap-4">
+            <span className="rule-warm" />
+            <span className="eyebrow">Contacts pratiques</span>
+          </div>
+          <ContactsSection
+            contacts={Array.isArray(rb?.contacts) ? rb.contacts : []}
+            regionBias={rb?.destination}
+            forceEdit={globalEdit}
+            onSave={(contacts) => persist({ ...rb, contacts })}
+            onAutoSave={(contacts) => updateAndAutosave({ ...rb, contacts })}
+          />
+        </section>
+      </SectionErrorBoundary>
 
       {/* Tips */}
-      <section className="reveal mt-24" style={staggerStyle(6)}>
-        <div className="mb-6 flex items-center gap-4">
-          <span className="rule-warm" />
-          <span className="eyebrow">Conseils &amp; recommandations</span>
-        </div>
-        <TipsSection
-          tips={rb.tips || []}
-          forceEdit={globalEdit}
-          onSave={(tips) => persist({ ...rb, tips })}
-          onAutoSave={(tips) => updateAndAutosave({ ...rb, tips })}
-        />
-      </section>
+      <SectionErrorBoundary name="Conseils & recommandations">
+        <section className="reveal mt-24" style={staggerStyle(6)}>
+          <div className="mb-6 flex items-center gap-4">
+            <span className="rule-warm" />
+            <span className="eyebrow">Conseils &amp; recommandations</span>
+          </div>
+          <TipsSection
+            tips={Array.isArray(rb?.tips) ? rb.tips : []}
+            forceEdit={globalEdit}
+            onSave={(tips) => persist({ ...rb, tips })}
+            onAutoSave={(tips) => updateAndAutosave({ ...rb, tips })}
+          />
+        </section>
+      </SectionErrorBoundary>
     </div>
   );
 }
