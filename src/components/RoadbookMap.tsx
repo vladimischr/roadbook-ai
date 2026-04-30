@@ -20,6 +20,7 @@ export interface MapDay {
   flight?: string;
   lat?: number | null;
   lng?: number | null;
+  geocoding_status?: "ok" | "failed" | "manual";
 }
 
 export interface DirectionsSegment {
