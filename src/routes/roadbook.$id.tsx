@@ -2320,10 +2320,13 @@ function DaysTableSection({
           ))}
         </ol>
       </section>
+      {locateDialog}
+      </>
     );
   }
 
   return (
+    <>
     <section>
       <SectionHeader
         label=""
