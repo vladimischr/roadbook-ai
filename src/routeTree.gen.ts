@@ -240,18 +240,6 @@ const rootRouteChildren: RootRouteChildren = {
   RoadbookIdRoute: RoadbookIdRoute,
   RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
 }
-
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
-  LoginRoute: LoginRoute,
-  NewRoute: NewRoute,
-  ApiGenerateRoadbookRoute: ApiGenerateRoadbookRoute,
-  ApiImportRoadbookRoute: ApiImportRoadbookRoute,
-  ApiRecomputeRoadbookRoute: ApiRecomputeRoadbookRoute,
-  RoadbookIdRoute: RoadbookIdRoute,
-  RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
-}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
