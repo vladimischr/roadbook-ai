@@ -2211,9 +2211,33 @@ function DaysTableSection({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-display text-[22px] font-semibold leading-tight text-foreground sm:text-[26px]">
-                      {d.stage || "Étape à définir"}
-                    </h3>
+                    <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+                      <h3 className="font-display text-[22px] font-semibold leading-tight text-foreground sm:text-[26px]">
+                        {d.stage || "Étape à définir"}
+                      </h3>
+                      {d.geocoding_status === "failed" && onManualLocate && (
+                        <TooltipProvider delayDuration={150}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setLocatingDay(d);
+                                  setLocateValue(d.stage || d.accommodation || "");
+                                }}
+                                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-800 shadow-sm transition hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+                              >
+                                <MapPin className="h-3 w-3" />
+                                À localiser
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-xs">
+                              Cette étape n'a pas pu être placée sur la carte. Clique pour localiser manuellement.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                     {d.narrative && (
                       <p className="mt-3 max-w-[58ch] text-[15px] leading-relaxed text-muted-foreground">
                         {d.narrative}
