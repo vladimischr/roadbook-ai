@@ -1381,6 +1381,7 @@ function RoadbookBody({
   updateAndAutosave,
   geocodeStatus,
   onRetryGeocode,
+  onManualLocate,
 }: {
   rb: Roadbook;
   apiKey: string | null;
@@ -1395,6 +1396,7 @@ function RoadbookBody({
   updateAndAutosave: (next: Roadbook) => void;
   geocodeStatus: "idle" | "running" | "done" | "failed";
   onRetryGeocode: () => void;
+  onManualLocate: (dayNumber: number, place: PlaceSelection) => void | Promise<void>;
 }) {
   const revealRef = useScrollReveal<HTMLDivElement>();
 
