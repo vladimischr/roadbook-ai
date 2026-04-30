@@ -44,12 +44,36 @@ interface Props {
   onAddDay?: (place: PlaceSelection, position: number | null) => void;
   /** Supprimer une étape du roadbook par son numéro de jour. */
   onRemoveDay?: (dayNumber: number) => void;
+  /** État du géocodage parent (pour afficher loader/erreur). */
+  geocodeStatus?: "idle" | "running" | "done" | "failed";
+  /** Force un nouveau passage de géocodage. */
+  onRetryGeocode?: () => void;
 }
 
 const AMBER = "#D97706";
 
 const TEAL = "#0F6E56";
 const TEAL_LIGHT = "#1D9E75";
+
+/* ---------- Style éditorial sable / teal ---------- */
+const EDITORIAL_MAP_STYLE: google.maps.MapTypeStyle[] = [
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#D6E5DC" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#5A7A6A" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#FAF5EC" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#F0E9D6" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#D8E5C9" }] },
+  { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#5C7A47" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#F5EDD8" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#E8D5A8" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#7A6A4A" }] },
+  { featureType: "poi", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", elementType: "geometry", stylers: [{ color: "#E5DCC0" }] },
+  { featureType: "transit.station", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative.country", elementType: "geometry.stroke", stylers: [{ color: "#C99263" }, { weight: 1 }] },
+  { featureType: "administrative.province", elementType: "geometry.stroke", stylers: [{ color: "#D4B896" }, { weight: 0.5 }] },
+  { featureType: "administrative", elementType: "labels.text.fill", stylers: [{ color: "#1F3D2E" }] },
+];
 
 /* ---------- Utilitaires ---------- */
 
