@@ -977,6 +977,8 @@ function RoadbookPage() {
         removeDayByNumber={removeDayByNumber}
         persist={persist}
         updateAndAutosave={updateAndAutosave}
+        geocodeStatus={geocodeStatus}
+        onRetryGeocode={handleRetryGeocode}
       />
 
       {/* Footer */}
