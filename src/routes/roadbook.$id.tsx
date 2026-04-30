@@ -420,13 +420,16 @@ function RoadbookPage() {
     }
   };
 
-  // Géocodage rétroactif
+  // Géocodage rétroactif progressif (variantes par ordre de spécificité).
   useEffect(() => {
     if (!rb) return;
     const days = rb.days || [];
     const missing = days
       .map((d, idx) => ({ d, idx }))
       .filter(({ d }) => typeof d.lat !== "number" || typeof d.lng !== "number")
+      // On ne retente pas les jours déjà marqués "failed" automatiquement —
+      // ils attendent une re-tentative explicite (bouton ou édition manuelle)
+      .filter(({ d }) => d.geocoding_status !== "failed")
       .filter(({ d }) => (d.stage || d.accommodation || "").trim().length > 0);
     if (missing.length === 0) {
       setGeocodeStatus((s) => (s === "running" ? "done" : s));
@@ -439,7 +442,6 @@ function RoadbookPage() {
 
     const timeoutId = setTimeout(() => {
       if (cancelled) return;
-      // Si après 30s on n'a rien obtenu, marque échec
       const cur = rbRef.current;
       const anyLocated = cur?.days?.some(
         (d) => typeof d.lat === "number" && typeof d.lng === "number",
@@ -449,6 +451,43 @@ function RoadbookPage() {
       }
     }, 30000);
 
+    const buildVariants = (day: Day, destination: string): string[] => {
+      const out: string[] = [];
+      const acc = (day.accommodation || "").trim();
+      const stage = (day.stage || "").trim();
+      const dest = (destination || "").trim();
+      if (acc && stage) {
+        out.push(dest ? `${acc}, ${stage}, ${dest}` : `${acc}, ${stage}`);
+        if (dest) out.push(`${acc}, ${dest}`);
+      }
+      if (stage) {
+        if (dest) out.push(`${stage}, ${dest}`);
+        out.push(stage);
+        // Étapes composées (ex: "Sesriem - dunes du Sossusvlei")
+        const parts = stage
+          .split(/\s*[-—–:|]\s*/)
+          .map((p) => p.trim())
+          .filter(Boolean);
+        if (parts.length > 1) {
+          for (const p of parts) {
+            out.push(dest ? `${p}, ${dest}` : p);
+          }
+        }
+      }
+      if (acc) {
+        if (dest) out.push(`${acc}, ${dest}`);
+        out.push(acc);
+      }
+      // Dédup en préservant l'ordre
+      const seen = new Set<string>();
+      return out.filter((v) => {
+        const k = v.toLowerCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+    };
+
     (async () => {
       let working = rbRef.current;
       if (!working) return;
@@ -457,23 +496,43 @@ function RoadbookPage() {
         const day = working.days[idx];
         if (!day) continue;
         if (typeof day.lat === "number" && typeof day.lng === "number") continue;
-        const query = (day.stage || day.accommodation || "").trim();
-        if (!query) continue;
-        try {
-          const res = await geocodePlace({
-            data: { query, region: working.destination },
-          });
+
+        const variants = buildVariants(day, working.destination);
+        let located: { lat: number; lng: number; from: string } | null = null;
+
+        for (let vIdx = 0; vIdx < variants.length; vIdx++) {
           if (cancelled) return;
-          if (res.lat == null || res.lng == null) continue;
-          geocodedCount += 1;
-          const nextDays: Day[] = working.days.map((d, i) =>
-            i === idx ? { ...d, lat: res.lat, lng: res.lng } : d,
-          );
-          working = { ...working, days: nextDays };
-          await persistSilent(working);
-        } catch (e) {
-          console.error("Geocode error:", e);
+          const query = variants[vIdx];
+          try {
+            const res = await geocodePlace({
+              data: { query, region: working.destination },
+            });
+            if (cancelled) return;
+            if (res.lat != null && res.lng != null) {
+              located = { lat: res.lat, lng: res.lng, from: query };
+              break;
+            }
+          } catch (e) {
+            console.warn(`Geocoding failed for "${query}":`, (e as Error).message);
+          }
         }
+
+        const nextDays: Day[] = working.days.map((d, i) => {
+          if (i !== idx) return d;
+          if (located) {
+            return {
+              ...d,
+              lat: located.lat,
+              lng: located.lng,
+              geocoding_status: "ok",
+              geocoded_from: located.from,
+            };
+          }
+          return { ...d, geocoding_status: "failed" };
+        });
+        working = { ...working, days: nextDays };
+        if (located) geocodedCount += 1;
+        await persistSilent(working);
       }
       if (!cancelled) {
         clearTimeout(timeoutId);
@@ -492,17 +551,49 @@ function RoadbookPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rb?.days?.length, id, geocodeAttempt]);
 
-  // Force un nouveau passage de géocodage (efface lat/lng de tous les days)
+  // Force un nouveau passage de géocodage : efface lat/lng + flag failed
+  // pour TOUS les jours (re-tente complètement avec la stratégie progressive).
   const handleRetryGeocode = async () => {
     const cur = rbRef.current;
     if (!cur) return;
     const cleared: Roadbook = {
       ...cur,
-      days: cur.days.map((d) => ({ ...d, lat: undefined, lng: undefined })),
+      days: cur.days.map((d) => ({
+        ...d,
+        lat: undefined,
+        lng: undefined,
+        geocoding_status: undefined,
+        geocoded_from: undefined,
+      })),
     };
     setGeocodeStatus("running");
     await persistSilent(cleared);
     setGeocodeAttempt((n) => n + 1);
+  };
+
+  // Fixe manuellement la position d'une étape via PlacesAutocomplete.
+  const handleManualLocate = async (
+    dayNumber: number,
+    place: PlaceSelection,
+  ) => {
+    const cur = rbRef.current;
+    if (!cur || place.lat == null || place.lng == null) return;
+    const next: Roadbook = {
+      ...cur,
+      days: cur.days.map((d) =>
+        d.day === dayNumber
+          ? {
+              ...d,
+              lat: place.lat,
+              lng: place.lng,
+              geocoding_status: "manual",
+              geocoded_from: `manual: ${place.name}`,
+            }
+          : d,
+      ),
+    };
+    await persistSilent(next);
+    toast.success(`Étape jour ${dayNumber} localisée`, { duration: 1800 });
   };
 
   // Persistance segments cache (silencieuse)
