@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useScrollReveal, staggerStyle } from "@/lib/animations";
 import { AppShell, useTopbarSlot, BreadcrumbLine } from "@/components/AppShell";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
