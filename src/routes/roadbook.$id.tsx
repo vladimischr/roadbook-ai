@@ -102,6 +102,10 @@ interface Day {
   lat?: number | null;
   lng?: number | null;
   narrative_user_modified?: boolean;
+  /** "ok" si geocodé avec succès, "failed" si toutes les variantes ont échoué, "manual" si fixé par l'utilisateur. */
+  geocoding_status?: "ok" | "failed" | "manual";
+  /** Variante (query) qui a permis le géocodage — utile pour debug. */
+  geocoded_from?: string;
 }
 interface AccommodationSummary {
   name: string;
@@ -217,6 +221,9 @@ function normalizeRoadbookContent(raw: unknown): Roadbook {
     const x = (d && typeof d === "object" ? (d as Record<string, unknown>) : {}) as Record<string, unknown>;
     const lat = typeof x.lat === "number" ? (x.lat as number) : null;
     const lng = typeof x.lng === "number" ? (x.lng as number) : null;
+    const gs = x.geocoding_status;
+    const geocoding_status =
+      gs === "ok" || gs === "failed" || gs === "manual" ? (gs as Day["geocoding_status"]) : undefined;
     return {
       day: asNumber(x.day, idx + 1),
       date: asString(x.date),
@@ -230,6 +237,8 @@ function normalizeRoadbookContent(raw: unknown): Roadbook {
       lat,
       lng,
       narrative_user_modified: x.narrative_user_modified === true,
+      geocoding_status,
+      geocoded_from: typeof x.geocoded_from === "string" ? (x.geocoded_from as string) : undefined,
     };
   });
 
@@ -411,13 +420,16 @@ function RoadbookPage() {
     }
   };
 
-  // Géocodage rétroactif
+  // Géocodage rétroactif progressif (variantes par ordre de spécificité).
   useEffect(() => {
     if (!rb) return;
     const days = rb.days || [];
     const missing = days
       .map((d, idx) => ({ d, idx }))
       .filter(({ d }) => typeof d.lat !== "number" || typeof d.lng !== "number")
+      // On ne retente pas les jours déjà marqués "failed" automatiquement —
+      // ils attendent une re-tentative explicite (bouton ou édition manuelle)
+      .filter(({ d }) => d.geocoding_status !== "failed")
       .filter(({ d }) => (d.stage || d.accommodation || "").trim().length > 0);
     if (missing.length === 0) {
       setGeocodeStatus((s) => (s === "running" ? "done" : s));
@@ -430,7 +442,6 @@ function RoadbookPage() {
 
     const timeoutId = setTimeout(() => {
       if (cancelled) return;
-      // Si après 30s on n'a rien obtenu, marque échec
       const cur = rbRef.current;
       const anyLocated = cur?.days?.some(
         (d) => typeof d.lat === "number" && typeof d.lng === "number",
@@ -440,6 +451,43 @@ function RoadbookPage() {
       }
     }, 30000);
 
+    const buildVariants = (day: Day, destination: string): string[] => {
+      const out: string[] = [];
+      const acc = (day.accommodation || "").trim();
+      const stage = (day.stage || "").trim();
+      const dest = (destination || "").trim();
+      if (acc && stage) {
+        out.push(dest ? `${acc}, ${stage}, ${dest}` : `${acc}, ${stage}`);
+        if (dest) out.push(`${acc}, ${dest}`);
+      }
+      if (stage) {
+        if (dest) out.push(`${stage}, ${dest}`);
+        out.push(stage);
+        // Étapes composées (ex: "Sesriem - dunes du Sossusvlei")
+        const parts = stage
+          .split(/\s*[-—–:|]\s*/)
+          .map((p) => p.trim())
+          .filter(Boolean);
+        if (parts.length > 1) {
+          for (const p of parts) {
+            out.push(dest ? `${p}, ${dest}` : p);
+          }
+        }
+      }
+      if (acc) {
+        if (dest) out.push(`${acc}, ${dest}`);
+        out.push(acc);
+      }
+      // Dédup en préservant l'ordre
+      const seen = new Set<string>();
+      return out.filter((v) => {
+        const k = v.toLowerCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+    };
+
     (async () => {
       let working = rbRef.current;
       if (!working) return;
@@ -448,23 +496,43 @@ function RoadbookPage() {
         const day = working.days[idx];
         if (!day) continue;
         if (typeof day.lat === "number" && typeof day.lng === "number") continue;
-        const query = (day.stage || day.accommodation || "").trim();
-        if (!query) continue;
-        try {
-          const res = await geocodePlace({
-            data: { query, region: working.destination },
-          });
+
+        const variants = buildVariants(day, working.destination);
+        let located: { lat: number; lng: number; from: string } | null = null;
+
+        for (let vIdx = 0; vIdx < variants.length; vIdx++) {
           if (cancelled) return;
-          if (res.lat == null || res.lng == null) continue;
-          geocodedCount += 1;
-          const nextDays: Day[] = working.days.map((d, i) =>
-            i === idx ? { ...d, lat: res.lat, lng: res.lng } : d,
-          );
-          working = { ...working, days: nextDays };
-          await persistSilent(working);
-        } catch (e) {
-          console.error("Geocode error:", e);
+          const query = variants[vIdx];
+          try {
+            const res = await geocodePlace({
+              data: { query, region: working.destination },
+            });
+            if (cancelled) return;
+            if (res.lat != null && res.lng != null) {
+              located = { lat: res.lat, lng: res.lng, from: query };
+              break;
+            }
+          } catch (e) {
+            console.warn(`Geocoding failed for "${query}":`, (e as Error).message);
+          }
         }
+
+        const nextDays: Day[] = working.days.map((d, i) => {
+          if (i !== idx) return d;
+          if (located) {
+            return {
+              ...d,
+              lat: located.lat,
+              lng: located.lng,
+              geocoding_status: "ok",
+              geocoded_from: located.from,
+            };
+          }
+          return { ...d, geocoding_status: "failed" };
+        });
+        working = { ...working, days: nextDays };
+        if (located) geocodedCount += 1;
+        await persistSilent(working);
       }
       if (!cancelled) {
         clearTimeout(timeoutId);
@@ -483,17 +551,49 @@ function RoadbookPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rb?.days?.length, id, geocodeAttempt]);
 
-  // Force un nouveau passage de géocodage (efface lat/lng de tous les days)
+  // Force un nouveau passage de géocodage : efface lat/lng + flag failed
+  // pour TOUS les jours (re-tente complètement avec la stratégie progressive).
   const handleRetryGeocode = async () => {
     const cur = rbRef.current;
     if (!cur) return;
     const cleared: Roadbook = {
       ...cur,
-      days: cur.days.map((d) => ({ ...d, lat: undefined, lng: undefined })),
+      days: cur.days.map((d) => ({
+        ...d,
+        lat: undefined,
+        lng: undefined,
+        geocoding_status: undefined,
+        geocoded_from: undefined,
+      })),
     };
     setGeocodeStatus("running");
     await persistSilent(cleared);
     setGeocodeAttempt((n) => n + 1);
+  };
+
+  // Fixe manuellement la position d'une étape via PlacesAutocomplete.
+  const handleManualLocate = async (
+    dayNumber: number,
+    place: PlaceSelection,
+  ) => {
+    const cur = rbRef.current;
+    if (!cur || place.lat == null || place.lng == null) return;
+    const next: Roadbook = {
+      ...cur,
+      days: cur.days.map((d) =>
+        d.day === dayNumber
+          ? {
+              ...d,
+              lat: place.lat,
+              lng: place.lng,
+              geocoding_status: "manual",
+              geocoded_from: `manual: ${place.name}`,
+            }
+          : d,
+      ),
+    };
+    await persistSilent(next);
+    toast.success(`Étape jour ${dayNumber} localisée`, { duration: 1800 });
   };
 
   // Persistance segments cache (silencieuse)
@@ -979,6 +1079,7 @@ function RoadbookPage() {
         updateAndAutosave={updateAndAutosave}
         geocodeStatus={geocodeStatus}
         onRetryGeocode={handleRetryGeocode}
+        onManualLocate={handleManualLocate}
       />
 
       {/* Footer */}
@@ -1280,6 +1381,7 @@ function RoadbookBody({
   updateAndAutosave,
   geocodeStatus,
   onRetryGeocode,
+  onManualLocate,
 }: {
   rb: Roadbook;
   apiKey: string | null;
@@ -1294,6 +1396,7 @@ function RoadbookBody({
   updateAndAutosave: (next: Roadbook) => void;
   geocodeStatus: "idle" | "running" | "done" | "failed";
   onRetryGeocode: () => void;
+  onManualLocate: (dayNumber: number, place: PlaceSelection) => void | Promise<void>;
 }) {
   const revealRef = useScrollReveal<HTMLDivElement>();
 
@@ -1417,6 +1520,8 @@ function RoadbookBody({
             onSave={(days) => persist({ ...rb, days })}
             onAutoSave={(days) => updateAndAutosave({ ...rb, days })}
             onAddDayFromPlace={addDayFromPlace}
+            onManualLocate={onManualLocate}
+            regionBiasForLocate={rb?.destination}
           />
         </section>
       </SectionErrorBoundary>
@@ -1989,6 +2094,8 @@ function DaysTableSection({
   regionBias,
   forceEdit,
   onAddDayFromPlace,
+  onManualLocate,
+  regionBiasForLocate,
 }: {
   days: Day[];
   onSave: (d: Day[]) => void;
@@ -1996,6 +2103,8 @@ function DaysTableSection({
   regionBias?: string;
   forceEdit: boolean;
   onAddDayFromPlace?: (place: PlaceSelection, position: number | null) => void;
+  onManualLocate?: (dayNumber: number, place: PlaceSelection) => void | Promise<void>;
+  regionBiasForLocate?: string;
 }) {
   const [localEdit, setLocalEdit] = useState(false);
   const [draft, setDraft] = useState(days);
@@ -2003,6 +2112,9 @@ function DaysTableSection({
   // Position où on est en train d'insérer un nouveau jour via autocomplete.
   // null = panneau fermé, "end" = ajout en fin, number = insertion à cet index.
   const [addingAt, setAddingAt] = useState<number | "end" | null>(null);
+  // Jour pour lequel on a ouvert la modale de localisation manuelle.
+  const [locatingDay, setLocatingDay] = useState<Day | null>(null);
+  const [locateValue, setLocateValue] = useState("");
 
   // Resync local draft whenever the parent days prop changes. Évite la
   // divergence quand une étape est ajoutée/supprimée via la carte ou via
@@ -2054,9 +2166,49 @@ function DaysTableSection({
     [list],
   );
 
+  // Modale de localisation manuelle (réutilisée en lecture et édition).
+  const locateDialog = (
+    <Dialog
+      open={!!locatingDay}
+      onOpenChange={(open) => {
+        if (!open) {
+          setLocatingDay(null);
+          setLocateValue("");
+        }
+      }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Localiser cette étape</DialogTitle>
+          <DialogDescription>
+            {locatingDay
+              ? `Jour ${locatingDay.day} — ${locatingDay.stage || locatingDay.accommodation || "étape sans nom"}. Recherche le lieu correct sur Google Maps.`
+              : ""}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="pt-2">
+          <PlacesAutocompleteInput
+            value={locateValue}
+            onChange={setLocateValue}
+            onSelect={(p) => {
+              if (locatingDay && onManualLocate && p.lat != null && p.lng != null) {
+                onManualLocate(locatingDay.day, p);
+                setLocatingDay(null);
+                setLocateValue("");
+              }
+            }}
+            regionBias={regionBiasForLocate}
+            placeholder="Saisir un lieu, lodge, ville…"
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   // Editorial vertical timeline (read mode only).
   if (!editing) {
     return (
+      <>
       <section>
         <SectionHeader
           label=""
@@ -2099,9 +2251,33 @@ function DaysTableSection({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-display text-[22px] font-semibold leading-tight text-foreground sm:text-[26px]">
-                      {d.stage || "Étape à définir"}
-                    </h3>
+                    <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+                      <h3 className="font-display text-[22px] font-semibold leading-tight text-foreground sm:text-[26px]">
+                        {d.stage || "Étape à définir"}
+                      </h3>
+                      {d.geocoding_status === "failed" && onManualLocate && (
+                        <TooltipProvider delayDuration={150}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setLocatingDay(d);
+                                  setLocateValue(d.stage || d.accommodation || "");
+                                }}
+                                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-800 shadow-sm transition hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+                              >
+                                <MapPin className="h-3 w-3" />
+                                À localiser
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-xs">
+                              Cette étape n'a pas pu être placée sur la carte. Clique pour localiser manuellement.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                     {d.narrative && (
                       <p className="mt-3 max-w-[58ch] text-[15px] leading-relaxed text-muted-foreground">
                         {d.narrative}
@@ -2144,10 +2320,13 @@ function DaysTableSection({
           ))}
         </ol>
       </section>
+      {locateDialog}
+      </>
     );
   }
 
   return (
+    <>
     <section>
       <SectionHeader
         label=""
@@ -2292,6 +2471,8 @@ function DaysTableSection({
         </div>
       )}
     </section>
+    {locateDialog}
+    </>
   );
 }
 

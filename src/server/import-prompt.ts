@@ -71,5 +71,10 @@ Structure exacte :
    - dates_label : "{jour} {mois début} au {jour} {mois fin} {année}"
 11. tips : 4-6 conseils pratiques génériques sur la destination.
 12. contacts : tableau vide [].
+13. Noms d'étapes géocodables. Quand tu reformules les "stage" et "accommodation", privilégie des noms reconnaissables par Google Maps :
+- Si l'agent a écrit "J5 Brandberg WL", reformule en "Brandberg White Lady Lodge".
+- Préfère les noms officiels en VO ("Serengeti National Park", "Cratère du Ngorongoro, Tanzanie") plutôt que des noms approximatifs.
+- Pour les étapes composées ("Sesriem - Sossusvlei"), choisis un nom principal géocodable (ex: "Sossusvlei, Namibie").
+- N'invente pas de lodges : si le nom est ambigu, garde-le tel quel mais ajoute la destination ("Lodge X, Tanzanie").
 
 Tu réponds UNIQUEMENT avec le JSON brut. Pas de markdown, pas de commentaire. Démarre directement par {.`;

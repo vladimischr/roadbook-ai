@@ -20,6 +20,7 @@ export interface MapDay {
   flight?: string;
   lat?: number | null;
   lng?: number | null;
+  geocoding_status?: "ok" | "failed" | "manual";
 }
 
 export interface DirectionsSegment {
@@ -187,6 +188,11 @@ export function RoadbookMap({
     !showFailed;
   const showMap = hasEnoughPoints || provisional || (points.length > 0 && geocodeStatus === "done");
 
+  // Au moins une étape a un échec de géocodage → propose un retry discret.
+  const failedCount = days.filter((d) => d.geocoding_status === "failed").length;
+  const showRetryBanner =
+    !showFailed && failedCount > 0 && !!onRetryGeocode;
+
   return (
     <div className="space-y-3">
       {canAdd && (
@@ -202,6 +208,23 @@ export function RoadbookMap({
             regionBias={regionBias}
             placeholder="Rechercher un lieu à ajouter au voyage…"
           />
+        </div>
+      )}
+
+      {showRetryBanner && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-50/70 px-4 py-2.5 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+          <span>
+            {failedCount === 1
+              ? "1 étape n'a pas pu être localisée."
+              : `${failedCount} étapes n'ont pas pu être localisées.`}
+          </span>
+          <button
+            type="button"
+            onClick={onRetryGeocode}
+            className="rounded-md border border-amber-500/40 bg-white/80 px-3 py-1 text-[11px] font-medium text-amber-900 hover:bg-white dark:bg-amber-500/20 dark:text-amber-100 dark:hover:bg-amber-500/30"
+          >
+            Re-tenter le géocodage
+          </button>
         </div>
       )}
 
