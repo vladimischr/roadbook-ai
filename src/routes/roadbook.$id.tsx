@@ -221,6 +221,9 @@ function normalizeRoadbookContent(raw: unknown): Roadbook {
     const x = (d && typeof d === "object" ? (d as Record<string, unknown>) : {}) as Record<string, unknown>;
     const lat = typeof x.lat === "number" ? (x.lat as number) : null;
     const lng = typeof x.lng === "number" ? (x.lng as number) : null;
+    const gs = x.geocoding_status;
+    const geocoding_status =
+      gs === "ok" || gs === "failed" || gs === "manual" ? (gs as Day["geocoding_status"]) : undefined;
     return {
       day: asNumber(x.day, idx + 1),
       date: asString(x.date),
@@ -234,6 +237,8 @@ function normalizeRoadbookContent(raw: unknown): Roadbook {
       lat,
       lng,
       narrative_user_modified: x.narrative_user_modified === true,
+      geocoding_status,
+      geocoded_from: typeof x.geocoded_from === "string" ? (x.geocoded_from as string) : undefined,
     };
   });
 
