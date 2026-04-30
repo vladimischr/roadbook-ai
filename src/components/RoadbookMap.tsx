@@ -6,7 +6,7 @@ import {
   Map as GMap,
   useMap,
 } from "@vis.gl/react-google-maps";
-import { getDirectionsSegment } from "@/server/maps.functions";
+import { getDirectionsSegment } from "@/lib/api";
 import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
 import {
   AlertDialog,
@@ -643,10 +643,8 @@ function RouteRenderer({
         // Driving via Directions API
         try {
           const res = await getDirectionsSegment({
-            data: {
-              from: { lat: from.lat, lng: from.lng },
-              to: { lat: to.lat, lng: to.lng },
-            },
+            from: { lat: from.lat, lng: from.lng },
+            to: { lat: to.lat, lng: to.lng },
           });
           if (cancelled) return;
           const seg: DirectionsSegment = res.ok

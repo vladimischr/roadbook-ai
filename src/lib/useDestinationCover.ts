@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchDestinationCover } from "@/server/cover.functions";
+import { fetchDestinationCover } from "@/lib/api";
 
 /** In-memory cache so repeat visits don't re-hit Pexels. */
 const cache = new Map<string, string | null>();
@@ -10,7 +10,7 @@ async function loadCover(destination: string): Promise<string | null> {
   if (!key) return null;
   if (cache.has(key)) return cache.get(key) ?? null;
   if (inflight.has(key)) return inflight.get(key)!;
-  const p = fetchDestinationCover({ data: { destination } })
+  const p = fetchDestinationCover({ destination })
     .then((r) => {
       cache.set(key, r.url);
       return r.url;

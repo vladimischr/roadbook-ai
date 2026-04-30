@@ -61,7 +61,7 @@ import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
 import { useDestinationCover } from "@/lib/useDestinationCover";
 import { RoadbookMap, type DirectionsSegment } from "@/components/RoadbookMap";
 import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
-import { geocodePlace, getDirectionsSegment } from "@/server/maps.functions";
+import { geocodePlace, getDirectionsSegment } from "@/lib/api";
 import {
   DndContext,
   closestCenter,
@@ -512,7 +512,8 @@ function RoadbookPage() {
           const query = variants[vIdx];
           try {
             const res = await geocodePlace({
-              data: { query, region: working.destination },
+              query,
+              region: working.destination,
             });
             if (cancelled) return;
             if (res.lat != null && res.lng != null) {
@@ -724,10 +725,8 @@ function RoadbookPage() {
       }
       try {
         const res = await getDirectionsSegment({
-          data: {
-            from: { lat: from.lat, lng: from.lng },
-            to: { lat: to.lat, lng: to.lng },
-          },
+          from: { lat: from.lat, lng: from.lng },
+          to: { lat: to.lat, lng: to.lng },
         });
         return {
           from_day: from.day,
@@ -1013,11 +1012,9 @@ function RoadbookPage() {
       const content = { ...rb! };
       let coverImageUrl: string | null = null;
       try {
-        const { fetchDestinationCover } = await import(
-          "@/server/cover.functions"
-        );
+        const { fetchDestinationCover } = await import("@/lib/api");
         const r = await fetchDestinationCover({
-          data: { destination: content.destination || "" },
+          destination: content.destination || "",
         });
         coverImageUrl = r.url;
       } catch (e) {
