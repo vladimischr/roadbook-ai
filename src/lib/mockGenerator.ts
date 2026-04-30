@@ -1,4 +1,6 @@
 // Real generator: calls our server route, which proxies to Anthropic Claude.
+import { supabase } from "@/integrations/supabase/client";
+
 export interface RoadbookFormData {
   client_name: string;
   destination: string;
@@ -43,9 +45,23 @@ export type GeneratedRoadbook = Record<string, any>;
 export async function callClaudeAPI(
   form: RoadbookFormData,
 ): Promise<GeneratedRoadbook> {
+  // Récupère le bearer token de la session pour authentifier l'appel
+  // côté serveur (sinon le route répond 401 — la route est désormais
+  // gardée pour empêcher les abus du quota Anthropic).
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) {
+    throw new Error("Session expirée. Reconnecte-toi pour générer un roadbook.");
+  }
+
   const res = await fetch("/api/generate-roadbook", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(form),
   });
 
