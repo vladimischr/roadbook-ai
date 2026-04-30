@@ -191,6 +191,105 @@ function renumberDays(list: Day[]): Day[] {
   return list.map((d, i) => ({ ...d, day: i + 1 }));
 }
 
+/* ---------- Normalize legacy/incomplete roadbook content ---------- */
+
+function asNumber(v: unknown, fallback = 0): number {
+  const n = typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN;
+  return Number.isFinite(n) ? n : fallback;
+}
+function asString(v: unknown, fallback = ""): string {
+  return typeof v === "string" ? v : fallback;
+}
+
+/**
+ * Garantit qu'un objet content respecte la forme `Roadbook` complète, avec des
+ * valeurs par défaut sûres pour tout champ manquant. Indispensable pour les
+ * roadbooks créés avant la refonte (anciennes structures incomplètes) afin
+ * d'éviter les crashs au rendu (ex: `.toFixed`, `.map` sur undefined).
+ */
+function normalizeRoadbookContent(raw: unknown): Roadbook {
+  const c = (raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {}) as Record<string, unknown>;
+  const cover = (c.cover && typeof c.cover === "object" ? (c.cover as Record<string, unknown>) : {}) as Record<string, unknown>;
+  const destination = asString(c.destination);
+  const daysRaw = Array.isArray(c.days) ? (c.days as unknown[]) : [];
+  const days: Day[] = daysRaw.map((d, idx) => {
+    const x = (d && typeof d === "object" ? (d as Record<string, unknown>) : {}) as Record<string, unknown>;
+    const lat = typeof x.lat === "number" ? (x.lat as number) : null;
+    const lng = typeof x.lng === "number" ? (x.lng as number) : null;
+    return {
+      day: asNumber(x.day, idx + 1),
+      date: asString(x.date),
+      stage: asString(x.stage ?? x.location),
+      accommodation: asString(x.accommodation),
+      type: asString(x.type),
+      distance_km: asNumber(x.distance_km, 0),
+      drive_hours: asNumber(x.drive_hours, 0),
+      flight: asString(x.flight, "—"),
+      narrative: asString(x.narrative ?? x.description),
+      lat,
+      lng,
+      narrative_user_modified: x.narrative_user_modified === true,
+    };
+  });
+
+  const accommodations_summary: AccommodationSummary[] = (
+    Array.isArray(c.accommodations_summary) ? (c.accommodations_summary as unknown[]) : []
+  ).map((a) => {
+    const x = (a && typeof a === "object" ? (a as Record<string, unknown>) : {}) as Record<string, unknown>;
+    return {
+      name: asString(x.name),
+      location: asString(x.location),
+      nights: asNumber(x.nights, 1),
+      type: asString(x.type),
+    };
+  });
+
+  const contacts: Contact[] = (
+    Array.isArray(c.contacts) ? (c.contacts as unknown[]) : []
+  ).map((ct) => {
+    const x = (ct && typeof ct === "object" ? (ct as Record<string, unknown>) : {}) as Record<string, unknown>;
+    return {
+      role: asString(x.role),
+      name: asString(x.name),
+      phone: asString(x.phone),
+      email: asString(x.email),
+    };
+  });
+
+  const tips: string[] = (Array.isArray(c.tips) ? (c.tips as unknown[]) : [])
+    .map((t) => (typeof t === "string" ? t : ""))
+    .filter((t) => t.length > 0);
+
+  const directions_segments = Array.isArray(c.directions_segments)
+    ? (c.directions_segments as DirectionsSegment[])
+    : [];
+
+  return {
+    client_name: asString(c.client_name),
+    destination,
+    start_date: asString(c.start_date),
+    end_date: asString(c.end_date),
+    duration_days: typeof c.duration_days === "number" ? c.duration_days : days.length || undefined,
+    travelers: typeof c.travelers === "number" ? c.travelers : undefined,
+    profile: asString(c.profile) || undefined,
+    theme: asString(c.theme) || undefined,
+    travel_mode: asString(c.travel_mode) || undefined,
+    budget_range: asString(c.budget_range) || undefined,
+    cover: {
+      title: asString(cover.title) || destination || "Voyage",
+      subtitle: asString(cover.subtitle),
+      tagline: asString(cover.tagline),
+      dates_label: asString(cover.dates_label),
+    },
+    overview: asString(c.overview),
+    days,
+    accommodations_summary,
+    contacts,
+    tips,
+    directions_segments,
+  };
+}
+
 /* ---------- Page ---------- */
 
 function RoadbookPage() {
