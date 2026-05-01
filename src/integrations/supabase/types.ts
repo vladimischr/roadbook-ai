@@ -85,6 +85,13 @@ export type Database = {
           current_period_end: string | null
           trial_ends_at: string | null
           cancel_at: string | null
+          display_name: string | null
+          agency_name: string | null
+          phone: string | null
+          website: string | null
+          avatar_url: string | null
+          agency_logo_url: string | null
+          brand_color: string | null
           created_at: string
           updated_at: string
         }
@@ -98,6 +105,13 @@ export type Database = {
           current_period_end?: string | null
           trial_ends_at?: string | null
           cancel_at?: string | null
+          display_name?: string | null
+          agency_name?: string | null
+          phone?: string | null
+          website?: string | null
+          avatar_url?: string | null
+          agency_logo_url?: string | null
+          brand_color?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -111,6 +125,13 @@ export type Database = {
           current_period_end?: string | null
           trial_ends_at?: string | null
           cancel_at?: string | null
+          display_name?: string | null
+          agency_name?: string | null
+          phone?: string | null
+          website?: string | null
+          avatar_url?: string | null
+          agency_logo_url?: string | null
+          brand_color?: string | null
           created_at?: string
           updated_at?: string
         }

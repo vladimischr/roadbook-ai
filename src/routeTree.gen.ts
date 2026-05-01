@@ -9,46 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as NewRouteImport } from './routes/new'
-import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
-import { Route as CguRouteImport } from './routes/cgu'
-import { Route as BillingRouteImport } from './routes/billing'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VoyageTokenRouteImport } from './routes/voyage.$token'
 import { Route as RoadbookPreviewMockRouteImport } from './routes/roadbook.preview-mock'
 import { Route as RoadbookIdRouteImport } from './routes/roadbook.$id'
-import { Route as ApiTrackViewRouteImport } from './routes/api/track-view'
-import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe-webhook'
-import { Route as ApiStripePortalRouteImport } from './routes/api/stripe-portal'
-import { Route as ApiStripeCheckoutRouteImport } from './routes/api/stripe-checkout'
-import { Route as ApiSharedRoadbookRouteImport } from './routes/api/shared-roadbook'
 import { Route as ApiRecomputeRoadbookRouteImport } from './routes/api/recompute-roadbook'
-import { Route as ApiPexelsSearchRouteImport } from './routes/api/pexels-search'
-import { Route as ApiMeSubscriptionRouteImport } from './routes/api/me-subscription'
-import { Route as ApiMapsKeyRouteImport } from './routes/api/maps-key'
 import { Route as ApiImportRoadbookRouteImport } from './routes/api/import-roadbook'
-import { Route as ApiGeocodePlaceRouteImport } from './routes/api/geocode-place'
 import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
-import { Route as ApiDirectionsSegmentRouteImport } from './routes/api/directions-segment'
-import { Route as ApiDestinationCoverRouteImport } from './routes/api/destination-cover'
+import { Route as ApiMapsKeyRouteImport } from './routes/api/maps-key'
 
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
-  id: '/mentions-legales',
-  path: '/mentions-legales',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -61,29 +35,9 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
-  id: '/confidentialite',
-  path: '/confidentialite',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CguRoute = CguRouteImport.update({
-  id: '/cgu',
-  path: '/cgu',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BillingRoute = BillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VoyageTokenRoute = VoyageTokenRouteImport.update({
-  id: '/voyage/$token',
-  path: '/voyage/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RoadbookPreviewMockRoute = RoadbookPreviewMockRouteImport.update({
@@ -96,49 +50,9 @@ const RoadbookIdRoute = RoadbookIdRouteImport.update({
   path: '/roadbook/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiTrackViewRoute = ApiTrackViewRouteImport.update({
-  id: '/api/track-view',
-  path: '/api/track-view',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
-  id: '/api/stripe-webhook',
-  path: '/api/stripe-webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiStripePortalRoute = ApiStripePortalRouteImport.update({
-  id: '/api/stripe-portal',
-  path: '/api/stripe-portal',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiStripeCheckoutRoute = ApiStripeCheckoutRouteImport.update({
-  id: '/api/stripe-checkout',
-  path: '/api/stripe-checkout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiSharedRoadbookRoute = ApiSharedRoadbookRouteImport.update({
-  id: '/api/shared-roadbook',
-  path: '/api/shared-roadbook',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiRecomputeRoadbookRoute = ApiRecomputeRoadbookRouteImport.update({
   id: '/api/recompute-roadbook',
   path: '/api/recompute-roadbook',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPexelsSearchRoute = ApiPexelsSearchRouteImport.update({
-  id: '/api/pexels-search',
-  path: '/api/pexels-search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMeSubscriptionRoute = ApiMeSubscriptionRouteImport.update({
-  id: '/api/me-subscription',
-  path: '/api/me-subscription',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMapsKeyRoute = ApiMapsKeyRouteImport.update({
-  id: '/api/maps-key',
-  path: '/api/maps-key',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiImportRoadbookRoute = ApiImportRoadbookRouteImport.update({
@@ -146,249 +60,107 @@ const ApiImportRoadbookRoute = ApiImportRoadbookRouteImport.update({
   path: '/api/import-roadbook',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiGeocodePlaceRoute = ApiGeocodePlaceRouteImport.update({
-  id: '/api/geocode-place',
-  path: '/api/geocode-place',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiGenerateRoadbookRoute = ApiGenerateRoadbookRouteImport.update({
   id: '/api/generate-roadbook',
   path: '/api/generate-roadbook',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiDirectionsSegmentRoute = ApiDirectionsSegmentRouteImport.update({
-  id: '/api/directions-segment',
-  path: '/api/directions-segment',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiDestinationCoverRoute = ApiDestinationCoverRouteImport.update({
-  id: '/api/destination-cover',
-  path: '/api/destination-cover',
+const ApiMapsKeyRoute = ApiMapsKeyRouteImport.update({
+  id: '/api/maps-key',
+  path: '/api/maps-key',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/billing': typeof BillingRoute
-  '/cgu': typeof CguRoute
-  '/confidentialite': typeof ConfidentialiteRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/mentions-legales': typeof MentionsLegalesRoute
   '/new': typeof NewRoute
-  '/pricing': typeof PricingRoute
-  '/api/destination-cover': typeof ApiDestinationCoverRoute
-  '/api/directions-segment': typeof ApiDirectionsSegmentRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
-  '/api/geocode-place': typeof ApiGeocodePlaceRoute
   '/api/import-roadbook': typeof ApiImportRoadbookRoute
-  '/api/maps-key': typeof ApiMapsKeyRoute
-  '/api/me-subscription': typeof ApiMeSubscriptionRoute
-  '/api/pexels-search': typeof ApiPexelsSearchRoute
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
-  '/api/shared-roadbook': typeof ApiSharedRoadbookRoute
-  '/api/stripe-checkout': typeof ApiStripeCheckoutRoute
-  '/api/stripe-portal': typeof ApiStripePortalRoute
-  '/api/stripe-webhook': typeof ApiStripeWebhookRoute
-  '/api/track-view': typeof ApiTrackViewRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
-  '/voyage/$token': typeof VoyageTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/billing': typeof BillingRoute
-  '/cgu': typeof CguRoute
-  '/confidentialite': typeof ConfidentialiteRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/mentions-legales': typeof MentionsLegalesRoute
   '/new': typeof NewRoute
-  '/pricing': typeof PricingRoute
-  '/api/destination-cover': typeof ApiDestinationCoverRoute
-  '/api/directions-segment': typeof ApiDirectionsSegmentRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
-  '/api/geocode-place': typeof ApiGeocodePlaceRoute
   '/api/import-roadbook': typeof ApiImportRoadbookRoute
-  '/api/maps-key': typeof ApiMapsKeyRoute
-  '/api/me-subscription': typeof ApiMeSubscriptionRoute
-  '/api/pexels-search': typeof ApiPexelsSearchRoute
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
-  '/api/shared-roadbook': typeof ApiSharedRoadbookRoute
-  '/api/stripe-checkout': typeof ApiStripeCheckoutRoute
-  '/api/stripe-portal': typeof ApiStripePortalRoute
-  '/api/stripe-webhook': typeof ApiStripeWebhookRoute
-  '/api/track-view': typeof ApiTrackViewRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
-  '/voyage/$token': typeof VoyageTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/billing': typeof BillingRoute
-  '/cgu': typeof CguRoute
-  '/confidentialite': typeof ConfidentialiteRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/mentions-legales': typeof MentionsLegalesRoute
   '/new': typeof NewRoute
-  '/pricing': typeof PricingRoute
-  '/api/destination-cover': typeof ApiDestinationCoverRoute
-  '/api/directions-segment': typeof ApiDirectionsSegmentRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
-  '/api/geocode-place': typeof ApiGeocodePlaceRoute
   '/api/import-roadbook': typeof ApiImportRoadbookRoute
-  '/api/maps-key': typeof ApiMapsKeyRoute
-  '/api/me-subscription': typeof ApiMeSubscriptionRoute
-  '/api/pexels-search': typeof ApiPexelsSearchRoute
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
-  '/api/shared-roadbook': typeof ApiSharedRoadbookRoute
-  '/api/stripe-checkout': typeof ApiStripeCheckoutRoute
-  '/api/stripe-portal': typeof ApiStripePortalRoute
-  '/api/stripe-webhook': typeof ApiStripeWebhookRoute
-  '/api/track-view': typeof ApiTrackViewRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
-  '/voyage/$token': typeof VoyageTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/billing'
-    | '/cgu'
-    | '/confidentialite'
     | '/dashboard'
     | '/login'
-    | '/mentions-legales'
     | '/new'
-    | '/pricing'
-    | '/api/destination-cover'
-    | '/api/directions-segment'
     | '/api/generate-roadbook'
-    | '/api/geocode-place'
     | '/api/import-roadbook'
-    | '/api/maps-key'
-    | '/api/me-subscription'
-    | '/api/pexels-search'
     | '/api/recompute-roadbook'
-    | '/api/shared-roadbook'
-    | '/api/stripe-checkout'
-    | '/api/stripe-portal'
-    | '/api/stripe-webhook'
-    | '/api/track-view'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
-    | '/voyage/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/billing'
-    | '/cgu'
-    | '/confidentialite'
     | '/dashboard'
     | '/login'
-    | '/mentions-legales'
     | '/new'
-    | '/pricing'
-    | '/api/destination-cover'
-    | '/api/directions-segment'
     | '/api/generate-roadbook'
-    | '/api/geocode-place'
     | '/api/import-roadbook'
-    | '/api/maps-key'
-    | '/api/me-subscription'
-    | '/api/pexels-search'
     | '/api/recompute-roadbook'
-    | '/api/shared-roadbook'
-    | '/api/stripe-checkout'
-    | '/api/stripe-portal'
-    | '/api/stripe-webhook'
-    | '/api/track-view'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
-    | '/voyage/$token'
   id:
     | '__root__'
     | '/'
-    | '/billing'
-    | '/cgu'
-    | '/confidentialite'
     | '/dashboard'
     | '/login'
-    | '/mentions-legales'
     | '/new'
-    | '/pricing'
-    | '/api/destination-cover'
-    | '/api/directions-segment'
     | '/api/generate-roadbook'
-    | '/api/geocode-place'
     | '/api/import-roadbook'
-    | '/api/maps-key'
-    | '/api/me-subscription'
-    | '/api/pexels-search'
     | '/api/recompute-roadbook'
-    | '/api/shared-roadbook'
-    | '/api/stripe-checkout'
-    | '/api/stripe-portal'
-    | '/api/stripe-webhook'
-    | '/api/track-view'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
-    | '/voyage/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BillingRoute: typeof BillingRoute
-  CguRoute: typeof CguRoute
-  ConfidentialiteRoute: typeof ConfidentialiteRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
-  MentionsLegalesRoute: typeof MentionsLegalesRoute
   NewRoute: typeof NewRoute
-  PricingRoute: typeof PricingRoute
-  ApiDestinationCoverRoute: typeof ApiDestinationCoverRoute
-  ApiDirectionsSegmentRoute: typeof ApiDirectionsSegmentRoute
   ApiGenerateRoadbookRoute: typeof ApiGenerateRoadbookRoute
-  ApiGeocodePlaceRoute: typeof ApiGeocodePlaceRoute
   ApiImportRoadbookRoute: typeof ApiImportRoadbookRoute
   ApiMapsKeyRoute: typeof ApiMapsKeyRoute
-  ApiMeSubscriptionRoute: typeof ApiMeSubscriptionRoute
-  ApiPexelsSearchRoute: typeof ApiPexelsSearchRoute
   ApiRecomputeRoadbookRoute: typeof ApiRecomputeRoadbookRoute
-  ApiSharedRoadbookRoute: typeof ApiSharedRoadbookRoute
-  ApiStripeCheckoutRoute: typeof ApiStripeCheckoutRoute
-  ApiStripePortalRoute: typeof ApiStripePortalRoute
-  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
-  ApiTrackViewRoute: typeof ApiTrackViewRoute
   RoadbookIdRoute: typeof RoadbookIdRoute
   RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
-  VoyageTokenRoute: typeof VoyageTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/new': {
       id: '/new'
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof NewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mentions-legales': {
-      id: '/mentions-legales'
-      path: '/mentions-legales'
-      fullPath: '/mentions-legales'
-      preLoaderRoute: typeof MentionsLegalesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -405,39 +177,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/confidentialite': {
-      id: '/confidentialite'
-      path: '/confidentialite'
-      fullPath: '/confidentialite'
-      preLoaderRoute: typeof ConfidentialiteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cgu': {
-      id: '/cgu'
-      path: '/cgu'
-      fullPath: '/cgu'
-      preLoaderRoute: typeof CguRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/billing': {
-      id: '/billing'
-      path: '/billing'
-      fullPath: '/billing'
-      preLoaderRoute: typeof BillingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/voyage/$token': {
-      id: '/voyage/$token'
-      path: '/voyage/$token'
-      fullPath: '/voyage/$token'
-      preLoaderRoute: typeof VoyageTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/roadbook/preview-mock': {
@@ -454,67 +198,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoadbookIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/track-view': {
-      id: '/api/track-view'
-      path: '/api/track-view'
-      fullPath: '/api/track-view'
-      preLoaderRoute: typeof ApiTrackViewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/stripe-webhook': {
-      id: '/api/stripe-webhook'
-      path: '/api/stripe-webhook'
-      fullPath: '/api/stripe-webhook'
-      preLoaderRoute: typeof ApiStripeWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/stripe-portal': {
-      id: '/api/stripe-portal'
-      path: '/api/stripe-portal'
-      fullPath: '/api/stripe-portal'
-      preLoaderRoute: typeof ApiStripePortalRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/stripe-checkout': {
-      id: '/api/stripe-checkout'
-      path: '/api/stripe-checkout'
-      fullPath: '/api/stripe-checkout'
-      preLoaderRoute: typeof ApiStripeCheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/shared-roadbook': {
-      id: '/api/shared-roadbook'
-      path: '/api/shared-roadbook'
-      fullPath: '/api/shared-roadbook'
-      preLoaderRoute: typeof ApiSharedRoadbookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/recompute-roadbook': {
       id: '/api/recompute-roadbook'
       path: '/api/recompute-roadbook'
       fullPath: '/api/recompute-roadbook'
       preLoaderRoute: typeof ApiRecomputeRoadbookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/pexels-search': {
-      id: '/api/pexels-search'
-      path: '/api/pexels-search'
-      fullPath: '/api/pexels-search'
-      preLoaderRoute: typeof ApiPexelsSearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/me-subscription': {
-      id: '/api/me-subscription'
-      path: '/api/me-subscription'
-      fullPath: '/api/me-subscription'
-      preLoaderRoute: typeof ApiMeSubscriptionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/maps-key': {
-      id: '/api/maps-key'
-      path: '/api/maps-key'
-      fullPath: '/api/maps-key'
-      preLoaderRoute: typeof ApiMapsKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/import-roadbook': {
@@ -524,13 +212,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiImportRoadbookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/geocode-place': {
-      id: '/api/geocode-place'
-      path: '/api/geocode-place'
-      fullPath: '/api/geocode-place'
-      preLoaderRoute: typeof ApiGeocodePlaceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/generate-roadbook': {
       id: '/api/generate-roadbook'
       path: '/api/generate-roadbook'
@@ -538,18 +219,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGenerateRoadbookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/directions-segment': {
-      id: '/api/directions-segment'
-      path: '/api/directions-segment'
-      fullPath: '/api/directions-segment'
-      preLoaderRoute: typeof ApiDirectionsSegmentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/destination-cover': {
-      id: '/api/destination-cover'
-      path: '/api/destination-cover'
-      fullPath: '/api/destination-cover'
-      preLoaderRoute: typeof ApiDestinationCoverRouteImport
+    '/api/maps-key': {
+      id: '/api/maps-key'
+      path: '/api/maps-key'
+      fullPath: '/api/maps-key'
+      preLoaderRoute: typeof ApiMapsKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -557,31 +231,15 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BillingRoute: BillingRoute,
-  CguRoute: CguRoute,
-  ConfidentialiteRoute: ConfidentialiteRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
-  MentionsLegalesRoute: MentionsLegalesRoute,
   NewRoute: NewRoute,
-  PricingRoute: PricingRoute,
-  ApiDestinationCoverRoute: ApiDestinationCoverRoute,
-  ApiDirectionsSegmentRoute: ApiDirectionsSegmentRoute,
   ApiGenerateRoadbookRoute: ApiGenerateRoadbookRoute,
-  ApiGeocodePlaceRoute: ApiGeocodePlaceRoute,
   ApiImportRoadbookRoute: ApiImportRoadbookRoute,
   ApiMapsKeyRoute: ApiMapsKeyRoute,
-  ApiMeSubscriptionRoute: ApiMeSubscriptionRoute,
-  ApiPexelsSearchRoute: ApiPexelsSearchRoute,
   ApiRecomputeRoadbookRoute: ApiRecomputeRoadbookRoute,
-  ApiSharedRoadbookRoute: ApiSharedRoadbookRoute,
-  ApiStripeCheckoutRoute: ApiStripeCheckoutRoute,
-  ApiStripePortalRoute: ApiStripePortalRoute,
-  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
-  ApiTrackViewRoute: ApiTrackViewRoute,
   RoadbookIdRoute: RoadbookIdRoute,
   RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
-  VoyageTokenRoute: VoyageTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

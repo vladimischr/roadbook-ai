@@ -8,6 +8,8 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  UserCircle2,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut, useAuth } from "@/lib/auth";
@@ -51,8 +53,22 @@ const NAV_ITEMS = [
 ];
 
 const SECONDARY_NAV_ITEMS = [
+  { to: "/profil" as const, label: "Mon profil", icon: UserCircle2 },
   { to: "/billing" as const, label: "Mon abonnement", icon: CreditCard },
 ];
+
+// Liste des emails admin exposée côté client pour afficher le lien
+// "Administration" dans la sidebar. C'est purement UI — le vrai contrôle
+// d'accès est server-side via ADMIN_EMAILS dans /api/admin-users.
+function isClientAdmin(email: string | undefined | null): boolean {
+  if (!email) return false;
+  const raw = (import.meta.env.VITE_ADMIN_EMAILS as string | undefined) || "";
+  const list = raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return list.includes(email.toLowerCase());
+}
 
 /* ---------- AppShell ---------- */
 
@@ -221,6 +237,17 @@ function SidebarContent({
             </li>
           ))}
         </ul>
+
+        {isClientAdmin(user.email) && (
+          <>
+            <div className="mx-3 my-5 h-px bg-border/60" />
+            <ul className="space-y-0.5">
+              <li>
+                <SidebarLink to="/admin" icon={ShieldCheck} label="Administration" />
+              </li>
+            </ul>
+          </>
+        )}
       </nav>
 
       <div className="border-t border-border/50 px-5 py-4">
@@ -244,13 +271,20 @@ function SidebarContent({
   );
 }
 
+type SidebarLinkPath =
+  | "/dashboard"
+  | "/new"
+  | "/billing"
+  | "/profil"
+  | "/admin";
+
 function SidebarLink({
   to,
   icon: Icon,
   label,
   disabled = false,
 }: {
-  to: "/dashboard" | "/new" | "/billing";
+  to: SidebarLinkPath;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   disabled?: boolean;
@@ -320,13 +354,33 @@ function DefaultBreadcrumb({ path }: { path: string }) {
       />
     );
   }
+  if (path.startsWith("/profil")) {
+    return (
+      <BreadcrumbLine
+        items={[
+          { label: "Vos roadbooks", to: "/dashboard" },
+          { label: "Mon profil" },
+        ]}
+      />
+    );
+  }
+  if (path.startsWith("/admin")) {
+    return (
+      <BreadcrumbLine
+        items={[
+          { label: "Vos roadbooks", to: "/dashboard" },
+          { label: "Administration" },
+        ]}
+      />
+    );
+  }
   return <BreadcrumbLine items={[{ label: "" }]} />;
 }
 
 export function BreadcrumbLine({
   items,
 }: {
-  items: Array<{ label: string; to?: "/dashboard" | "/new" | "/billing" }>;
+  items: Array<{ label: string; to?: SidebarLinkPath }>;
 }) {
   return (
     <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-[13px] text-muted-foreground">
