@@ -434,7 +434,7 @@ function NewRoadbook() {
           title="Quota atteint"
           subtitle={
             subInfo.limit !== null
-              ? `Tu as utilisé ${subInfo.used} / ${subInfo.limit} roadbooks ce mois sur le plan ${subInfo.planKey}. Passe au plan supérieur pour continuer.`
+              ? `Crédits IA épuisés (${subInfo.used} / ${subInfo.limit}) sur le plan ${subInfo.planKey}. Passe au plan supérieur ou attends le renouvellement.`
               : "Ton abonnement n'autorise pas la génération de nouveaux roadbooks."
           }
         />

@@ -2,6 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import { IMPORT_SYSTEM_PROMPT } from "@/server/import-prompt";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  getUserSubscriptionInfo,
+  logAiAction,
+} from "@/lib/subscription.server";
 
 function stripMarkdownFence(text: string): string {
   const trimmed = text.trim();
@@ -59,6 +63,24 @@ export const Route = createFileRoute("/api/import-roadbook")({
             );
           }
           const userId = userData.user.id;
+
+          // Crédits check
+          const subInfo = await getUserSubscriptionInfo(userId);
+          if (!subInfo.canGenerate) {
+            const reason =
+              subInfo.planStatus === "past_due" ||
+              subInfo.planStatus === "unpaid"
+                ? "Ton paiement a échoué — mets à jour ta CB."
+                : `Crédits IA épuisés (${subInfo.used} / ${subInfo.limit}). Passe au plan supérieur ou attends le renouvellement.`;
+            return new Response(
+              JSON.stringify({
+                error: reason,
+                code: "quota_exceeded",
+                subscription: subInfo,
+              }),
+              { status: 402, headers: { "Content-Type": "application/json" } },
+            );
+          }
 
           const formData = await request.formData();
           const file = formData.get("file");
@@ -316,6 +338,12 @@ Parse ce programme de voyage et construis le JSON Roadbook complet selon ta stru
           }
 
           console.log("[import-roadbook] Roadbook créé:", inserted.id);
+
+          await logAiAction(userId, "import", inserted.id, {
+            file_name: file.name,
+            file_size: file.size,
+          });
+
           return new Response(JSON.stringify({ id: inserted.id }), {
             status: 200,
             headers: { "Content-Type": "application/json" },

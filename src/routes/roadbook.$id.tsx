@@ -70,7 +70,8 @@ import { Paywall } from "@/components/Paywall";
 import { useSubscription } from "@/lib/useSubscription";
 import { getPlan, isPdfWatermarked } from "@/lib/plans";
 import { PhotoPicker, type PhotoEntry } from "@/components/PhotoPicker";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, MessageSquare } from "lucide-react";
+import { AIChat } from "@/components/AIChat";
 import {
   DndContext,
   closestCenter,
@@ -380,6 +381,7 @@ function RoadbookPage() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [shareTokenLoading, setShareTokenLoading] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const [shareStats, setShareStats] = useState<{
     view_count: number;
     last_viewed_at: string | null;
@@ -1357,6 +1359,7 @@ function RoadbookPage() {
       onRecompute={() => setRecomputeOpen(true)}
       onExportPdf={handleExportPdf}
       onShare={() => setShareOpen(true)}
+      onAIChat={() => setAiChatOpen(true)}
     />
   );
 
@@ -1631,6 +1634,24 @@ function RoadbookPage() {
           subtitle={paywallContext?.subtitle}
         />
       )}
+
+      {/* Chat IA — drawer flottant */}
+      <AIChat
+        open={aiChatOpen}
+        onOpenChange={setAiChatOpen}
+        roadbookId={id}
+        currentContent={rb}
+        canUse={!!subInfo?.canGenerate && getPlan(subInfo?.planKey).allowsAIChat}
+        creditsRemaining={subInfo?.remaining ?? null}
+        onApplied={async (newContent) => {
+          // L'IA a modifié le roadbook côté serveur (déjà persisté en DB).
+          // On normalise le contenu reçu et on rafraîchit l'état local.
+          const normalized = normalizeRoadbookContent(newContent);
+          setRb(normalized);
+          await refetchSub(); // décrémente les crédits visibles
+          toast.success("Roadbook mis à jour", { duration: 2000 });
+        }}
+      />
     </AppShell>
   );
 
@@ -1657,6 +1678,7 @@ function RoadbookTopbarActions({
   onRecompute,
   onExportPdf,
   onShare,
+  onAIChat,
 }: {
   status: RoadbookStatus;
   onSetStatus: (s: RoadbookStatus) => void;
@@ -1667,6 +1689,7 @@ function RoadbookTopbarActions({
   onRecompute: () => void;
   onExportPdf: () => void;
   onShare: () => void;
+  onAIChat: () => void;
 }) {
   return (
     <>
@@ -1733,6 +1756,26 @@ function RoadbookTopbarActions({
         <Pencil className="h-3.5 w-3.5" />
         {globalEdit ? "Quitter l'édition" : "Tout modifier"}
       </Button>
+
+      <TooltipProvider delayDuration={250}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAIChat}
+              className="h-9 gap-1.5 rounded-full border-border/70 bg-surface px-3.5 text-[12.5px] transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Chat IA</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            Demande à l'IA d'ajouter, supprimer ou modifier des étapes en
+            langage naturel. 1 crédit par demande.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       <Button
         size="sm"

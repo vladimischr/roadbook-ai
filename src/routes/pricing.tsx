@@ -96,10 +96,11 @@ function Pricing() {
                 Choisissez le plan adapté à votre volume.
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-[16px] leading-[1.65] text-muted-foreground sm:text-[17.5px]">
-                Tous les plans incluent les <strong className="text-foreground">trois modes de
-                composition</strong> — IA, saisie manuelle ou import Excel. Le quota
-                porte sur le nombre de roadbooks créés, peu importe la
-                méthode. 14 jours d'essai gratuit, annulation en un clic.
+                Le quota est en <strong className="text-foreground">crédits IA</strong>{" "}
+                : 1 crédit = 1 appel IA (génération, recalcul, import Excel
+                ou modification par chat). Tu choisis comment dépenser tes
+                crédits selon ton workflow. 14 jours d'essai, annulation en
+                un clic.
               </p>
 
               {/* Toggle Mensuel / Annuel */}
@@ -198,9 +199,9 @@ function Pricing() {
                   )}
 
                   <p className="mt-3 text-[12.5px] text-muted-foreground">
-                    {plan.monthlyRoadbookLimit === null
-                      ? "Roadbooks illimités, tous modes"
-                      : `${plan.monthlyRoadbookLimit} roadbooks/mois, tous modes`}
+                    {plan.monthlyCredits === null
+                      ? "Crédits IA illimités"
+                      : `${plan.monthlyCredits} crédits IA/mois`}
                   </p>
 
                   <ul className="mt-7 space-y-2.5 text-[13.5px] leading-relaxed text-foreground/85">
@@ -261,8 +262,8 @@ function Pricing() {
                 a: "Au bout de 14 jours, le premier prélèvement a lieu sauf si vous annulez avant. Aucun engagement.",
               },
               {
-                q: "Que comptent mes « roadbooks composés » ?",
-                a: "Chaque nouveau roadbook compte pour un — qu'il soit généré par l'IA, saisi manuellement ou importé d'Excel. Les modifications, les recalculs et les exports PDF n'entament pas votre quota.",
+                q: "Comment fonctionnent les crédits ?",
+                a: "1 crédit = 1 appel à l'IA. La génération d'un nouveau roadbook, un recalcul, un import Excel ou une modification via le chat IA consomment chacun 1 crédit. La saisie manuelle, les modifications éditoriales (texte, photos), l'export PDF et le partage de lien client n'utilisent aucun crédit. Vos crédits se réinitialisent à chaque renouvellement mensuel.",
               },
               {
                 q: "Mes clients voient-ils Roadbook.ai ?",

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { getUserSubscriptionInfo } from "@/lib/subscription.server";
+import { getUserSubscriptionInfo, logAiAction } from "@/lib/subscription.server";
 import { rateLimit, rateLimitedResponse } from "@/lib/rate-limit.server";
 
 // Schéma Zod aligné sur RoadbookFormData (côté client) — refuse les payloads
@@ -118,10 +118,8 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             return rateLimitedResponse(rl.retryAfterSec ?? 30);
           }
 
-          // Quota check — refuse l'appel Anthropic si l'utilisateur a épuisé
-          // son plan, OU si son abo est past_due / unpaid (CB à mettre à
-          // jour). On répond 402 (Payment Required) avec un payload
-          // explicite que le client utilise pour ouvrir le paywall.
+          // Crédits check — refuse l'appel Anthropic si l'utilisateur n'a
+          // plus de crédits OU si son abo est past_due / unpaid.
           const subInfo = await getUserSubscriptionInfo(userData.user.id);
           if (!subInfo.canGenerate) {
             const reason =
@@ -129,8 +127,8 @@ export const Route = createFileRoute("/api/generate-roadbook")({
               subInfo.planStatus === "unpaid"
                 ? "Ton paiement a échoué — mets à jour ta carte bancaire dans le portail de facturation pour reprendre."
                 : subInfo.limit !== null && subInfo.used >= subInfo.limit
-                  ? `Tu as utilisé ${subInfo.used} / ${subInfo.limit} roadbooks ce mois sur le plan ${subInfo.planKey}. Passe au plan supérieur pour continuer.`
-                  : "Ton abonnement n'autorise pas la génération de roadbooks.";
+                  ? `Crédits IA épuisés (${subInfo.used} / ${subInfo.limit}) sur le plan ${subInfo.planKey}. Passe au plan supérieur ou attends le renouvellement.`
+                  : "Ton abonnement n'autorise pas la génération.";
             return new Response(
               JSON.stringify({
                 error: reason,
@@ -334,6 +332,15 @@ Génère le roadbook complet en JSON conforme à la structure définie dans ton 
               { status: 502, headers: { "Content-Type": "application/json" } },
             );
           }
+
+          // Log l'action IA pour décrémenter les crédits.
+          // Le roadbook_id sera lié plus tard côté client lors de l'INSERT
+          // (on log avant pour facturer même si l'INSERT côté client
+          // échoue — l'utilisateur a quand même consommé le quota Claude).
+          await logAiAction(userData.user.id, "generate", null, {
+            destination: formData.destination,
+            duration_days,
+          });
 
           return new Response(JSON.stringify(roadbook), {
             status: 200,

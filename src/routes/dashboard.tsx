@@ -495,13 +495,13 @@ function UsageBanner({
           {isPastDue ? (
             "Paiement en échec — mets à jour ta CB pour reprendre."
           ) : isUnlimited ? (
-            "Génération illimitée."
+            "Crédits IA illimités."
           ) : (
             <>
               <strong className="text-foreground">{info.used}</strong>
               <span className="text-muted-foreground"> / {info.limit}</span>
               <span className="ml-1 text-muted-foreground">
-                roadbooks ce mois
+                crédits IA ce mois
               </span>
             </>
           )}

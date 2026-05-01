@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { getUserSubscriptionInfo } from "@/lib/subscription.server";
+import { getUserSubscriptionInfo, logAiAction } from "@/lib/subscription.server";
 import { getPlan } from "@/lib/plans";
 import { rateLimit, rateLimitedResponse } from "@/lib/rate-limit.server";
 
@@ -324,6 +324,11 @@ Réponds avec le JSON Roadbook complet recalculé. La longueur de days[] DOIT ê
 
           // Invalide le cache directions pour reforcer recalcul carte
           (recomputed as any).directions_segments = [];
+
+          // Log l'action IA pour décrémenter les crédits.
+          await logAiAction(userData.user.id, "recompute", null, {
+            preserve_modified: preserveModifiedNarratives ?? true,
+          });
 
           return new Response(JSON.stringify(recomputed), {
             status: 200,

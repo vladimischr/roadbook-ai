@@ -1,13 +1,16 @@
-// Helpers serveur pour vérifier le plan et le quota mensuel d'un utilisateur.
-// Utilisés par /api/generate-roadbook, /api/recompute-roadbook, et
-// /api/me-subscription pour propager l'info au client.
+// Helpers serveur pour vérifier le plan et le quota CRÉDITS d'un utilisateur.
+// Utilisés par les routes API qui consomment de l'IA (génération, recalcul,
+// import Excel, chat) ainsi que /api/me-subscription pour propager au client.
+//
+// 1 crédit = 1 appel IA. La consommation est calculée en comptant les
+// lignes de la table `ai_actions` sur la fenêtre de facturation courante.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getPlan, type PlanKey } from "@/lib/plans";
 
 export interface UserSubscriptionInfo {
   planKey: PlanKey;
   planStatus: string;
-  /** Nombre de roadbooks générés sur la période en cours. */
+  /** Crédits consommés sur la période en cours. */
   used: number;
   /** Quota max sur la période (null = illimité). */
   limit: number | null;
@@ -15,7 +18,7 @@ export interface UserSubscriptionInfo {
   remaining: number | null;
   /** Début de la fenêtre de comptage (utile pour debug + UI). */
   periodStart: string;
-  /** L'utilisateur peut-il générer un nouveau roadbook ? */
+  /** L'utilisateur peut-il déclencher une action IA (générer, chat, etc.) ? */
   canGenerate: boolean;
   currentPeriodEnd: string | null;
   trialEndsAt: string | null;
@@ -23,9 +26,9 @@ export interface UserSubscriptionInfo {
 }
 
 /**
- * Récupère l'état d'abo + le quota d'un utilisateur. Crée le profil au
- * vol si manquant (filet de sécurité — devrait pas arriver grâce au
- * trigger DB).
+ * Récupère l'état d'abo + le quota crédits d'un utilisateur. Crée le profil
+ * au vol si manquant (filet de sécurité — ne devrait pas arriver grâce au
+ * trigger DB on_auth_user_created).
  */
 export async function getUserSubscriptionInfo(
   userId: string,
@@ -38,8 +41,6 @@ export async function getUserSubscriptionInfo(
     .eq("id", userId)
     .maybeSingle();
 
-  // Fallback : crée un profil free s'il manque (uniquement si on a un user
-  // valide — ne jamais créer de profil orphelin).
   if (!profile) {
     await supabaseAdmin
       .from("profiles")
@@ -52,33 +53,39 @@ export async function getUserSubscriptionInfo(
   const planStatus = profile?.plan_status ?? "active";
   const plan = getPlan(planKey);
 
-  // Période de référence pour le comptage :
-  // - Plan payant : on compte depuis (current_period_end - 30j) → aligné
-  //   sur le cycle de facturation Stripe.
-  // - Plan free : on compte depuis le 1er du mois calendaire.
   const periodStart = computePeriodStart(
     planKey,
     profile?.current_period_end ?? null,
   );
 
-  const { count } = await supabaseAdmin
-    .from("roadbooks")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .gte("created_at", periodStart);
+  // Crédits consommés = SOMME des credits_consumed dans ai_actions
+  // sur la fenêtre courante. Si la table n'existe pas encore (migration
+  // pas appliquée), on retombe sur 0 — backward compat.
+  let used = 0;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("ai_actions")
+      .select("credits_consumed")
+      .eq("user_id", userId)
+      .gte("created_at", periodStart);
+    if (!error && data) {
+      used = data.reduce(
+        (acc, row) => acc + ((row as any).credits_consumed ?? 1),
+        0,
+      );
+    }
+  } catch (e) {
+    console.info("[subscription] ai_actions indisponible:", e);
+  }
 
-  const used = count ?? 0;
-  const limit = plan.monthlyRoadbookLimit;
+  const limit = plan.monthlyCredits;
   const remaining = limit === null ? null : Math.max(0, limit - used);
 
-  // canGenerate : plan illimité OU il reste du quota. Un statut past_due /
-  // unpaid bloque aussi la génération (CB à mettre à jour).
   const statusOk =
     planStatus === "active" ||
     planStatus === "trialing" ||
-    planStatus === "canceled"; // canceled = encore valide jusqu'à period_end
-  const canGenerate =
-    statusOk && (limit === null || used < limit);
+    planStatus === "canceled";
+  const canGenerate = statusOk && (limit === null || used < limit);
 
   return {
     planKey,
@@ -99,16 +106,37 @@ function computePeriodStart(
   currentPeriodEnd: string | null,
 ): string {
   if (planKey !== "free" && currentPeriodEnd) {
-    // 30 jours avant la prochaine fin de cycle. Pour les sub Stripe en
-    // cycle mensuel ça matche pile le début du cycle courant.
     const end = new Date(currentPeriodEnd);
     const start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
     return start.toISOString();
   }
-  // Free tier (ou plan sans periode connue) : 1er du mois calendaire UTC.
   const now = new Date();
   const start = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0),
   );
   return start.toISOString();
+}
+
+/**
+ * Helper : insère une ligne dans ai_actions pour facturer un crédit.
+ * Tolérant si la table n'existe pas (silently no-op pendant la transition
+ * d'une ancienne base sans la migration credits).
+ */
+export async function logAiAction(
+  userId: string,
+  actionType: "generate" | "recompute" | "import" | "chat",
+  roadbookId: string | null,
+  metadata?: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await supabaseAdmin.from("ai_actions").insert({
+      user_id: userId,
+      action_type: actionType,
+      roadbook_id: roadbookId,
+      credits_consumed: 1,
+      metadata: metadata ?? null,
+    } as never);
+  } catch (e) {
+    console.warn("[logAiAction] failed (table missing?):", e);
+  }
 }

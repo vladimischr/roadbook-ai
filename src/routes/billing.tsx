@@ -185,11 +185,11 @@ function Billing() {
               </div>
             </div>
 
-            {/* Compteur d'usage */}
+            {/* Compteur d'usage en crédits */}
             <div className="mt-8 border-t border-border/60 pt-6">
               <div className="flex items-baseline justify-between">
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  Roadbooks générés ce mois
+                  Crédits IA consommés ce mois
                 </p>
                 <p className="text-[13px] text-muted-foreground">
                   Réinitialisé le {formatDate(info.periodStart)}
@@ -200,7 +200,8 @@ function Billing() {
                   {info.used}
                 </span>
                 <span className="text-[14px] text-muted-foreground">
-                  / {info.limit === null ? "∞" : info.limit}
+                  / {info.limit === null ? "∞" : info.limit} crédit
+                  {info.limit && info.limit > 1 ? "s" : ""}
                 </span>
               </div>
               {info.limit !== null && (
@@ -217,10 +218,14 @@ function Billing() {
                   />
                 </div>
               )}
+              <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
+                1 crédit = 1 appel IA (génération, recalcul, import Excel,
+                modification par chat).
+              </p>
               {info.limit !== null && info.remaining === 0 && (
                 <p className="mt-3 text-[13px] text-amber-700">
-                  Quota atteint. Passez au plan supérieur pour continuer à
-                  générer.
+                  Crédits épuisés. Passez au plan supérieur ou attendez le
+                  renouvellement le {formatDate(info.currentPeriodEnd ?? info.periodStart)}.
                 </p>
               )}
             </div>

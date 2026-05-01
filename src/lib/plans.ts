@@ -21,12 +21,17 @@ export interface Plan {
   priceMonthly: number;
   /** Prix annuel en centimes EUR (avec remise -20% par rapport au mensuel × 12). */
   priceAnnual: number;
-  /** Quota mensuel de roadbooks générés (null = illimité). */
-  monthlyRoadbookLimit: number | null;
+  /**
+   * Quota mensuel de crédits IA (null = illimité).
+   * 1 crédit = 1 appel IA (génération, recalcul, import Excel, chat).
+   */
+  monthlyCredits: number | null;
   /** PDF haute qualité accessible ? Le free n'y a pas droit. */
   allowsPdfExport: boolean;
   /** L'utilisateur peut-il déclencher un recalcul IA ? */
   allowsRecompute: boolean;
+  /** L'utilisateur peut-il dialoguer avec l'IA pour modifier ? */
+  allowsAIChat: boolean;
   /** Liste de bénéfices à afficher sur la page Pricing. */
   features: string[];
   /** Mis en avant comme « le plus populaire » sur la page de prix. */
@@ -40,12 +45,13 @@ export const PLANS: Record<PlanKey, Plan> = {
     tagline: "Pour goûter à l'outil",
     priceMonthly: 0,
     priceAnnual: 0,
-    monthlyRoadbookLimit: 2,
+    monthlyCredits: 10,
     allowsPdfExport: true,
     allowsRecompute: false,
+    allowsAIChat: false,
     features: [
-      "2 roadbooks composés par mois",
-      "IA, saisie manuelle ou import Excel",
+      "10 crédits IA par mois",
+      "Génération, manuel ou import Excel",
       "Carte interactive Google Maps",
       "Export PDF avec mention « via Roadbook.ai »",
     ],
@@ -56,14 +62,15 @@ export const PLANS: Record<PlanKey, Plan> = {
     tagline: "Travel designer indépendant",
     priceMonthly: 2900,
     priceAnnual: 27900,
-    monthlyRoadbookLimit: 15,
+    monthlyCredits: 100,
     allowsPdfExport: true,
     allowsRecompute: true,
+    allowsAIChat: true,
     features: [
-      "15 roadbooks composés par mois",
-      "IA, saisie manuelle ou import Excel",
-      "Recalcul IA illimité",
-      "Export PDF éditorial",
+      "100 crédits IA par mois",
+      "Chat avec l'IA pour modifier (1 crédit / demande)",
+      "Recalcul IA + import Excel",
+      "Export PDF éditorial sans watermark",
       "Support email",
     ],
     highlighted: true,
@@ -74,13 +81,14 @@ export const PLANS: Record<PlanKey, Plan> = {
     tagline: "Petite agence 1-3 personnes",
     priceMonthly: 7900,
     priceAnnual: 75900,
-    monthlyRoadbookLimit: 50,
+    monthlyCredits: 300,
     allowsPdfExport: true,
     allowsRecompute: true,
+    allowsAIChat: true,
     features: [
-      "50 roadbooks composés par mois",
-      "IA, saisie manuelle ou import Excel",
-      "Recalcul IA illimité",
+      "300 crédits IA par mois",
+      "Chat avec l'IA illimité (dans la limite des crédits)",
+      "Recalcul + import Excel + chat",
       "Export PDF haute qualité",
       "Support prioritaire",
     ],
@@ -91,12 +99,13 @@ export const PLANS: Record<PlanKey, Plan> = {
     tagline: "Agence établie",
     priceMonthly: 19900,
     priceAnnual: 190900,
-    monthlyRoadbookLimit: null,
+    monthlyCredits: null,
     allowsPdfExport: true,
     allowsRecompute: true,
+    allowsAIChat: true,
     features: [
-      "Roadbooks illimités",
-      "IA, saisie manuelle ou import Excel",
+      "Crédits IA illimités",
+      "Toutes les fonctionnalités",
       "Export PDF marque blanche",
       "Multi-utilisateurs (à venir)",
       "Support dédié",
