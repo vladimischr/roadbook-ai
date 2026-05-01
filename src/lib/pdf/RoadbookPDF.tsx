@@ -709,7 +709,31 @@ function buildStaticMapUrl(
   }
 
   params.set("key", apiKey);
-  return `${base}?${params.toString()}`;
+  const finalUrl = `${base}?${params.toString()}`;
+
+  // Sécurité : Google rejette les URLs > 16 KB avec 414. Si on dépasse
+  // (rare avec le cap des polylines mais possible avec beaucoup de
+  // marqueurs ou de stylings), on tombe sur une carte SANS path et SANS
+  // styling — basique mais ça s'affichera.
+  if (finalUrl.length > 16_000) {
+    console.warn(
+      `[buildStaticMapUrl] URL ${finalUrl.length} chars > 16 KB, fallback minimal`,
+    );
+    const fallback = new URLSearchParams();
+    fallback.set("size", "640x420");
+    fallback.set("scale", "2");
+    fallback.set("maptype", "roadmap");
+    points.forEach((p) => {
+      fallback.append(
+        "markers",
+        `color:0x0F6E56|${p.day <= 9 ? `label:${p.day}|` : ""}${p.lat},${p.lng}`,
+      );
+    });
+    fallback.set("key", apiKey);
+    return `${base}?${fallback.toString()}`;
+  }
+
+  return finalUrl;
 }
 
 // Chunk days into pages of N for itinerary section.
