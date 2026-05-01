@@ -14,6 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          credits_consumed: number
+          id: string
+          metadata: Json | null
+          roadbook_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          credits_consumed?: number
+          id?: string
+          metadata?: Json | null
+          roadbook_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          credits_consumed?: number
+          id?: string
+          metadata?: Json | null
+          roadbook_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_actions_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbook_view_stats"
+            referencedColumns: ["roadbook_id"]
+          },
+          {
+            foreignKeyName: "ai_actions_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          agency_logo_url: string | null
+          agency_name: string | null
+          avatar_url: string | null
+          brand_color: string | null
+          cancel_at: string | null
+          created_at: string
+          current_period_end: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          plan_key: string
+          plan_status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          agency_logo_url?: string | null
+          agency_name?: string | null
+          avatar_url?: string | null
+          brand_color?: string | null
+          cancel_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          display_name?: string | null
+          email?: string | null
+          id: string
+          phone?: string | null
+          plan_key?: string
+          plan_status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          agency_logo_url?: string | null
+          agency_name?: string | null
+          avatar_url?: string | null
+          brand_color?: string | null
+          cancel_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          plan_key?: string
+          plan_status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      roadbook_views: {
+        Row: {
+          created_at: string
+          device_type: string | null
+          id: string
+          referrer: string | null
+          roadbook_id: string
+          viewed_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          referrer?: string | null
+          roadbook_id: string
+          viewed_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          referrer?: string | null
+          roadbook_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadbook_views_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbook_view_stats"
+            referencedColumns: ["roadbook_id"]
+          },
+          {
+            foreignKeyName: "roadbook_views_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roadbooks: {
         Row: {
           agent_notes: string | null
@@ -76,7 +226,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      roadbook_view_stats: {
+        Row: {
+          desktop_count: number | null
+          last_viewed_at: string | null
+          mobile_count: number | null
+          roadbook_id: string | null
+          user_id: string | null
+          view_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_shared_roadbook: {
