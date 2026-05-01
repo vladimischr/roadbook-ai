@@ -120,6 +120,15 @@ export interface RoadbookContent {
     email?: string;
   }>;
   tips?: string[];
+  /** Tracés routiers cachés (calculés côté Directions API) — utilisés pour la carte PDF. */
+  directions_segments?: Array<{
+    from_day: number;
+    to_day: number;
+    encoded_polyline: string | null;
+    distance_meters: number | null;
+    duration_seconds: number | null;
+    mode?: string;
+  }>;
 }
 
 // ---------- Colors ----------
@@ -444,18 +453,86 @@ const styles = StyleSheet.create({
   },
 
   // Map
+  mapFrame: {
+    marginTop: 14,
+    padding: 10,
+    backgroundColor: "#f5f0e3",
+    borderRadius: 4,
+    border: "1 solid #ebe5d2",
+  },
   mapImg: {
     width: "100%",
-    height: 360,
+    height: 380,
     objectFit: "cover",
-    borderRadius: 6,
-    marginTop: 6,
+    borderRadius: 2,
   },
   mapCaption: {
-    marginTop: 10,
-    fontSize: 9.5,
+    marginTop: 14,
+    fontSize: 9,
     color: MUTED,
     fontStyle: "italic",
+    textAlign: "center",
+    letterSpacing: 0.3,
+  },
+  mapStatsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 22,
+    paddingTop: 18,
+    borderTop: "1 solid #ebe5d2",
+  },
+  mapStatCell: {
+    flex: 1,
+    alignItems: "center",
+  },
+  mapStatLabel: {
+    fontSize: 8,
+    fontWeight: 600,
+    color: MUTED,
+    textTransform: "uppercase",
+    letterSpacing: 1.4,
+    marginBottom: 4,
+  },
+  mapStatValue: {
+    fontFamily: "Playfair",
+    fontWeight: 600,
+    fontSize: 22,
+    color: INK,
+  },
+  mapStatUnit: {
+    fontSize: 9,
+    color: MUTED,
+    marginLeft: 2,
+  },
+  mapLegendRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 0,
+    marginTop: 16,
+  },
+  mapLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+    paddingRight: 14,
+    width: "33%",
+  },
+  mapLegendNum: {
+    fontSize: 8,
+    fontWeight: 700,
+    color: "#fff",
+    backgroundColor: TEAL,
+    borderRadius: 99,
+    width: 14,
+    height: 14,
+    textAlign: "center",
+    paddingTop: 2,
+    marginRight: 6,
+  },
+  mapLegendText: {
+    fontSize: 9,
+    color: INK,
+    flex: 1,
   },
 
   // End page
@@ -517,8 +594,25 @@ function formatDateFR(iso?: string): string {
   });
 }
 
+/**
+ * Construit l'URL Google Static Maps pour la carte du PDF.
+ *
+ * Stratégie premium :
+ * - Style éditorial chaud (sable, eau teal désaturée, routes effacées)
+ * - Marqueurs branded teal numérotés J1, J2... (J1-9 numérotés, >9 en pointillé)
+ * - Tracés RÉELS (encoded polylines des cached directions_segments) plutôt
+ *   que des lignes droites — donne une impression de vraie route suivie
+ * - Fallback : géodésique (great-circle) si pas de segments cachés
+ *
+ * LIMITE GOOGLE : URL max ≈ 16 KB. On surveille la longueur, et on tronque
+ * les polylines si on dépasse (préfère 12 segments réels que 30 cassés).
+ */
 function buildStaticMapUrl(
   days: NonNullable<RoadbookContent["days"]>,
+  segments: Array<{
+    encoded_polyline?: string | null;
+    mode?: string;
+  }> | undefined,
   apiKey?: string,
 ): string | null {
   if (!apiKey) return null;
@@ -529,31 +623,89 @@ function buildStaticMapUrl(
 
   const base = "https://maps.googleapis.com/maps/api/staticmap";
   const params = new URLSearchParams();
-  params.set("size", "640x400");
+  // 640×420 × scale 2 = 1280×840 → pleine résolution sur A4 paysage.
+  params.set("size", "640x420");
   params.set("scale", "2");
   params.set("maptype", "roadmap");
+  params.set("language", "fr");
 
-  // Minimalist style: hide POIs, transit, business labels.
+  // Style éditorial — palette sable/teal cohérente avec la charte du PDF.
   const styleRules = [
+    // Texte global, lisible mais discret
+    "feature:all|element:labels.text.fill|color:0x4a4a3f",
+    "feature:all|element:labels.text.stroke|color:0xfafaf7|weight:2",
+    "feature:all|element:labels.icon|visibility:off",
+    // Terres : sable chaud
+    "feature:landscape|element:geometry|color:0xf5f0e3",
+    "feature:landscape.natural|element:geometry|color:0xebe5d2",
+    // Eau : teal désaturé qui matche --primary-soft
+    "feature:water|element:geometry|color:0xb8d4cc",
+    "feature:water|element:labels|visibility:off",
+    // Routes : très estompées, juste suggérer
+    "feature:road|element:geometry|color:0xe8e0d0",
+    "feature:road|element:labels|visibility:off",
+    "feature:road.highway|element:geometry|color:0xd6cab3",
+    "feature:road.highway|element:labels|visibility:simplified",
+    "feature:road.highway|element:labels.text.fill|color:0x6b6b66",
+    // Frontières : trait fin ambré
+    "feature:administrative.country|element:geometry.stroke|color:0xc99263|weight:1",
+    "feature:administrative.province|element:geometry.stroke|color:0xd9c5a8",
+    // Labels : seulement les pays + grandes villes
+    "feature:administrative.country|element:labels.text|color:0x4a4a3f",
+    "feature:administrative.locality|element:labels.text.fill|color:0x6b6b66",
+    "feature:administrative.neighborhood|visibility:off",
+    "feature:administrative.land_parcel|visibility:off",
+    // Tout le bruit visuel : OFF
     "feature:poi|visibility:off",
     "feature:transit|visibility:off",
-    "feature:road|element:labels.icon|visibility:off",
-    "feature:administrative.locality|element:labels|visibility:on",
   ];
   styleRules.forEach((s) => params.append("style", s));
 
-  // Markers (one per day)
+  // Marqueurs — teal branded, numérotés pour J1-J9 (limite Google Static).
+  // Pour J10+, on met un point sans label (le tracé suffit à raconter
+  // l'histoire, et on ne veut pas d'étiquettes coupées).
   points.forEach((p) => {
-    params.append(
-      "markers",
-      `color:0x0F6E56|label:${p.day <= 9 ? p.day : ""}|${p.lat},${p.lng}`,
-    );
+    if (p.day <= 9) {
+      params.append(
+        "markers",
+        `color:0x0F6E56|label:${p.day}|size:mid|${p.lat},${p.lng}`,
+      );
+    } else {
+      // Petit point sans label, couleur ambre pour distinguer
+      params.append(
+        "markers",
+        `color:0xC99263|size:tiny|${p.lat},${p.lng}`,
+      );
+    }
   });
 
-  // Path (polyline as ordered list of lat,lng)
-  if (points.length >= 2) {
+  // Tracé RÉEL via les segments cachés (polylines encodées de Directions API).
+  // Sinon fallback géodésique (courbe naturelle plutôt que droite rigide).
+  let urlLen =
+    base.length + params.toString().length + 50; /* marge */
+  let usedRealPath = false;
+
+  if (segments && segments.length > 0) {
+    for (const seg of segments) {
+      if (!seg.encoded_polyline) continue;
+      // Préviser l'ajout pour ne pas péter la limite Google (~16 KB).
+      const pathParam = `color:0x0F6E5688|weight:4|enc:${seg.encoded_polyline}`;
+      if (urlLen + pathParam.length + 8 > 14_000) {
+        break; // assez de polylines, on s'arrête là
+      }
+      params.append("path", pathParam);
+      urlLen += pathParam.length + 8;
+      usedRealPath = true;
+    }
+  }
+
+  if (!usedRealPath && points.length >= 2) {
+    // Fallback : ligne géodésique entre les points (suit la courbure terrestre).
     const pathPts = points.map((p) => `${p.lat},${p.lng}`).join("|");
-    params.append("path", `color:0x0F6E56FF|weight:3|${pathPts}`);
+    params.append(
+      "path",
+      `color:0x0F6E56AA|weight:3|geodesic:true|${pathPts}`,
+    );
   }
 
   params.set("key", apiKey);
@@ -586,7 +738,11 @@ export function RoadbookPDF({
   const contacts = roadbook.contacts || [];
   const tips = roadbook.tips || [];
   const destination = roadbook.destination || cover.title || "Voyage";
-  const mapUrl = buildStaticMapUrl(days, mapsApiKey);
+  const mapUrl = buildStaticMapUrl(
+    days,
+    roadbook.directions_segments,
+    mapsApiKey,
+  );
   const dayPages = chunk(days, 3);
 
   const pageMeta = `${roadbook.client_name || ""}${
@@ -733,10 +889,80 @@ export function RoadbookPDF({
           <Text style={styles.sectionEyebrow}>Tracé du voyage</Text>
           <Text style={styles.h1}>Itinéraire général</Text>
           <View style={styles.rule} />
-          <Image style={styles.mapImg} src={mapUrl} />
+
+          {/* Cadre éditorial autour de la carte — donne un effet "encadré" */}
+          <View style={styles.mapFrame}>
+            <Image style={styles.mapImg} src={mapUrl} />
+          </View>
+
           <Text style={styles.mapCaption}>
-            Carte schématique des étapes principales — distances et tracés indicatifs.
+            Tracé routier réel calculé via Google Maps · marqueurs J1 à J9
+            numérotés · les étapes au-delà sont représentées par des points.
           </Text>
+
+          {/* Mini-stats — distance / route / hébergements */}
+          {(() => {
+            const totalKm = days.reduce(
+              (acc, d) => acc + (d.distance_km || 0),
+              0,
+            );
+            const totalH = days.reduce(
+              (acc, d) => acc + (d.drive_hours || 0),
+              0,
+            );
+            const stops = accommodations.length || days.length;
+            return (
+              <View style={styles.mapStatsRow}>
+                <View style={styles.mapStatCell}>
+                  <Text style={styles.mapStatLabel}>Distance</Text>
+                  <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+                    <Text style={styles.mapStatValue}>
+                      {totalKm > 0 ? totalKm.toLocaleString("fr-FR") : "—"}
+                    </Text>
+                    {totalKm > 0 ? (
+                      <Text style={styles.mapStatUnit}>km</Text>
+                    ) : null}
+                  </View>
+                </View>
+                <View style={styles.mapStatCell}>
+                  <Text style={styles.mapStatLabel}>Route</Text>
+                  <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+                    <Text style={styles.mapStatValue}>
+                      {totalH > 0 ? totalH.toFixed(1).replace(".", ",") : "—"}
+                    </Text>
+                    {totalH > 0 ? (
+                      <Text style={styles.mapStatUnit}>h</Text>
+                    ) : null}
+                  </View>
+                </View>
+                <View style={styles.mapStatCell}>
+                  <Text style={styles.mapStatLabel}>Étapes</Text>
+                  <Text style={styles.mapStatValue}>{days.length}</Text>
+                </View>
+                <View style={styles.mapStatCell}>
+                  <Text style={styles.mapStatLabel}>Hébergements</Text>
+                  <Text style={styles.mapStatValue}>{stops}</Text>
+                </View>
+              </View>
+            );
+          })()}
+
+          {/* Légende des étapes — uniquement si voyage court (≤ 9 jours)
+              pour rester lisible. Pour les longs voyages, on s'appuie sur
+              le sommaire jour par jour des pages suivantes. */}
+          {days.length <= 9 && days.length > 0 ? (
+            <View style={styles.mapLegendRow}>
+              {days.map((d) => (
+                <View key={`legend-${d.day}`} style={styles.mapLegendItem}>
+                  <Text style={styles.mapLegendNum}>{d.day}</Text>
+                  <Text style={styles.mapLegendText}>
+                    {d.stage || d.accommodation || "Étape"}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
           <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
             <>
               <Text>{pageMeta}</Text>
