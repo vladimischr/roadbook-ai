@@ -597,15 +597,15 @@ function formatDateFR(iso?: string): string {
 /**
  * Construit l'URL Google Static Maps pour la carte du PDF.
  *
- * Stratégie premium :
- * - Style éditorial chaud (sable, eau teal désaturée, routes effacées)
- * - Marqueurs branded teal numérotés J1, J2... (J1-9 numérotés, >9 en pointillé)
- * - Tracés RÉELS (encoded polylines des cached directions_segments) plutôt
- *   que des lignes droites — donne une impression de vraie route suivie
- * - Fallback : géodésique (great-circle) si pas de segments cachés
+ * IMPORTANT — pourquoi on construit l'URL "à la main" et pas via
+ * URLSearchParams : Google Static Maps utilise des `|` non encodés comme
+ * séparateurs internes (style=feature:water|color:0xXXX). URLSearchParams
+ * encode ces `|` en `%7C`, ce qui casse silencieusement les rules
+ * complexes — Google ignore les paramètres mal formés sans erreur.
+ * Conséquence : style appliqué partiellement, path invisible, etc.
  *
- * LIMITE GOOGLE : URL max ≈ 16 KB. On surveille la longueur, et on tronque
- * les polylines si on dépasse (préfère 12 segments réels que 30 cassés).
+ * Ici on encode UNIQUEMENT ce qui doit l'être (clé, valeurs avec espaces),
+ * et on garde les `|` bruts.
  */
 function buildStaticMapUrl(
   days: NonNullable<RoadbookContent["days"]>,
@@ -622,118 +622,110 @@ function buildStaticMapUrl(
   if (points.length === 0) return null;
 
   const base = "https://maps.googleapis.com/maps/api/staticmap";
-  const params = new URLSearchParams();
-  // 640×420 × scale 2 = 1280×840 → pleine résolution sur A4 paysage.
-  params.set("size", "640x420");
-  params.set("scale", "2");
-  params.set("maptype", "roadmap");
-  params.set("language", "fr");
+  const parts: string[] = [];
 
-  // Style éditorial — palette sable/teal cohérente avec la charte du PDF.
+  parts.push("size=640x420");
+  parts.push("scale=2");
+  parts.push("maptype=roadmap");
+  parts.push("language=fr");
+
+  // Style éditorial minimal qui MARCHE — moins de rules = plus fiable.
+  // Chaque rule est conçue selon le format strict de Static Maps :
+  //   style=feature:X|element:Y|rule:value
+  // On garde les `|` bruts (ne pas encoder).
   const styleRules = [
-    // Texte global, lisible mais discret
-    "feature:all|element:labels.text.fill|color:0x4a4a3f",
-    "feature:all|element:labels.text.stroke|color:0xfafaf7|weight:2",
-    "feature:all|element:labels.icon|visibility:off",
-    // Terres : sable chaud
-    "feature:landscape|element:geometry|color:0xf5f0e3",
-    "feature:landscape.natural|element:geometry|color:0xebe5d2",
-    // Eau : teal désaturé qui matche --primary-soft
-    "feature:water|element:geometry|color:0xb8d4cc",
-    "feature:water|element:labels|visibility:off",
-    // Routes : très estompées, juste suggérer
-    "feature:road|element:geometry|color:0xe8e0d0",
-    "feature:road|element:labels|visibility:off",
-    "feature:road.highway|element:geometry|color:0xd6cab3",
-    "feature:road.highway|element:labels|visibility:simplified",
-    "feature:road.highway|element:labels.text.fill|color:0x6b6b66",
-    // Frontières : trait fin ambré
-    "feature:administrative.country|element:geometry.stroke|color:0xc99263|weight:1",
-    "feature:administrative.province|element:geometry.stroke|color:0xd9c5a8",
-    // Labels : seulement les pays + grandes villes
-    "feature:administrative.country|element:labels.text|color:0x4a4a3f",
-    "feature:administrative.locality|element:labels.text.fill|color:0x6b6b66",
-    "feature:administrative.neighborhood|visibility:off",
-    "feature:administrative.land_parcel|visibility:off",
-    // Tout le bruit visuel : OFF
+    // Hide tout le bruit
     "feature:poi|visibility:off",
     "feature:transit|visibility:off",
+    "feature:road|element:labels|visibility:off",
+    // Land : sable chaud (matche la palette du PDF)
+    "feature:landscape|element:geometry.fill|color:0xf5f0e3",
+    "feature:landscape.natural|element:geometry.fill|color:0xede5d2",
+    // Eau : teal désaturé, matche la cover teal du roadbook
+    "feature:water|element:geometry.fill|color:0xb8d4cc",
+    // Routes : barement visibles, juste pour donner du contexte
+    "feature:road|element:geometry.fill|color:0xe8e0cf",
+    "feature:road.highway|element:geometry.fill|color:0xd4c5a8",
+    // Frontières pays : trait ambré fin
+    "feature:administrative.country|element:geometry.stroke|color:0xc99263|weight:1.5",
+    // Labels : couleur encre, pas de halo bruyant
+    "feature:all|element:labels.text.fill|color:0x4a4a3f",
+    "feature:all|element:labels.icon|visibility:off",
   ];
-  styleRules.forEach((s) => params.append("style", s));
+  for (const rule of styleRules) {
+    parts.push(`style=${rule}`);
+  }
 
-  // Marqueurs — teal branded, numérotés pour J1-J9 (limite Google Static).
-  // Pour J10+, on met un point sans label (le tracé suffit à raconter
-  // l'histoire, et on ne veut pas d'étiquettes coupées).
-  points.forEach((p) => {
+  // Marqueurs — branded teal, J1-J9 numérotés, J10+ en petit point ambre.
+  for (const p of points) {
     if (p.day <= 9) {
-      params.append(
-        "markers",
-        `color:0x0F6E56|label:${p.day}|size:mid|${p.lat},${p.lng}`,
+      parts.push(
+        `markers=color:0x0F6E56|label:${p.day}|size:mid|${p.lat},${p.lng}`,
       );
     } else {
-      // Petit point sans label, couleur ambre pour distinguer
-      params.append(
-        "markers",
-        `color:0xC99263|size:tiny|${p.lat},${p.lng}`,
-      );
+      parts.push(`markers=color:0xC99263|size:tiny|${p.lat},${p.lng}`);
     }
-  });
+  }
 
-  // Tracé RÉEL via les segments cachés (polylines encodées de Directions API).
-  // Sinon fallback géodésique (courbe naturelle plutôt que droite rigide).
-  let urlLen =
-    base.length + params.toString().length + 50; /* marge */
+  // Tracé RÉEL via polylines cachées (Directions API). Si pas dispo →
+  // fallback ligne géodésique entre les points (= courbe naturelle).
   let usedRealPath = false;
+  let urlLen = base.length + parts.join("&").length + 100;
 
   if (segments && segments.length > 0) {
     for (const seg of segments) {
       if (!seg.encoded_polyline) continue;
-      // Préviser l'ajout pour ne pas péter la limite Google (~16 KB).
-      const pathParam = `color:0x0F6E5688|weight:4|enc:${seg.encoded_polyline}`;
-      if (urlLen + pathParam.length + 8 > 14_000) {
-        break; // assez de polylines, on s'arrête là
-      }
-      params.append("path", pathParam);
-      urlLen += pathParam.length + 8;
+      // L'`enc:` polyline contient des chars qui DOIVENT être URL-encodés
+      // (sinon ?: \: etc. cassent l'URL). Mais le séparateur initial `|`
+      // doit rester brut. On encode uniquement la valeur enc.
+      const encoded = encodeURIComponent(seg.encoded_polyline);
+      const pathParam = `path=color:0x0F6E56FF|weight:5|enc:${encoded}`;
+      if (urlLen + pathParam.length + 1 > 14_000) break;
+      parts.push(pathParam);
+      urlLen += pathParam.length + 1;
       usedRealPath = true;
     }
   }
 
+  // Fallback : si pas de polylines (ou pas assez), on dessine une ligne
+  // géodésique entre TOUS les points. Toujours visible, contraste fort.
   if (!usedRealPath && points.length >= 2) {
-    // Fallback : ligne géodésique entre les points (suit la courbure terrestre).
     const pathPts = points.map((p) => `${p.lat},${p.lng}`).join("|");
-    params.append(
-      "path",
-      `color:0x0F6E56AA|weight:3|geodesic:true|${pathPts}`,
-    );
+    parts.push(`path=color:0x0F6E56FF|weight:4|geodesic:true|${pathPts}`);
   }
 
-  params.set("key", apiKey);
-  const finalUrl = `${base}?${params.toString()}`;
+  parts.push(`key=${encodeURIComponent(apiKey)}`);
 
-  // Sécurité : Google rejette les URLs > 16 KB avec 414. Si on dépasse
-  // (rare avec le cap des polylines mais possible avec beaucoup de
-  // marqueurs ou de stylings), on tombe sur une carte SANS path et SANS
-  // styling — basique mais ça s'affichera.
-  if (finalUrl.length > 16_000) {
+  const url = `${base}?${parts.join("&")}`;
+
+  // Garde-fou : si trop long, on retombe sur une carte minimale (sans
+  // styling, sans polylines) — c'est moche mais ça s'affichera.
+  if (url.length > 16_000) {
     console.warn(
-      `[buildStaticMapUrl] URL ${finalUrl.length} chars > 16 KB, fallback minimal`,
+      `[buildStaticMapUrl] URL ${url.length} chars > 16 KB, fallback minimal`,
     );
-    const fallback = new URLSearchParams();
-    fallback.set("size", "640x420");
-    fallback.set("scale", "2");
-    fallback.set("maptype", "roadmap");
-    points.forEach((p) => {
-      fallback.append(
-        "markers",
-        `color:0x0F6E56|${p.day <= 9 ? `label:${p.day}|` : ""}${p.lat},${p.lng}`,
+    const fallbackParts = [
+      "size=640x420",
+      "scale=2",
+      "maptype=roadmap",
+      "language=fr",
+    ];
+    for (const p of points) {
+      fallbackParts.push(
+        `markers=color:0x0F6E56|${p.day <= 9 ? `label:${p.day}|` : ""}${p.lat},${p.lng}`,
       );
-    });
-    fallback.set("key", apiKey);
-    return `${base}?${fallback.toString()}`;
+    }
+    if (points.length >= 2) {
+      const pathPts = points.map((p) => `${p.lat},${p.lng}`).join("|");
+      fallbackParts.push(
+        `path=color:0x0F6E56FF|weight:4|geodesic:true|${pathPts}`,
+      );
+    }
+    fallbackParts.push(`key=${encodeURIComponent(apiKey)}`);
+    return `${base}?${fallbackParts.join("&")}`;
   }
 
-  return finalUrl;
+  return url;
 }
 
 // Chunk days into pages of N for itinerary section.
