@@ -24,6 +24,10 @@ import {
   Building2,
   CloudCheck,
   CloudUpload,
+  Share2,
+  Copy,
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { useScrollReveal, staggerStyle } from "@/lib/animations";
 import { AppShell, useTopbarSlot, BreadcrumbLine } from "@/components/AppShell";
@@ -321,6 +325,10 @@ function RoadbookPage() {
     title: string;
     subtitle: string;
   } | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareTokenLoading, setShareTokenLoading] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const [status, setStatus] = useState<RoadbookStatus>("draft");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [savingState, setSavingState] = useState<"idle" | "saving">("idle");
@@ -349,7 +357,7 @@ function RoadbookPage() {
     }
     supabase
       .from("roadbooks")
-      .select("content,destination,status")
+      .select("content,destination,status,share_token")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -364,6 +372,7 @@ function RoadbookPage() {
         }
         setRb(content);
         setStatus(normalizeStatus(data.status));
+        setShareToken((data as any).share_token ?? null);
         setLoading(false);
       });
   }, [id, user, authLoading, navigate]);
@@ -1049,6 +1058,44 @@ function RoadbookPage() {
     }
   };
 
+  // ---- Lien client public ----
+  const shareUrl = shareToken
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/voyage/${shareToken}`
+    : "";
+
+  const handleCopyShareLink = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      toast.success("Lien copié dans le presse-papier", { duration: 2000 });
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      toast.error("Impossible de copier — sélectionne et copie manuellement.");
+    }
+  };
+
+  const handleRegenerateShareToken = async () => {
+    if (!confirm("Régénérer le lien rendra l'ancien inutilisable. Continuer ?"))
+      return;
+    setShareTokenLoading(true);
+    const { data, error } = await supabase.rpc("regenerate_share_token", {
+      p_roadbook_id: id,
+    });
+    setShareTokenLoading(false);
+    if (error) {
+      toast.error("Échec : " + error.message);
+      return;
+    }
+    setShareToken(data as string);
+    setShareCopied(false);
+    toast.success("Nouveau lien généré — l'ancien est désormais invalide.");
+  };
+
+  // Avertit l'utilisateur si le statut empêche le partage public.
+  // (la RPC get_shared_roadbook filtre status IN ('ready', 'delivered'))
+  const isSharable = status === "ready" || status === "delivered";
+
   if (authLoading || loading || !rb) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
@@ -1153,6 +1200,7 @@ function RoadbookPage() {
       onToggleEdit={() => setGlobalEdit((v) => !v)}
       onRecompute={() => setRecomputeOpen(true)}
       onExportPdf={handleExportPdf}
+      onShare={() => setShareOpen(true)}
     />
   );
 
@@ -1191,6 +1239,119 @@ function RoadbookPage() {
 
       {/* Footer */}
       <RoadbookFooter destination={rb.destination} />
+
+      {/* Modale partage client */}
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <span className="rule-warm" aria-hidden />
+              <span className="eyebrow">Partager avec votre client</span>
+            </div>
+            <DialogTitle className="font-display mt-3 text-[24px] font-semibold leading-tight">
+              Lien public en lecture seule
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-[13.5px] leading-relaxed">
+              Envoie ce lien à ton voyageur — il accède au roadbook sur son
+              téléphone, sans inscription. Mise en page mobile-friendly,
+              tout est lisible depuis Google Maps ou WhatsApp.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!isSharable && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-50/60 p-4 dark:bg-amber-500/10">
+              <span className="mt-0.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-600" />
+              <div className="flex-1 text-[13px] leading-relaxed">
+                <p className="font-medium text-foreground">
+                  Le statut « Brouillon » bloque le partage public
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  Passe le statut sur <strong>Prêt</strong> ou{" "}
+                  <strong>Livré</strong> dans la barre du haut pour activer
+                  le lien client.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* URL + actions */}
+          <div className="space-y-3">
+            <div className="flex items-stretch gap-2">
+              <Input
+                readOnly
+                value={shareUrl || "Génération du lien…"}
+                onFocus={(e) => e.currentTarget.select()}
+                className="font-mono text-[12.5px]"
+              />
+              <Button
+                type="button"
+                onClick={handleCopyShareLink}
+                disabled={!shareUrl || !isSharable}
+                className="gap-1.5 rounded-md"
+              >
+                {shareCopied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" /> Copié
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" /> Copier
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={shareUrl || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-surface px-3.5 py-1.5 text-[12px] font-medium text-foreground/80 transition hover:border-primary/40 hover:text-primary",
+                  (!shareUrl || !isSharable) && "pointer-events-none opacity-50",
+                )}
+              >
+                <ExternalLink className="h-3 w-3" />
+                Ouvrir dans un nouvel onglet
+              </a>
+              <button
+                type="button"
+                onClick={handleRegenerateShareToken}
+                disabled={shareTokenLoading}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-surface px-3.5 py-1.5 text-[12px] font-medium text-muted-foreground transition hover:border-destructive/40 hover:text-destructive disabled:opacity-50"
+              >
+                {shareTokenLoading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3 w-3" />
+                )}
+                Régénérer le lien
+              </button>
+            </div>
+          </div>
+
+          {/* Aide */}
+          <div className="space-y-2 border-t border-border/40 pt-4 text-[12px] leading-relaxed text-muted-foreground">
+            <p>
+              <strong className="text-foreground">📱 Mobile-friendly</strong>
+              {" — "}le voyageur ouvre le lien sur son téléphone, lit la
+              cover, les jours, les contacts, les conseils. Pas besoin
+              d'application.
+            </p>
+            <p>
+              <strong className="text-foreground">🔒 Lien sécurisé</strong>
+              {" — "}le token est unique et impossible à deviner. Tu peux
+              le régénérer à tout moment pour invalider l'ancien (utile si
+              tu changes de client ou en cas de fuite).
+            </p>
+            <p>
+              <strong className="text-foreground">🚫 Pas indexé</strong>
+              {" — "}les liens portent un meta robots noindex, donc Google
+              ne les remontera jamais.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={recomputeOpen} onOpenChange={setRecomputeOpen}>
         <DialogContent>
@@ -1280,6 +1441,7 @@ function RoadbookTopbarActions({
   onToggleEdit,
   onRecompute,
   onExportPdf,
+  onShare,
 }: {
   status: RoadbookStatus;
   onSetStatus: (s: RoadbookStatus) => void;
@@ -1289,6 +1451,7 @@ function RoadbookTopbarActions({
   onToggleEdit: () => void;
   onRecompute: () => void;
   onExportPdf: () => void;
+  onShare: () => void;
 }) {
   return (
     <>
@@ -1354,6 +1517,16 @@ function RoadbookTopbarActions({
       >
         <Pencil className="h-3.5 w-3.5" />
         {globalEdit ? "Quitter l'édition" : "Tout modifier"}
+      </Button>
+
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={onShare}
+        className="h-9 gap-1.5 rounded-full border-border/70 bg-surface px-3.5 text-[12.5px] transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
+      >
+        <Share2 className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Partager</span>
       </Button>
 
       <Button

@@ -25,6 +25,7 @@ export type Database = {
           end_date: string | null
           generation_mode: string
           id: string
+          share_token: string
           start_date: string | null
           status: string
           theme: string | null
@@ -43,6 +44,7 @@ export type Database = {
           end_date?: string | null
           generation_mode?: string
           id?: string
+          share_token?: string
           start_date?: string | null
           status?: string
           theme?: string | null
@@ -61,6 +63,7 @@ export type Database = {
           end_date?: string | null
           generation_mode?: string
           id?: string
+          share_token?: string
           start_date?: string | null
           status?: string
           theme?: string | null
