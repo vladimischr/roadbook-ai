@@ -94,10 +94,10 @@ export const Route = createFileRoute("/api/stripe-checkout")({
             mode: "subscription",
             customer: customerId,
             line_items: [{ price: priceId, quantity: 1 }],
-            // 14 jours d'essai gratuit avec CB demandée → conversion forte.
+            // 7 jours d'essai gratuit avec CB demandée → conversion forte.
             // Stripe gère automatiquement le passage trialing → active.
             subscription_data: {
-              trial_period_days: 14,
+              trial_period_days: 7,
               metadata: {
                 supabase_user_id: user.id,
                 plan_key,

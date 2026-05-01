@@ -14,6 +14,7 @@ import { useSubscription, redirectToPortal } from "@/lib/useSubscription";
 import { Paywall } from "@/components/Paywall";
 import { getPlan, formatPlanPrice } from "@/lib/plans";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/billing")({
   component: Billing,
@@ -26,20 +27,54 @@ function Billing() {
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
-  // Si on revient de Stripe Checkout (?status=success), on affiche un toast
-  // et on rafraîchit le profil. Le webhook met à jour la DB en parallèle —
-  // un re-fetch après ~2s capte le nouveau plan.
+  // Si on revient de Stripe Checkout (?status=success), on déclenche un
+  // resync explicite côté serveur (qui interroge Stripe directement et écrit
+  // dans profiles), puis on rafraîchit l'UI. Le webhook reste le filet de
+  // sécurité long-terme mais on ne dépend plus de sa latence.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const status = params.get("status");
-    if (status === "success") {
-      toast.success("Abonnement actif. Bienvenue à bord.");
-      // Re-fetch deux fois pour laisser le temps au webhook
-      setTimeout(refetch, 1500);
-      setTimeout(refetch, 4000);
-      // Nettoie l'URL pour ne pas re-trigger au refresh
-      window.history.replaceState({}, "", "/billing");
-    }
+    if (status !== "success") return;
+
+    const sessionId = params.get("session_id");
+    // Nettoie l'URL pour ne pas re-trigger au refresh
+    window.history.replaceState({}, "", "/billing");
+
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          // Pas de session active — on tente quand même le refetch
+          setTimeout(refetch, 2000);
+          return;
+        }
+        const res = await fetch("/api/stripe-resync", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ session_id: sessionId ?? undefined }),
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          console.warn("[billing] resync failed:", txt);
+          // Fallback : retry classique sur le webhook
+          setTimeout(refetch, 1500);
+          setTimeout(refetch, 4000);
+          toast.success("Abonnement en cours d'activation…");
+          return;
+        }
+        await refetch();
+        toast.success("Abonnement actif. Bienvenue à bord.");
+      } catch (e) {
+        console.warn("[billing] resync error:", e);
+        setTimeout(refetch, 2000);
+      }
+    })();
   }, [refetch]);
 
   const handlePortal = async () => {
