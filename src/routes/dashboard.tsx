@@ -471,29 +471,110 @@ function SortItem({
 
 function EmptyState({ onImport }: { onImport: () => void }) {
   return (
-    <div className="rounded-3xl border border-dashed border-border/70 bg-surface px-10 py-20 text-center shadow-soft">
-      <EmptyStateIllustration />
-      <h2 className="mt-10 font-display text-[32px] font-semibold leading-tight text-foreground">
-        Votre premier voyage commence ici
-      </h2>
-      <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-        Créez un roadbook depuis zéro ou importez un programme Excel existant.
-      </p>
-      <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-        <Link to="/new">
-          <Button className="h-11 gap-2 rounded-full px-6 transition-smooth hover:scale-[1.02]">
-            <Plus className="h-4 w-4" /> Créer un roadbook
-          </Button>
-        </Link>
-        <Button
-          variant="outline"
-          className="h-11 gap-2 rounded-full border-border/70 px-6 transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
-          onClick={onImport}
-        >
-          <Upload className="h-4 w-4" /> Importer un fichier
-        </Button>
+    <div className="rounded-3xl border border-dashed border-border/70 bg-surface px-10 py-16 shadow-soft sm:py-20">
+      <div className="text-center">
+        <EmptyStateIllustration />
+        <h2 className="mt-10 font-display text-[32px] font-semibold leading-tight text-foreground">
+          Votre premier voyage commence ici
+        </h2>
+        <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+          Trois manières de démarrer — choisissez celle qui correspond à
+          votre matière&nbsp;:
+        </p>
       </div>
+
+      {/* 3 cartes éducatives — onboarding visuel */}
+      <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-3">
+        <OnboardCard
+          step="01"
+          title="L'IA propose"
+          body="Donnez le brief, l'IA dessine la trame en quelques secondes."
+          cta="Créer avec l'IA"
+          href="/new"
+        />
+        <OnboardCard
+          step="02"
+          title="Vous composez"
+          body="Vos coins secrets, vos lodges. L'IA met en forme autour."
+          cta="Saisir manuellement"
+          href="/new"
+          highlighted
+        />
+        <OnboardCard
+          step="03"
+          title="Importer Excel"
+          body="Programme déjà prêt sur tableur ? On le passe au format éditorial."
+          cta="Importer un fichier"
+          onClick={onImport}
+        />
+      </div>
+
+      <p className="mx-auto mt-8 max-w-md text-center text-[12.5px] text-muted-foreground">
+        Vous gardez la main sur chaque étape. Le livret final est exportable
+        en PDF, en un clic.
+      </p>
     </div>
+  );
+}
+
+function OnboardCard({
+  step,
+  title,
+  body,
+  cta,
+  href,
+  onClick,
+  highlighted,
+}: {
+  step: string;
+  title: string;
+  body: string;
+  cta: string;
+  href?: string;
+  onClick?: () => void;
+  highlighted?: boolean;
+}) {
+  const inner = (
+    <div
+      className={cn(
+        "flex h-full flex-col rounded-2xl border bg-surface p-5 text-left transition-smooth hover:-translate-y-0.5 hover:shadow-soft-md",
+        highlighted
+          ? "border-primary/40 shadow-soft"
+          : "border-border/60 shadow-soft",
+      )}
+    >
+      <span className="font-display text-[24px] font-semibold leading-none text-accent-warm">
+        {step}
+      </span>
+      <h3 className="font-display mt-3 text-[18px] font-semibold leading-tight text-foreground">
+        {title}
+      </h3>
+      <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+        {body}
+      </p>
+      <div className="flex-1" />
+      <span
+        className={cn(
+          "mt-4 inline-flex items-center gap-1 text-[12.5px] font-medium",
+          highlighted ? "text-primary" : "text-foreground/80",
+        )}
+      >
+        {cta} →
+      </span>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <Link to={href} className="block">
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className="block w-full">
+      {inner}
+    </button>
   );
 }
 

@@ -13,6 +13,8 @@ import {
   PAID_PLAN_ORDER,
   PLANS,
   formatPlanPrice,
+  getDisplayedMonthlyPrice,
+  type Billing,
   type PlanKey,
 } from "@/lib/plans";
 import { redirectToCheckout } from "@/lib/useSubscription";
@@ -43,12 +45,13 @@ export function Paywall({
   subtitle = "Tu as atteint la limite de ton plan actuel. Choisis un plan adapté à ton volume.",
 }: PaywallProps) {
   const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
+  const [billing, setBilling] = useState<Billing>("annual");
 
   const handlePick = async (planKey: PlanKey) => {
     if (planKey === "free" || planKey === currentPlanKey) return;
     setLoadingPlan(planKey);
     try {
-      await redirectToCheckout(planKey as Exclude<PlanKey, "free">);
+      await redirectToCheckout(planKey as Exclude<PlanKey, "free">, billing);
       // Le navigateur quitte l'app, pas besoin de reset l'état.
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -72,6 +75,46 @@ export function Paywall({
             {subtitle}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Toggle Mensuel / Annuel — défaut Annuel pour pousser au -20% */}
+        <div className="mt-3 flex justify-center">
+          <div className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-surface p-1">
+            <button
+              type="button"
+              onClick={() => setBilling("monthly")}
+              className={cn(
+                "rounded-full px-4 py-1.5 text-[12.5px] font-medium transition",
+                billing === "monthly"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Mensuel
+            </button>
+            <button
+              type="button"
+              onClick={() => setBilling("annual")}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12.5px] font-medium transition",
+                billing === "annual"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Annuel
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.12em]",
+                  billing === "annual"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-primary-soft text-primary",
+                )}
+              >
+                −20%
+              </span>
+            </button>
+          </div>
+        </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           {PAID_PLAN_ORDER.map((key) => {
@@ -113,10 +156,15 @@ export function Paywall({
                 </p>
                 <div className="mt-5 flex items-baseline gap-1">
                   <span className="font-display text-[34px] font-semibold leading-none text-foreground">
-                    {formatPlanPrice(plan.priceMonthly)}
+                    {formatPlanPrice(getDisplayedMonthlyPrice(plan, billing))}
                   </span>
                   <span className="text-[12px] text-muted-foreground">/mois</span>
                 </div>
+                {billing === "annual" && (
+                  <p className="mt-1 text-[11px] text-accent-warm">
+                    Soit {formatPlanPrice(plan.priceAnnual)} /an
+                  </p>
+                )}
                 <ul className="mt-5 space-y-2 text-[12.5px] leading-relaxed text-muted-foreground">
                   {plan.features.slice(0, 4).map((f, i) => (
                     <li key={i} className="flex items-start gap-2">

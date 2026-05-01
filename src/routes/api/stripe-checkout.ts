@@ -16,6 +16,7 @@ import { stripePriceIdFor, type PlanKey } from "@/lib/plans";
 
 const inputSchema = z.object({
   plan_key: z.enum(["solo", "studio", "atelier"]),
+  billing: z.enum(["monthly", "annual"]).default("monthly"),
   // URL où renvoyer le navigateur après succès / cancel. Le client passe son
   // window.location.origin pour rester sur le bon environnement.
   origin: z.string().url(),
@@ -48,14 +49,16 @@ export const Route = createFileRoute("/api/stripe-checkout")({
               400,
             );
           }
-          const { plan_key, origin } = parsed.data;
+          const { plan_key, billing, origin } = parsed.data;
 
-          const priceId = stripePriceIdFor(plan_key as PlanKey);
+          const priceId = stripePriceIdFor(plan_key as PlanKey, billing);
           if (!priceId) {
+            const envName =
+              billing === "annual"
+                ? `STRIPE_PRICE_${plan_key.toUpperCase()}_ANNUAL`
+                : `STRIPE_PRICE_${plan_key.toUpperCase()}`;
             return jsonResponse(
-              {
-                error: `STRIPE_PRICE_${plan_key.toUpperCase()} non configurée côté serveur.`,
-              },
+              { error: `${envName} non configurée côté serveur.` },
               500,
             );
           }
@@ -98,6 +101,7 @@ export const Route = createFileRoute("/api/stripe-checkout")({
               metadata: {
                 supabase_user_id: user.id,
                 plan_key,
+                billing,
               },
             },
             // Permet à Stripe de gérer la TVA EU automatiquement (si Stripe
@@ -119,6 +123,7 @@ export const Route = createFileRoute("/api/stripe-checkout")({
             metadata: {
               supabase_user_id: user.id,
               plan_key,
+              billing,
             },
           });
 

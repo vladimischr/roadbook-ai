@@ -8,6 +8,7 @@
 // dans les profils en base.
 
 export type PlanKey = "free" | "solo" | "studio" | "atelier";
+export type Billing = "monthly" | "annual";
 
 export interface Plan {
   /** Clef stockée en DB. NE JAMAIS RENOMMER après mise en prod. */
@@ -18,6 +19,8 @@ export interface Plan {
   tagline: string;
   /** Prix mensuel en centimes EUR (0 pour free). */
   priceMonthly: number;
+  /** Prix annuel en centimes EUR (avec remise -20% par rapport au mensuel × 12). */
+  priceAnnual: number;
   /** Quota mensuel de roadbooks générés (null = illimité). */
   monthlyRoadbookLimit: number | null;
   /** PDF haute qualité accessible ? Le free n'y a pas droit. */
@@ -36,14 +39,15 @@ export const PLANS: Record<PlanKey, Plan> = {
     name: "Découverte",
     tagline: "Pour goûter à l'outil",
     priceMonthly: 0,
+    priceAnnual: 0,
     monthlyRoadbookLimit: 2,
-    allowsPdfExport: false,
+    allowsPdfExport: true,
     allowsRecompute: false,
     features: [
       "2 roadbooks composés par mois",
       "IA, saisie manuelle ou import Excel",
       "Carte interactive Google Maps",
-      "Aperçu en ligne uniquement",
+      "Export PDF avec mention « via Roadbook.ai »",
     ],
   },
   solo: {
@@ -51,6 +55,7 @@ export const PLANS: Record<PlanKey, Plan> = {
     name: "Solo",
     tagline: "Travel designer indépendant",
     priceMonthly: 2900,
+    priceAnnual: 27900,
     monthlyRoadbookLimit: 15,
     allowsPdfExport: true,
     allowsRecompute: true,
@@ -68,6 +73,7 @@ export const PLANS: Record<PlanKey, Plan> = {
     name: "Studio",
     tagline: "Petite agence 1-3 personnes",
     priceMonthly: 7900,
+    priceAnnual: 75900,
     monthlyRoadbookLimit: 50,
     allowsPdfExport: true,
     allowsRecompute: true,
@@ -84,6 +90,7 @@ export const PLANS: Record<PlanKey, Plan> = {
     name: "Atelier",
     tagline: "Agence établie",
     priceMonthly: 19900,
+    priceAnnual: 190900,
     monthlyRoadbookLimit: null,
     allowsPdfExport: true,
     allowsRecompute: true,
@@ -109,12 +116,31 @@ export function isPaidPlan(key: string | null | undefined): boolean {
   return key === "solo" || key === "studio" || key === "atelier";
 }
 
+/** Free tier exporte un PDF avec watermark "via Roadbook.ai" — viral loop. */
+export function isPdfWatermarked(key: string | null | undefined): boolean {
+  return key === "free" || !key;
+}
+
 /**
- * Mappe une plan_key → STRIPE_PRICE_ID. Côté serveur uniquement. Lit les
- * env vars (STRIPE_PRICE_SOLO, STRIPE_PRICE_STUDIO, STRIPE_PRICE_ATELIER).
- * Retourne undefined pour "free" — le free tier n'a pas de price Stripe.
+ * Mappe une plan_key + billing → STRIPE_PRICE_ID. Côté serveur uniquement.
+ * Lit les env vars correspondantes. Retourne undefined pour "free".
  */
-export function stripePriceIdFor(key: PlanKey): string | undefined {
+export function stripePriceIdFor(
+  key: PlanKey,
+  billing: Billing = "monthly",
+): string | undefined {
+  if (billing === "annual") {
+    switch (key) {
+      case "solo":
+        return process.env.STRIPE_PRICE_SOLO_ANNUAL;
+      case "studio":
+        return process.env.STRIPE_PRICE_STUDIO_ANNUAL;
+      case "atelier":
+        return process.env.STRIPE_PRICE_ATELIER_ANNUAL;
+      default:
+        return undefined;
+    }
+  }
   switch (key) {
     case "solo":
       return process.env.STRIPE_PRICE_SOLO;
@@ -128,13 +154,25 @@ export function stripePriceIdFor(key: PlanKey): string | undefined {
 }
 
 /**
- * Mappe inverse : STRIPE_PRICE_ID → plan_key. Utilisé par le webhook pour
- * savoir à quel plan associer une subscription quand Stripe envoie un event.
+ * Mappe inverse : STRIPE_PRICE_ID → plan_key. Utilisé par le webhook.
+ * Reconnait à la fois les prix mensuels et annuels.
  */
 export function planKeyForStripePrice(priceId: string): PlanKey | null {
-  if (priceId === process.env.STRIPE_PRICE_SOLO) return "solo";
-  if (priceId === process.env.STRIPE_PRICE_STUDIO) return "studio";
-  if (priceId === process.env.STRIPE_PRICE_ATELIER) return "atelier";
+  if (
+    priceId === process.env.STRIPE_PRICE_SOLO ||
+    priceId === process.env.STRIPE_PRICE_SOLO_ANNUAL
+  )
+    return "solo";
+  if (
+    priceId === process.env.STRIPE_PRICE_STUDIO ||
+    priceId === process.env.STRIPE_PRICE_STUDIO_ANNUAL
+  )
+    return "studio";
+  if (
+    priceId === process.env.STRIPE_PRICE_ATELIER ||
+    priceId === process.env.STRIPE_PRICE_ATELIER_ANNUAL
+  )
+    return "atelier";
   return null;
 }
 
@@ -142,4 +180,18 @@ export function planKeyForStripePrice(priceId: string): PlanKey | null {
 export function formatPlanPrice(priceCents: number): string {
   if (priceCents === 0) return "Gratuit";
   return `${Math.round(priceCents / 100)} €`;
+}
+
+/** Prix d'un plan affiché par mois selon le billing choisi. */
+export function getDisplayedMonthlyPrice(plan: Plan, billing: Billing): number {
+  if (billing === "annual" && plan.priceAnnual > 0) {
+    // Affiche le prix annuel divisé par 12, arrondi à l'euro inférieur.
+    return Math.floor(plan.priceAnnual / 12 / 100) * 100;
+  }
+  return plan.priceMonthly;
+}
+
+/** Économie réalisée en passant à l'annuel (en centimes EUR). */
+export function getAnnualSavings(plan: Plan): number {
+  return Math.max(0, plan.priceMonthly * 12 - plan.priceAnnual);
 }

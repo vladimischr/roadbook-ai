@@ -67,7 +67,10 @@ export function useSubscription() {
  * Le navigateur quitte l'app temporairement, Stripe encaisse, puis renvoie
  * sur /billing?status=success.
  */
-export async function redirectToCheckout(planKey: Exclude<PlanKey, "free">) {
+export async function redirectToCheckout(
+  planKey: Exclude<PlanKey, "free">,
+  billing: "monthly" | "annual" = "monthly",
+) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -83,6 +86,7 @@ export async function redirectToCheckout(planKey: Exclude<PlanKey, "free">) {
     },
     body: JSON.stringify({
       plan_key: planKey,
+      billing,
       origin: window.location.origin,
     }),
   });

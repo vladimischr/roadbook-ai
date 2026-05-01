@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "micro-saas-launcher": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/micro-saas-launcher/SKILL.md",
+      "computedHash": "611c8c7c3a2b8c89efce424ca1532a9888afe34cfb26dfc2614f842af06efb3b"
+    }
+  }
+}

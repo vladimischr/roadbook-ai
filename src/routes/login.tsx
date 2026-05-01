@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -97,6 +97,23 @@ function Login() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </form>
+              <p className="mt-6 text-[11.5px] leading-relaxed text-text-soft">
+                En vous connectant, vous acceptez nos{" "}
+                <Link
+                  to="/cgu"
+                  className="underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  CGU
+                </Link>{" "}
+                et notre{" "}
+                <Link
+                  to="/confidentialite"
+                  className="underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  politique de confidentialité
+                </Link>
+                .
+              </p>
             </div>
           ) : (
             <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-soft-md sm:p-10">

@@ -4,6 +4,7 @@ import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getUserSubscriptionInfo } from "@/lib/subscription.server";
 import { getPlan } from "@/lib/plans";
+import { rateLimit, rateLimitedResponse } from "@/lib/rate-limit.server";
 
 // Validation minimale du body — on ne valide pas la forme complète du
 // roadbook (trop coûteux et instable dans le temps), juste qu'on a bien un
@@ -70,6 +71,12 @@ export const Route = createFileRoute("/api/recompute-roadbook")({
               JSON.stringify({ error: "Session invalide." }),
               { status: 401, headers: { "Content-Type": "application/json" } },
             );
+          }
+
+          // Rate limit : max 5 recalculs / minute / user.
+          const rl = rateLimit(`recompute:${userData.user.id}`, 5, 60_000);
+          if (!rl.ok) {
+            return rateLimitedResponse(rl.retryAfterSec ?? 30);
           }
 
           // Recompute = appel Claude facturable. On le bloque sur les plans

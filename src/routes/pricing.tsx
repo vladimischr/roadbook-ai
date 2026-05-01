@@ -8,6 +8,9 @@ import {
   ALL_PLAN_ORDER,
   PLANS,
   formatPlanPrice,
+  getDisplayedMonthlyPrice,
+  getAnnualSavings,
+  type Billing,
   type PlanKey,
 } from "@/lib/plans";
 import { redirectToCheckout } from "@/lib/useSubscription";
@@ -32,6 +35,7 @@ function Pricing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
+  const [billing, setBilling] = useState<Billing>("annual");
 
   const handlePick = async (key: PlanKey) => {
     if (key === "free") {
@@ -47,7 +51,7 @@ function Pricing() {
     }
     setLoadingPlan(key);
     try {
-      await redirectToCheckout(key as Exclude<PlanKey, "free">);
+      await redirectToCheckout(key as Exclude<PlanKey, "free">, billing);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(msg);
@@ -97,6 +101,44 @@ function Pricing() {
                 porte sur le nombre de roadbooks créés, peu importe la
                 méthode. 14 jours d'essai gratuit, annulation en un clic.
               </p>
+
+              {/* Toggle Mensuel / Annuel */}
+              <div className="mt-10 inline-flex items-center gap-1 rounded-full border border-border/60 bg-surface p-1 shadow-soft">
+                <button
+                  type="button"
+                  onClick={() => setBilling("monthly")}
+                  className={cn(
+                    "rounded-full px-5 py-2 text-[13px] font-medium transition-smooth",
+                    billing === "monthly"
+                      ? "bg-foreground text-background shadow-soft"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Mensuel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBilling("annual")}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-medium transition-smooth",
+                    billing === "annual"
+                      ? "bg-foreground text-background shadow-soft"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Annuel
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]",
+                      billing === "annual"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-primary-soft text-primary",
+                    )}
+                  >
+                    −20%
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -132,7 +174,7 @@ function Pricing() {
 
                   <div className="mt-6 flex items-baseline gap-1">
                     <span className="font-display text-[44px] font-semibold leading-none text-foreground">
-                      {formatPlanPrice(plan.priceMonthly)}
+                      {formatPlanPrice(getDisplayedMonthlyPrice(plan, billing))}
                     </span>
                     {plan.priceMonthly > 0 && (
                       <span className="text-[13px] text-muted-foreground">
@@ -141,7 +183,21 @@ function Pricing() {
                     )}
                   </div>
 
-                  <p className="mt-2 text-[12.5px] text-muted-foreground">
+                  {billing === "annual" && plan.priceAnnual > 0 && (
+                    <p className="mt-2 text-[11.5px] text-accent-warm font-medium">
+                      Soit {formatPlanPrice(plan.priceAnnual)} /an
+                      <span className="ml-1 text-muted-foreground/80">
+                        (économie {formatPlanPrice(getAnnualSavings(plan))})
+                      </span>
+                    </p>
+                  )}
+                  {billing === "monthly" && plan.priceMonthly > 0 && (
+                    <p className="mt-2 text-[11.5px] text-muted-foreground">
+                      Facturation mensuelle, sans engagement
+                    </p>
+                  )}
+
+                  <p className="mt-3 text-[12.5px] text-muted-foreground">
                     {plan.monthlyRoadbookLimit === null
                       ? "Roadbooks illimités, tous modes"
                       : `${plan.monthlyRoadbookLimit} roadbooks/mois, tous modes`}

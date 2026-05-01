@@ -572,10 +572,13 @@ export function RoadbookPDF({
   roadbook,
   mapsApiKey,
   coverImageUrl,
+  watermark = false,
 }: {
   roadbook: RoadbookContent;
   mapsApiKey?: string;
   coverImageUrl?: string | null;
+  /** Si true, ajoute un nudge "via Roadbook.ai" prononcé sur cover + footer. */
+  watermark?: boolean;
 }) {
   const cover = roadbook.cover || {};
   const days = roadbook.days || [];
@@ -649,7 +652,11 @@ export function RoadbookPDF({
             ) : null}
           </View>
         </View>
-        <Text style={styles.coverFooter}>Préparé avec Roadbook.ai</Text>
+        <Text style={styles.coverFooter}>
+          {watermark
+            ? "Composé avec Roadbook.ai — créez le vôtre sur roadbook.ai"
+            : "Préparé avec Roadbook.ai"}
+        </Text>
       </Page>
 
       {/* ---------- Overview + Stats ---------- */}

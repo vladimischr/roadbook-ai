@@ -64,7 +64,7 @@ import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/Place
 import { geocodePlace, getDirectionsSegment } from "@/lib/api";
 import { Paywall } from "@/components/Paywall";
 import { useSubscription } from "@/lib/useSubscription";
-import { getPlan } from "@/lib/plans";
+import { getPlan, isPdfWatermarked } from "@/lib/plans";
 import {
   DndContext,
   closestCenter,
@@ -1065,6 +1065,7 @@ function RoadbookPage() {
           roadbook={content as any}
           mapsApiKey={apiKey || undefined}
           coverImageUrl={coverImageUrl}
+          watermark={isPdfWatermarked(subInfo?.planKey)}
         />,
       ).toBlob();
       const filename = `Roadbook-${slug(content.client_name)}-${slug(content.destination)}.pdf`;

@@ -606,14 +606,50 @@ function CTASection() {
 function SiteFooter() {
   return (
     <footer className="border-t border-border/40 bg-background">
-      <div className="container-editorial px-6 py-10 sm:px-10">
-        <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <Logo />
-          <p className="text-[12.5px] text-muted-foreground">
-            © {new Date().getFullYear()} Roadbook.ai · Pensé pour les
-            travel designers indépendants.
-          </p>
+      <div className="container-editorial px-6 py-12 sm:px-10">
+        <div className="flex flex-col items-start gap-8 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-3">
+            <Logo />
+            <p className="text-[12.5px] text-muted-foreground">
+              Pensé pour les travel designers indépendants.
+            </p>
+          </div>
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[12.5px] text-muted-foreground">
+            <Link
+              to="/pricing"
+              className="transition hover:text-foreground"
+            >
+              Tarifs
+            </Link>
+            <Link
+              to="/cgu"
+              className="transition hover:text-foreground"
+            >
+              CGU
+            </Link>
+            <Link
+              to="/confidentialite"
+              className="transition hover:text-foreground"
+            >
+              Confidentialité
+            </Link>
+            <Link
+              to="/mentions-legales"
+              className="transition hover:text-foreground"
+            >
+              Mentions légales
+            </Link>
+            <a
+              href="mailto:contact@roadbook.ai"
+              className="transition hover:text-foreground"
+            >
+              Contact
+            </a>
+          </nav>
         </div>
+        <p className="mt-8 border-t border-border/30 pt-6 text-[11.5px] text-text-soft">
+          © {new Date().getFullYear()} Roadbook.ai
+        </p>
       </div>
     </footer>
   );

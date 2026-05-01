@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ROADBOOK_SYSTEM_PROMPT } from "@/server/roadbook-prompt";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getUserSubscriptionInfo } from "@/lib/subscription.server";
+import { rateLimit, rateLimitedResponse } from "@/lib/rate-limit.server";
 
 // Schéma Zod aligné sur RoadbookFormData (côté client) — refuse les payloads
 // invalides AVANT d'appeler Anthropic, pour ne pas brûler du quota sur du
@@ -108,6 +109,13 @@ export const Route = createFileRoute("/api/generate-roadbook")({
               JSON.stringify({ error: "Session invalide." }),
               { status: 401, headers: { "Content-Type": "application/json" } },
             );
+          }
+
+          // Rate limit anti-burst : max 5 générations par minute par user.
+          // Suffisant pour un usage légitime, bloque un script qui spamme.
+          const rl = rateLimit(`gen:${userData.user.id}`, 5, 60_000);
+          if (!rl.ok) {
+            return rateLimitedResponse(rl.retryAfterSec ?? 30);
           }
 
           // Quota check — refuse l'appel Anthropic si l'utilisateur a épuisé
