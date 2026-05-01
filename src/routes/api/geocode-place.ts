@@ -9,10 +9,18 @@ const inputSchema = z.object({
   region: z.string().max(120).optional(),
 });
 
+interface GeocodeAttempt {
+  found: { lat: number; lng: number; formatted: string | null } | null;
+  /** Status renvoyé par Google : OK / ZERO_RESULTS / REQUEST_DENIED / OVER_QUERY_LIMIT / etc. */
+  apiStatus?: string;
+  /** Message d'erreur Google si REQUEST_DENIED (clé invalide, API non activée, etc.) */
+  errorMessage?: string;
+}
+
 async function tryGeocode(
   query: string,
   key: string,
-): Promise<{ lat: number; lng: number; formatted: string | null } | null> {
+): Promise<GeocodeAttempt> {
   const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
   url.searchParams.set("address", query);
   url.searchParams.set("key", key);
@@ -20,25 +28,54 @@ async function tryGeocode(
 
   try {
     const res = await fetch(url.toString());
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(
+        `[geocode-place] HTTP ${res.status} sur "${query}":`,
+        await res.text().catch(() => "<no body>"),
+      );
+      return { found: null, apiStatus: `HTTP_${res.status}` };
+    }
     const json = (await res.json()) as {
       status: string;
+      error_message?: string;
       results?: Array<{
         geometry?: { location?: { lat: number; lng: number } };
         formatted_address?: string;
       }>;
     };
-    if (json.status !== "OK" || !json.results?.length) return null;
+    if (json.status !== "OK" || !json.results?.length) {
+      // Log explicite des erreurs Google qui nécessitent une action :
+      // REQUEST_DENIED → clé invalide ou Geocoding API non activée
+      // OVER_QUERY_LIMIT → quota dépassé
+      // INVALID_REQUEST → format de query incorrect
+      if (json.status !== "ZERO_RESULTS") {
+        console.error(
+          `[geocode-place] Google status=${json.status} sur "${query}": ${json.error_message ?? "(no message)"}`,
+        );
+      }
+      return {
+        found: null,
+        apiStatus: json.status,
+        errorMessage: json.error_message,
+      };
+    }
     const r = json.results[0];
     const loc = r.geometry?.location;
-    if (!loc) return null;
+    if (!loc) return { found: null, apiStatus: "OK_NO_LOC" };
     return {
-      lat: loc.lat,
-      lng: loc.lng,
-      formatted: r.formatted_address ?? null,
+      found: {
+        lat: loc.lat,
+        lng: loc.lng,
+        formatted: r.formatted_address ?? null,
+      },
+      apiStatus: "OK",
     };
-  } catch {
-    return null;
+  } catch (err) {
+    console.error(
+      `[geocode-place] fetch failed sur "${query}":`,
+      err instanceof Error ? err.message : err,
+    );
+    return { found: null, apiStatus: "FETCH_ERROR" };
   }
 }
 
@@ -137,25 +174,59 @@ export const Route = createFileRoute("/api/geocode-place")({
         const { query, region } = parsed.data;
         const variants = buildQueryVariants(query, region);
 
+        let lastApiStatus: string | undefined;
+        let lastErrorMessage: string | undefined;
+
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
           const result = await tryGeocode(variant, apiKey);
-          if (result) {
+          lastApiStatus = result.apiStatus;
+          lastErrorMessage = result.errorMessage;
+
+          if (result.found) {
             return new Response(
               JSON.stringify({
-                lat: result.lat,
-                lng: result.lng,
-                formatted: result.formatted,
+                lat: result.found.lat,
+                lng: result.found.lng,
+                formatted: result.found.formatted,
                 geocoded_from: variant,
                 confidence: i === 0 ? "high" : "fallback",
               }),
               { status: 200, headers: { "Content-Type": "application/json" } },
             );
           }
+
+          // Court-circuite la boucle si Google nous dit que la clé est cassée
+          // ou que le quota est saturé. Inutile de retenter 8 variantes qui
+          // vont toutes échouer de la même façon — ça brûle des ms et pollue
+          // les logs. On remonte l'erreur au client pour qu'il l'affiche.
+          if (
+            result.apiStatus === "REQUEST_DENIED" ||
+            result.apiStatus === "OVER_QUERY_LIMIT" ||
+            result.apiStatus === "INVALID_REQUEST"
+          ) {
+            return new Response(
+              JSON.stringify({
+                lat: null,
+                lng: null,
+                formatted: null,
+                geocoded_from: null,
+                confidence: null,
+                error: `Google Maps: ${result.apiStatus}${
+                  result.errorMessage ? ` — ${result.errorMessage}` : ""
+                }`,
+                api_status: result.apiStatus,
+              }),
+              {
+                status: 502,
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+          }
         }
 
         console.warn(
-          `[geocode-place] échec sur ${variants.length} variantes pour "${query}" (region: ${region ?? "—"})`,
+          `[geocode-place] échec sur ${variants.length} variantes pour "${query}" (region: ${region ?? "—"}, last_status: ${lastApiStatus ?? "?"})`,
         );
         return new Response(
           JSON.stringify({
@@ -164,6 +235,8 @@ export const Route = createFileRoute("/api/geocode-place")({
             formatted: null,
             geocoded_from: null,
             confidence: null,
+            api_status: lastApiStatus,
+            error_message: lastErrorMessage,
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         );

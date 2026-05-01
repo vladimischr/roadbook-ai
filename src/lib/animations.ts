@@ -50,11 +50,22 @@ export function useScrollReveal<T extends HTMLElement = HTMLElement>(opts?: {
   return ref;
 }
 
-/** Compose `--reveal-delay` style for a child index (80ms default stagger). */
+/**
+ * Compose `--reveal-delay` style for a child index (80ms default stagger).
+ *
+ * IMPORTANT : on plafonne le delay total à 480ms. Sans ça, un roadbook avec
+ * 33 jours aurait son dernier item avec un delay de 33×80=2640ms — quand
+ * l'utilisateur scrolle vite, il voit du blanc pendant 2-3s avant que les
+ * derniers steps apparaissent. Le plafond garantit qu'aucun item ne tarde
+ * de plus de ~½s à se révéler, peu importe l'index.
+ */
 export function staggerStyle(
   index: number,
   stepMs = 80,
   startMs = 0,
+  maxDelayMs = 480,
 ): React.CSSProperties {
-  return { ["--reveal-delay" as string]: `${startMs + index * stepMs}ms` };
+  const raw = startMs + index * stepMs;
+  const capped = Math.min(raw, startMs + maxDelayMs);
+  return { ["--reveal-delay" as string]: `${capped}ms` };
 }

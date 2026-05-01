@@ -39,6 +39,9 @@ export interface GeocodeResult {
   formatted: string | null;
   geocoded_from: string | null;
   confidence: "high" | "fallback" | null;
+  /** Status Google Maps remonté pour debug (ZERO_RESULTS, REQUEST_DENIED, etc.). */
+  api_status?: string;
+  error_message?: string;
 }
 
 export async function geocodePlace(input: {

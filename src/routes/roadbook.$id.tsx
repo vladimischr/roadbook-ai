@@ -507,8 +507,13 @@ function RoadbookPage() {
     (async () => {
       let working = rbRef.current;
       if (!working) return;
+      // Si Google nous renvoie une erreur systémique (clé invalide, quota
+      // dépassé, API non activée), on arrête tout de suite la boucle —
+      // inutile de retenter 33×8 fois si la cause est en amont.
+      let systemicError: string | null = null;
       for (const { idx } of missing) {
         if (cancelled) return;
+        if (systemicError) break;
         const day = working.days[idx];
         if (!day) continue;
         if (typeof day.lat === "number" && typeof day.lng === "number") continue;
@@ -529,8 +534,31 @@ function RoadbookPage() {
               located = { lat: res.lat, lng: res.lng, from: query };
               break;
             }
+            // Détecte les statuts API qui veulent dire "ça sert à rien de
+            // continuer". Le serveur renvoie 502 dans ce cas, donc on entre
+            // ici via le catch — mais on garde la garde au cas où.
+            if (
+              res.api_status === "REQUEST_DENIED" ||
+              res.api_status === "OVER_QUERY_LIMIT" ||
+              res.api_status === "INVALID_REQUEST"
+            ) {
+              systemicError = `Google Maps: ${res.api_status}${res.error_message ? ` — ${res.error_message}` : ""}`;
+              break;
+            }
           } catch (e) {
-            console.warn(`Geocoding failed for "${query}":`, (e as Error).message);
+            const msg = (e as Error).message;
+            console.warn(`Geocoding failed for "${query}":`, msg);
+            // Le 502 du serveur sur erreur systémique remonte ici comme
+            // exception. On en fait un message global plutôt qu'un warn par
+            // étape.
+            if (
+              msg.includes("REQUEST_DENIED") ||
+              msg.includes("OVER_QUERY_LIMIT") ||
+              msg.includes("INVALID_REQUEST")
+            ) {
+              systemicError = msg;
+              break;
+            }
           }
         }
 
@@ -558,6 +586,15 @@ function RoadbookPage() {
           (d) => typeof d.lat === "number" && typeof d.lng === "number",
         );
         setGeocodeStatus(anyLocated ? "done" : "failed");
+        // Toast persistant si on a détecté une erreur de config Google Maps :
+        // l'utilisateur (toi) doit savoir que c'est pas ses étapes qui sont
+        // mal formulées, c'est sa clé API qui est rejetée par Google.
+        if (systemicError && !anyLocated) {
+          toast.error(
+            `Carte indisponible — ${systemicError}. Vérifie GOOGLE_MAPS_API_KEY et que l'API "Geocoding" + "Directions" sont activées dans Google Cloud Console.`,
+            { duration: 12_000 },
+          );
+        }
       }
     })();
 
@@ -1838,16 +1875,35 @@ function CoverSection({
       <div className="relative z-0 flex h-full w-full items-end justify-center pb-[28%] sm:pb-[22%]">
         <div className="mx-auto max-w-4xl px-6 text-center sm:px-10">
           <p className="eyebrow-light mb-6">Roadbook</p>
-          <h1
-            className="font-display font-bold leading-[0.95] text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.25)]"
-            style={{
-              fontSize: "clamp(56px, 8vw, 120px)",
-              maxWidth: "16ch",
-              margin: "0 auto",
-            }}
-          >
-            {cover.title}
-          </h1>
+          {(() => {
+            // Échelle de typo adaptative — sans ça, "Namibie & Botswana"
+            // (18 chars) ou pire, des titres longs débordent ou wrappent
+            // moche. On scale par longueur de chaîne.
+            const len = (cover.title || "").length;
+            const fontSize =
+              len > 22
+                ? "clamp(34px, 4.5vw, 64px)"
+                : len > 16
+                  ? "clamp(44px, 6vw, 88px)"
+                  : len > 10
+                    ? "clamp(52px, 7vw, 104px)"
+                    : "clamp(56px, 8vw, 120px)";
+            const maxWidth = len > 16 ? "22ch" : "16ch";
+            return (
+              <h1
+                className="font-display font-bold leading-[0.95] text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.25)]"
+                style={{
+                  fontSize,
+                  maxWidth,
+                  margin: "0 auto",
+                  wordBreak: "break-word",
+                  hyphens: "auto",
+                }}
+              >
+                {cover.title}
+              </h1>
+            );
+          })()}
           {cover.subtitle && (
             <p className="font-display mx-auto mt-6 max-w-[600px] text-[20px] italic leading-snug text-white/95 sm:text-[24px]">
               {cover.subtitle}
