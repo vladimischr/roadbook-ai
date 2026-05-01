@@ -57,6 +57,7 @@ function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<"auth" | "db" | "other">("other");
   const [query, setQuery] = useState("");
   const [planFilter, setPlanFilter] = useState<PlanKey | "all">("all");
 
@@ -69,6 +70,7 @@ function AdminPage() {
       const token = session?.access_token;
       if (!token) {
         setError("Session expirée");
+        setErrorKind("auth");
         setLoading(false);
         return;
       }
@@ -83,12 +85,16 @@ function AdminPage() {
         } catch {}
         if (!res.ok) {
           setError(parsed?.error || `Erreur ${res.status}`);
+          setErrorKind(
+            res.status === 401 || res.status === 403 ? "auth" : "db",
+          );
           setLoading(false);
           return;
         }
         setUsers(parsed?.users || []);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
+        setErrorKind("other");
       }
       setLoading(false);
     })();
@@ -164,21 +170,45 @@ function AdminPage() {
   }
 
   if (error) {
+    const title =
+      errorKind === "auth"
+        ? "Accès refusé"
+        : errorKind === "db"
+          ? "Erreur base de données"
+          : "Erreur";
+    const hint =
+      errorKind === "auth" ? (
+        <>
+          Si tu es admin, vérifie que ton email est dans la variable d'env{" "}
+          <code className="rounded bg-muted px-1">ADMIN_EMAILS</code> côté
+          Lovable.
+        </>
+      ) : errorKind === "db" ? (
+        <>
+          La table <code className="rounded bg-muted px-1">profiles</code> n'est
+          pas trouvée. La migration initiale n'a peut-être pas été appliquée à
+          ton projet Supabase, ou bien le serveur pointe sur le mauvais projet.
+          Vérifie les variables{" "}
+          <code className="rounded bg-muted px-1">SUPABASE_URL</code> et{" "}
+          <code className="rounded bg-muted px-1">SUPABASE_SERVICE_ROLE_KEY</code>{" "}
+          côté Lovable.
+        </>
+      ) : null;
     return (
       <AppShell>
         <div className="container-editorial px-6 py-16 sm:px-10">
           <div className="mx-auto max-w-md text-center">
             <h1 className="font-display text-[28px] font-semibold text-foreground">
-              Accès refusé
+              {title}
             </h1>
             <p className="mt-3 text-[14.5px] text-muted-foreground">
               {error}
             </p>
-            <p className="mt-6 text-[12.5px] text-text-soft">
-              Si tu es admin, vérifie que ton email est dans la variable
-              d'env <code className="rounded bg-muted px-1">ADMIN_EMAILS</code>{" "}
-              côté Lovable.
-            </p>
+            {hint && (
+              <p className="mt-6 text-[12.5px] leading-relaxed text-text-soft">
+                {hint}
+              </p>
+            )}
             <Link to="/dashboard">
               <Button variant="outline" className="mt-6 rounded-full">
                 Retour au dashboard

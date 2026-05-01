@@ -39,16 +39,52 @@ export const Route = createFileRoute("/api/admin-users")({
         }
 
         try {
-          // 1. Tous les profils
-          const { data: profiles, error: profErr } = await supabaseAdmin
-            .from("profiles")
-            .select(
-              "id, email, display_name, agency_name, plan_key, plan_status, current_period_end, trial_ends_at, created_at",
-            )
-            .order("created_at", { ascending: false });
+          // 1. Tous les profils — avec retry sur cache stale et fallback
+          // sur les colonnes ajoutées par la migration récente.
+          const SELECT_FULL =
+            "id, email, display_name, agency_name, plan_key, plan_status, current_period_end, trial_ends_at, created_at";
+          const SELECT_MINIMAL =
+            "id, email, plan_key, plan_status, current_period_end, trial_ends_at, created_at";
+
+          const fetchProfiles = async (cols: string) =>
+            supabaseAdmin
+              .from("profiles")
+              .select(cols)
+              .order("created_at", { ascending: false });
+
+          let { data: profiles, error: profErr } = await fetchProfiles(
+            SELECT_FULL,
+          );
+
+          // Retry après une courte pause si PostgREST a un cache de schéma
+          // périmé (signalé par "schema cache" dans le message).
+          if (profErr && /schema cache/i.test(profErr.message)) {
+            await new Promise((r) => setTimeout(r, 1500));
+            const retry = await fetchProfiles(SELECT_FULL);
+            profiles = retry.data;
+            profErr = retry.error;
+          }
+
+          // Fallback sur SELECT minimal si display_name/agency_name n'existent
+          // pas (migration profil pas appliquée).
+          if (profErr && /display_name|agency_name|column/i.test(profErr.message)) {
+            const minimal = await fetchProfiles(SELECT_MINIMAL);
+            profiles = minimal.data;
+            profErr = minimal.error;
+          }
+
           if (profErr) {
+            const isSchemaCache = /schema cache/i.test(profErr.message);
+            const isMissingTable = /could not find the table/i.test(
+              profErr.message,
+            );
+            const hint = isMissingTable
+              ? " — La table profiles est introuvable. Migrations non appliquées ou mauvais projet Supabase configuré côté serveur."
+              : isSchemaCache
+                ? " — Cache de schéma périmé, réessaie dans 30s ou exécute « NOTIFY pgrst, 'reload schema' » dans Supabase SQL Editor."
+                : "";
             return jsonResponse(
-              { error: "Erreur DB profils: " + profErr.message },
+              { error: "Erreur DB profils: " + profErr.message + hint },
               500,
             );
           }
@@ -103,8 +139,8 @@ export const Route = createFileRoute("/api/admin-users")({
             return {
               id: (p as any).id,
               email: (p as any).email,
-              display_name: (p as any).display_name,
-              agency_name: (p as any).agency_name,
+              display_name: (p as any).display_name ?? null,
+              agency_name: (p as any).agency_name ?? null,
               plan_key: (p as any).plan_key,
               plan_status: (p as any).plan_status,
               current_period_end: (p as any).current_period_end,
