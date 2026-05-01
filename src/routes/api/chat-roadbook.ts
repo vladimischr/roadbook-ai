@@ -44,6 +44,60 @@ function cleanClaudeJson(text: string): string {
   return cleaned.trim();
 }
 
+/**
+ * Strip les champs "lourds" qui ne sont pas pertinents pour une mutation
+ * éditoriale. Réduit drastiquement le payload envoyé à Claude (de ~80KB
+ * à ~5-10KB pour un roadbook moyen) → réponse 5-10× plus rapide → pas de
+ * timeout Worker.
+ */
+function stripHeavyFields(rb: any): any {
+  const out = { ...rb };
+  delete out.directions_segments;
+  if (Array.isArray(out.days)) {
+    out.days = out.days.map((d: any) => {
+      const { photos, lat, lng, geocoding_status, geocoded_from, ...rest } = d;
+      return rest;
+    });
+  }
+  return out;
+}
+
+/**
+ * Post-merge : réinjecte les champs lourds (photos, lat/lng) du roadbook
+ * original dans la réponse de Claude, par index de jour. Si Claude a
+ * changé le stage d'un jour, on RESET lat/lng pour forcer le re-géocodage
+ * automatique côté client.
+ */
+function mergeHeavyFields(original: any, claudeOutput: any): any {
+  const out = { ...claudeOutput };
+  // directions_segments reset (sera recalculé par RoadbookMap)
+  out.directions_segments = [];
+
+  if (Array.isArray(out.days) && Array.isArray(original.days)) {
+    out.days = out.days.map((newDay: any, idx: number) => {
+      const oldDay = original.days[idx];
+      if (!oldDay) return newDay;
+      const merged = { ...newDay };
+      // Réinjecte les photos si Claude n'en a pas mentionné
+      if (!merged.photos && oldDay.photos) merged.photos = oldDay.photos;
+      // Réinjecte lat/lng UNIQUEMENT si le stage n'a pas changé.
+      // Si stage différent → re-géocodage requis, on laisse lat/lng vide.
+      if (
+        merged.stage === oldDay.stage &&
+        typeof oldDay.lat === "number" &&
+        typeof oldDay.lng === "number"
+      ) {
+        merged.lat = oldDay.lat;
+        merged.lng = oldDay.lng;
+        merged.geocoding_status = oldDay.geocoding_status;
+        merged.geocoded_from = oldDay.geocoded_from;
+      }
+      return merged;
+    });
+  }
+  return out;
+}
+
 export const Route = createFileRoute("/api/chat-roadbook")({
   server: {
     handlers: {
@@ -147,17 +201,32 @@ export const Route = createFileRoute("/api/chat-roadbook")({
             );
           }
 
+          // ALLÈGEMENT du payload — on strip les champs lourds avant
+          // d'envoyer à Claude. Sans ça, sur un roadbook avec 24 jours +
+          // photos + directions_segments, le payload dépasse 80 KB et
+          // Claude met >30s à répondre → timeout Worker → "Failed to fetch"
+          // côté client.
+          //
+          // Champs strippés (réinjectés en post-merge server-side) :
+          //   - photos (par jour) : URLs longues, jamais modifiées par chat
+          //   - lat/lng/geocoding_status : re-géocodés si stage change
+          //   - directions_segments : recalculés post-mutation
+          //
+          // L'IA ne touche que la structure éditoriale (jours, hébergement,
+          // narrative, dates, distance, contacts, tips).
+          const stripped = stripHeavyFields(currentRoadbook as any);
+
           const userMessage = `# COMMANDE UTILISATEUR
 
 ${command}
 
-# ROADBOOK ACTUEL
+# ROADBOOK ACTUEL (allégé)
 
-${JSON.stringify(currentRoadbook, null, 2)}
+${JSON.stringify(stripped)}
 
 # TÂCHE
 
-Applique la commande au roadbook ci-dessus et retourne le JSON { summary, roadbook } selon ta structure. Le roadbook retourné doit être COMPLET (pas juste les changements).`;
+Applique la commande au roadbook ci-dessus et retourne le JSON { summary, roadbook } selon ta structure. Le roadbook retourné doit être COMPLET (mêmes champs que reçus). Réponds UNIQUEMENT avec le JSON, démarrant directement par {.`;
 
           const t0 = Date.now();
           const resp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -249,10 +318,15 @@ Applique la commande au roadbook ci-dessus et retourne le JSON { summary, roadbo
             );
           }
 
+          // Réinjecte les champs lourds (photos, lat/lng) qu'on n'avait pas
+          // envoyés à Claude. Sans ça, l'agent perdrait toutes ses photos
+          // uploadées à chaque modif IA.
+          const merged = mergeHeavyFields(currentRoadbook, updated);
+
           // Persiste le nouveau contenu
           const { error: updateErr } = await supabaseAdmin
             .from("roadbooks")
-            .update({ content: updated as never })
+            .update({ content: merged as never })
             .eq("id", roadbook_id);
           if (updateErr) {
             return jsonResponse(
@@ -271,7 +345,7 @@ Applique la commande au roadbook ci-dessus et retourne le JSON { summary, roadbo
             {
               ok: true,
               summary,
-              roadbook: updated,
+              roadbook: merged,
             },
             200,
           );
