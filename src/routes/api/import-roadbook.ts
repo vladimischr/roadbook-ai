@@ -236,6 +236,52 @@ Parse ce programme de voyage et construis le JSON Roadbook complet selon ta stru
             );
           }
 
+          // Validation post-parsing : Claude doit renvoyer des days non vides.
+          // Sans ça, l'utilisateur arrive sur une page de roadbook avec une
+          // timeline vide (ce qu'il interprète comme "page blanche").
+          const days = Array.isArray(roadbook?.days) ? roadbook.days : null;
+          if (!days || days.length === 0) {
+            console.error(
+              "[import-roadbook] Pas de days dans la réponse Claude:",
+              rawText.substring(0, 500),
+            );
+            return new Response(
+              JSON.stringify({
+                error:
+                  "L'IA n'a pas réussi à extraire d'étapes du fichier. Vérifie que ton Excel contient au moins des lignes avec dates ou étapes, ou créé un roadbook manuellement.",
+              }),
+              { status: 422, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          // Normalise chaque jour : garantit les types numériques pour
+          // distance_km / drive_hours et que le narrative est une string.
+          // Sans ça, un jour avec drive_hours: "8h" (string) crash le rendu
+          // .toFixed() côté client.
+          roadbook.days = days.map((d: any, idx: number) => {
+            const numeric = (v: unknown, fallback = 0): number => {
+              const n =
+                typeof v === "number"
+                  ? v
+                  : typeof v === "string"
+                    ? parseFloat(v)
+                    : NaN;
+              return Number.isFinite(n) ? n : fallback;
+            };
+            return {
+              day: numeric(d.day, idx + 1),
+              date: typeof d.date === "string" ? d.date : "",
+              stage: typeof d.stage === "string" ? d.stage : "",
+              accommodation:
+                typeof d.accommodation === "string" ? d.accommodation : "",
+              type: typeof d.type === "string" ? d.type : "",
+              distance_km: numeric(d.distance_km, 0),
+              drive_hours: numeric(d.drive_hours, 0),
+              flight: typeof d.flight === "string" ? d.flight : "—",
+              narrative: typeof d.narrative === "string" ? d.narrative : "",
+            };
+          });
+
           // Insert en DB
           const { data: inserted, error: insertErr } = await supabaseAdmin
             .from("roadbooks")

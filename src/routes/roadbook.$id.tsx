@@ -1090,10 +1090,44 @@ function RoadbookPage() {
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/voyage/${shareToken}`
     : "";
 
+  // Génère un token côté client si la migration n'a pas tourné OU si le
+  // backfill manque. On le persiste via UPDATE (qui passera silencieusement
+  // si la colonne n'existe pas — auquel cas on ne peut juste pas partager).
+  const ensureShareToken = async (): Promise<string | null> => {
+    if (shareToken) return shareToken;
+    const newToken =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+    const { error } = await supabase
+      .from("roadbooks")
+      .update({ share_token: newToken } as never)
+      .eq("id", id);
+    if (error) {
+      console.error("[ensureShareToken] update failed:", error.message);
+      // Si la colonne n'existe pas, on remonte une erreur explicite.
+      if (error.message.includes("share_token")) {
+        toast.error(
+          "La fonctionnalité de partage n'est pas encore activée sur ta base. Demande à Lovable d'appliquer la dernière migration.",
+        );
+        return null;
+      }
+      toast.error("Impossible d'initialiser le lien : " + error.message);
+      return null;
+    }
+    setShareToken(newToken);
+    return newToken;
+  };
+
   const handleCopyShareLink = async () => {
-    if (!shareUrl) return;
+    let token = shareToken;
+    if (!token) {
+      token = await ensureShareToken();
+      if (!token) return;
+    }
+    const url = `${window.location.origin}/voyage/${token}`;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(url);
       setShareCopied(true);
       toast.success("Lien copié dans le presse-papier", { duration: 2000 });
       setTimeout(() => setShareCopied(false), 2500);
@@ -1106,17 +1140,36 @@ function RoadbookPage() {
     if (!confirm("Régénérer le lien rendra l'ancien inutilisable. Continuer ?"))
       return;
     setShareTokenLoading(true);
+    // Tente d'abord la RPC sécurisée (vérifie ownership). Si elle n'existe
+    // pas (migration pas appliquée), fallback sur UPDATE direct (RLS
+    // protègera car user_id check côté policy).
     const { data, error } = await supabase.rpc("regenerate_share_token", {
       p_roadbook_id: id,
     });
-    setShareTokenLoading(false);
-    if (error) {
-      toast.error("Échec : " + error.message);
+    if (!error && data) {
+      setShareToken(data as string);
+      setShareCopied(false);
+      setShareTokenLoading(false);
+      toast.success("Nouveau lien généré — l'ancien est désormais invalide.");
       return;
     }
-    setShareToken(data as string);
+    // Fallback : UPDATE direct
+    const newToken =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+    const { error: updateErr } = await supabase
+      .from("roadbooks")
+      .update({ share_token: newToken } as never)
+      .eq("id", id);
+    setShareTokenLoading(false);
+    if (updateErr) {
+      toast.error("Échec : " + updateErr.message);
+      return;
+    }
+    setShareToken(newToken);
     setShareCopied(false);
-    toast.success("Nouveau lien généré — l'ancien est désormais invalide.");
+    toast.success("Nouveau lien généré.");
   };
 
   // Avertit l'utilisateur si le statut empêche le partage public.
@@ -2722,10 +2775,13 @@ function DaysTableSection({
         />
         <ol className="relative space-y-6 border-l border-accent-warm/40 pl-8 sm:pl-10">
           {list.map((d, i) => (
+            // Pas de classe .reveal sur les cartes individuelles : la section
+            // parente a déjà son propre scroll-reveal. Le .reveal par-carte
+            // causait des bugs (opacity: 0 stuck) sur des roadbooks longs ou
+            // chargés en async (ex: import Excel + géocodage post-load).
             <li
-              key={`day-card-${d.day}`}
-              className="reveal relative"
-              style={staggerStyle(i, 80)}
+              key={`day-card-${d.day}-${i}`}
+              className="relative"
             >
               {/* Timeline dot */}
               <span
