@@ -106,6 +106,12 @@ export interface RoadbookContent {
     narrative?: string;
     lat?: number;
     lng?: number;
+    photos?: Array<{
+      url: string;
+      source?: string;
+      credit?: string;
+      alt?: string;
+    }>;
   }>;
   accommodations_summary?: Array<{
     name: string;
@@ -373,6 +379,23 @@ const styles = StyleSheet.create({
     lineHeight: 1.65,
     color: INK,
     marginTop: 6,
+  },
+  dayPhotosRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 10,
+  },
+  dayPhoto: {
+    flex: 1,
+    height: 110,
+    objectFit: "cover",
+    borderRadius: 3,
+  },
+  dayPhotoCredit: {
+    fontSize: 7.5,
+    color: MUTED,
+    marginTop: 4,
+    fontStyle: "italic",
   },
 
   // Table
@@ -1188,6 +1211,29 @@ export function RoadbookPDF({
               </Text>
               {d.narrative ? (
                 <Text style={styles.dayNarrative}>{d.narrative}</Text>
+              ) : null}
+              {d.photos && d.photos.length > 0 ? (
+                <>
+                  <View style={styles.dayPhotosRow}>
+                    {d.photos.slice(0, 3).map((p, idx) => (
+                      <Image
+                        key={`photo-${idx}`}
+                        src={p.url}
+                        style={styles.dayPhoto}
+                      />
+                    ))}
+                  </View>
+                  {/* Crédit photographe si Pexels (obligation) */}
+                  {d.photos.some((p) => p.credit) ? (
+                    <Text style={styles.dayPhotoCredit}>
+                      {d.photos
+                        .slice(0, 3)
+                        .map((p) => p.credit)
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </Text>
+                  ) : null}
+                </>
               ) : null}
             </View>
           ))}

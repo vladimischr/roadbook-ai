@@ -10,6 +10,7 @@ import {
   Search,
   ChevronDown,
   Check,
+  Copy,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -178,6 +179,84 @@ function Dashboard() {
     }
   };
 
+  const duplicateRoadbook = async (rb: RoadbookRow) => {
+    if (!user) return;
+    const toastId = toast.loading("Duplication en cours…");
+    // 1. Récupère le contenu complet du roadbook source
+    const { data: source, error: fetchErr } = await supabase
+      .from("roadbooks")
+      .select("*")
+      .eq("id", rb.id)
+      .maybeSingle();
+    if (fetchErr || !source) {
+      toast.error("Impossible de lire le roadbook source", { id: toastId });
+      return;
+    }
+
+    // 2. Décale les dates de +1 an pour faciliter une réutilisation à la
+    //    saison suivante (l'agent peut toujours modifier après).
+    const shiftYear = (iso: string | null): string | null => {
+      if (!iso) return null;
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      d.setUTCFullYear(d.getUTCFullYear() + 1);
+      return d.toISOString().slice(0, 10);
+    };
+
+    // 3. Décale aussi les dates des jours dans le content JSON
+    const shiftedContent = (() => {
+      const c = (source.content || {}) as any;
+      if (!Array.isArray(c.days)) return c;
+      return {
+        ...c,
+        start_date: shiftYear(c.start_date) ?? c.start_date,
+        end_date: shiftYear(c.end_date) ?? c.end_date,
+        days: c.days.map((d: any) => ({
+          ...d,
+          date: shiftYear(d.date) ?? d.date,
+        })),
+        // Reset des données géocodées / segments — devra être recalculé
+        // pour le nouveau roadbook (les coordonnées peuvent rester valides
+        // mais on préfère repartir propre, l'utilisateur peut éditer).
+      };
+    })();
+
+    // 4. Insert la copie avec un nouveau client_name suffixé "(copie)"
+    const { data: inserted, error: insertErr } = await supabase
+      .from("roadbooks")
+      .insert({
+        user_id: user.id,
+        client_name: `${source.client_name} (copie)`,
+        destination: source.destination,
+        start_date: shiftYear(source.start_date),
+        end_date: shiftYear(source.end_date),
+        travelers_count: source.travelers_count,
+        traveler_profile: source.traveler_profile,
+        theme: source.theme,
+        budget_range: source.budget_range,
+        generation_mode: source.generation_mode,
+        agent_notes: source.agent_notes,
+        content: shiftedContent,
+        status: "draft", // Toujours brouillon — l'agent doit valider
+      })
+      .select("id, client_name, destination, start_date, end_date, status, created_at")
+      .single();
+
+    if (insertErr || !inserted) {
+      toast.error("Échec de la duplication : " + (insertErr?.message ?? "inconnu"), {
+        id: toastId,
+      });
+      return;
+    }
+
+    toast.success("Roadbook dupliqué — modifie le et passe en « Prêt »", {
+      id: toastId,
+      duration: 3500,
+    });
+    // Ajoute la copie en haut de la liste
+    setRoadbooks((rs) => [inserted as RoadbookRow, ...rs]);
+  };
+
   return (
     <AppShell>
       <div className="container-editorial px-6 sm:px-10 lg:px-14">
@@ -321,6 +400,7 @@ function Dashboard() {
                   index={i}
                   onDelete={() => setToDelete(rb)}
                   onSetStatus={(s) => updateStatus(rb, s)}
+                  onDuplicate={() => duplicateRoadbook(rb)}
                 />
               ))}
             </ul>
@@ -657,11 +737,13 @@ function RoadbookCard({
   index = 0,
   onDelete,
   onSetStatus,
+  onDuplicate,
 }: {
   rb: RoadbookRow;
   index?: number;
   onDelete: () => void;
   onSetStatus: (s: RoadbookStatus) => void;
+  onDuplicate: () => void;
 }) {
   const navigate = useNavigate();
   const cover = useDestinationCover(rb.destination);
@@ -752,6 +834,15 @@ function RoadbookCard({
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate();
+              }}
+              className="text-[13px]"
+            >
+              <Copy className="mr-2 h-4 w-4" /> Dupliquer
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();

@@ -97,6 +97,18 @@ function VoyagePublic() {
     };
   }, [token]);
 
+  // Tracking de vue — fire-and-forget. L'erreur ne doit jamais affecter le
+  // visiteur. Anti-spam côté serveur : 1 vue max par 60s sur le même token.
+  useEffect(() => {
+    if (!token) return;
+    fetch(`/api/track-view?token=${encodeURIComponent(token)}`, {
+      method: "POST",
+      keepalive: true,
+    }).catch(() => {
+      /* ignore */
+    });
+  }, [token]);
+
   if (loading) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
@@ -511,6 +523,33 @@ function DayCard({ d }: { d: any }) {
                 </span>
               )}
             </div>
+
+            {/* Photos du jour */}
+            {Array.isArray(d.photos) && d.photos.length > 0 && (
+              <div
+                className={`mt-4 grid gap-2 ${
+                  d.photos.length === 1
+                    ? "grid-cols-1"
+                    : d.photos.length === 2
+                      ? "grid-cols-2"
+                      : "grid-cols-3"
+                }`}
+              >
+                {d.photos.slice(0, 3).map((p: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="relative aspect-[4/3] overflow-hidden rounded-lg ring-1 ring-border/40"
+                  >
+                    <img
+                      src={p.url}
+                      alt={p.alt || ""}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </article>

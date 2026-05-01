@@ -69,6 +69,8 @@ import { geocodePlace, getDirectionsSegment } from "@/lib/api";
 import { Paywall } from "@/components/Paywall";
 import { useSubscription } from "@/lib/useSubscription";
 import { getPlan, isPdfWatermarked } from "@/lib/plans";
+import { PhotoPicker, type PhotoEntry } from "@/components/PhotoPicker";
+import { Image as ImageIcon } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -96,6 +98,13 @@ interface Cover {
   tagline: string;
   dates_label: string;
 }
+interface DayPhoto {
+  url: string;
+  source: "pexels" | "upload";
+  credit?: string;
+  credit_url?: string;
+  alt?: string;
+}
 interface Day {
   day: number;
   date: string;
@@ -113,6 +122,8 @@ interface Day {
   geocoding_status?: "ok" | "failed" | "manual";
   /** Variante (query) qui a permis le géocodage — utile pour debug. */
   geocoded_from?: string;
+  /** Photos illustrant le jour (Pexels search ou upload custom de l'agent). */
+  photos?: DayPhoto[];
 }
 interface AccommodationSummary {
   name: string;
@@ -177,6 +188,22 @@ function formatShortDate(iso: string) {
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
+/** "il y a 3 min", "il y a 2h", "hier", "il y a 5j" */
+function formatRelativeTime(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const diffMs = Date.now() - d.getTime();
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `il y a ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "hier";
+  if (days < 30) return `il y a ${days}j`;
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+}
+
 function emptyDay(nextNum: number): Day {
   return {
     day: nextNum,
@@ -231,6 +258,29 @@ function normalizeRoadbookContent(raw: unknown): Roadbook {
     const gs = x.geocoding_status;
     const geocoding_status =
       gs === "ok" || gs === "failed" || gs === "manual" ? (gs as Day["geocoding_status"]) : undefined;
+    // Normalisation des photos — garde uniquement les entrées avec une URL
+    // valide. Limite à 6 max par jour pour éviter qu'un agent ne charge un
+    // album entier (mauvais pour le PDF + le rendu mobile).
+    const rawPhotos = Array.isArray(x.photos) ? (x.photos as unknown[]) : [];
+    const photos: DayPhoto[] = rawPhotos
+      .map((p): DayPhoto | null => {
+        if (!p || typeof p !== "object") return null;
+        const obj = p as Record<string, unknown>;
+        const url = typeof obj.url === "string" ? obj.url : null;
+        if (!url) return null;
+        const src = obj.source;
+        return {
+          url,
+          source: src === "upload" ? "upload" : "pexels",
+          credit: typeof obj.credit === "string" ? obj.credit : undefined,
+          credit_url:
+            typeof obj.credit_url === "string" ? obj.credit_url : undefined,
+          alt: typeof obj.alt === "string" ? obj.alt : undefined,
+        };
+      })
+      .filter((p): p is DayPhoto => p !== null)
+      .slice(0, 6);
+
     return {
       day: asNumber(x.day, idx + 1),
       date: asString(x.date),
@@ -246,6 +296,7 @@ function normalizeRoadbookContent(raw: unknown): Roadbook {
       narrative_user_modified: x.narrative_user_modified === true,
       geocoding_status,
       geocoded_from: typeof x.geocoded_from === "string" ? (x.geocoded_from as string) : undefined,
+      photos: photos.length > 0 ? photos : undefined,
     };
   });
 
@@ -329,6 +380,12 @@ function RoadbookPage() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [shareTokenLoading, setShareTokenLoading] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareStats, setShareStats] = useState<{
+    view_count: number;
+    last_viewed_at: string | null;
+    mobile_count: number;
+    desktop_count: number;
+  } | null>(null);
   const [status, setStatus] = useState<RoadbookStatus>("draft");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [savingState, setSavingState] = useState<"idle" | "saving">("idle");
@@ -1090,6 +1147,25 @@ function RoadbookPage() {
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/voyage/${shareToken}`
     : "";
 
+  // Récupère les stats de vue à l'ouverture de la modale Partager.
+  // Tolérant si la table n'existe pas encore (migration roadbook_views
+  // pas appliquée).
+  useEffect(() => {
+    if (!shareOpen) return;
+    supabase
+      .from("roadbook_view_stats" as never)
+      .select("view_count, last_viewed_at, mobile_count, desktop_count")
+      .eq("roadbook_id", id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          console.info("[share-stats] indisponible:", error.message);
+          return;
+        }
+        if (data) setShareStats(data as never);
+      });
+  }, [shareOpen, id]);
+
   // Génère un token côté client si la migration n'a pas tourné OU si le
   // backfill manque. On le persiste via UPDATE (qui passera silencieusement
   // si la colonne n'existe pas — auquel cas on ne peut juste pas partager).
@@ -1302,6 +1378,7 @@ function RoadbookPage() {
       {/* Editorial body */}
       <RoadbookBody
         rb={rb}
+        roadbookId={id}
         apiKey={apiKey}
         globalEdit={globalEdit}
         totalDistance={totalDistance}
@@ -1419,6 +1496,54 @@ function RoadbookPage() {
               </button>
             </div>
           </div>
+
+          {/* Stats de vue — affiché si la modale est ouverte ET qu'il y a des
+              données. Caché silencieusement si la migration roadbook_views
+              n'est pas appliquée (shareStats reste null). */}
+          {shareStats && shareStats.view_count > 0 && (
+            <div className="rounded-xl border border-border/60 bg-surface-warm/40 p-4">
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-accent-warm">
+                Activité du lien
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+                <div>
+                  <p className="font-display text-[24px] font-semibold leading-none text-foreground">
+                    {shareStats.view_count}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {shareStats.view_count > 1 ? "vues" : "vue"} totale
+                    {shareStats.view_count > 1 ? "s" : ""}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-display text-[24px] font-semibold leading-none text-foreground">
+                    {shareStats.mobile_count}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    sur mobile
+                  </p>
+                </div>
+                <div>
+                  <p className="font-display text-[24px] font-semibold leading-none text-foreground">
+                    {shareStats.desktop_count}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    sur desktop
+                  </p>
+                </div>
+                <div>
+                  <p className="font-display text-[14px] font-semibold leading-tight text-foreground">
+                    {shareStats.last_viewed_at
+                      ? formatRelativeTime(shareStats.last_viewed_at)
+                      : "—"}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    dernière vue
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Aide */}
           <div className="space-y-2 border-t border-border/40 pt-4 text-[12px] leading-relaxed text-muted-foreground">
@@ -1749,6 +1874,7 @@ function SectionHeader({
 
 function RoadbookBody({
   rb,
+  roadbookId,
   apiKey,
   globalEdit,
   totalDistance,
@@ -1764,6 +1890,7 @@ function RoadbookBody({
   onManualLocate,
 }: {
   rb: Roadbook;
+  roadbookId: string;
   apiKey: string | null;
   globalEdit: boolean;
   totalDistance: number;
@@ -1895,6 +2022,7 @@ function RoadbookBody({
           </div>
           <DaysTableSection
             days={Array.isArray(rb?.days) ? rb.days : []}
+            roadbookId={roadbookId}
             regionBias={rb?.destination}
             forceEdit={globalEdit}
             onSave={(days) => persist({ ...rb, days })}
@@ -2296,6 +2424,7 @@ interface DayRowProps {
   index: number;
   editing: boolean;
   regionBias?: string;
+  roadbookId: string;
   onUpdate: (patch: Partial<Day>) => void;
   onRemove: () => void;
   isOdd: boolean;
@@ -2305,6 +2434,7 @@ function DayRow({
   day,
   editing,
   regionBias,
+  roadbookId,
   onUpdate,
   onRemove,
   isOdd,
@@ -2466,17 +2596,25 @@ function DayRow({
           className="px-3 pb-4 pt-0 italic text-foreground/70"
         >
           {editing ? (
-            <Textarea
-              rows={2}
-              value={day.narrative}
-              onChange={(e) =>
-                onUpdate({
-                  narrative: e.target.value,
-                  narrative_user_modified: true,
-                })
-              }
-              className="italic"
-            />
+            <>
+              <Textarea
+                rows={2}
+                value={day.narrative}
+                onChange={(e) =>
+                  onUpdate({
+                    narrative: e.target.value,
+                    narrative_user_modified: true,
+                  })
+                }
+                className="italic"
+              />
+              <DayPhotosEditor
+                photos={day.photos || []}
+                defaultQuery={day.stage || day.accommodation || ""}
+                roadbookId={roadbookId}
+                onChange={(nextPhotos) => onUpdate({ photos: nextPhotos })}
+              />
+            </>
           ) : (
             day.narrative
           )}
@@ -2488,6 +2626,7 @@ function DayRow({
 
 function DaysTableSection({
   days,
+  roadbookId,
   onSave,
   onAutoSave,
   regionBias,
@@ -2497,6 +2636,7 @@ function DaysTableSection({
   regionBiasForLocate,
 }: {
   days: Day[];
+  roadbookId: string;
   onSave: (d: Day[]) => void;
   onAutoSave: (d: Day[]) => void;
   regionBias?: string;
@@ -2878,6 +3018,12 @@ function DaysTableSection({
                         </span>
                       )}
                     </div>
+
+                    {/* Photos du jour — read-only, max 3 affichées en
+                        thumbnails, les suivantes accessibles via grid plus bas. */}
+                    {d.photos && d.photos.length > 0 && (
+                      <DayPhotosReadOnly photos={d.photos} />
+                    )}
                   </div>
                 </div>
               </article>
@@ -2945,6 +3091,7 @@ function DaysTableSection({
                       index={i}
                       editing={editing}
                       regionBias={regionBias}
+                      roadbookId={roadbookId}
                       onUpdate={(patch) => update(i, patch)}
                       onRemove={() => remove(i)}
                       isOdd={i % 2 === 1}
@@ -3507,5 +3654,134 @@ function TipsSection({
         </ul>
       )}
     </section>
+  );
+}
+
+/* ---------- Day photos (read-only display) ---------- */
+
+function DayPhotosReadOnly({ photos }: { photos: DayPhoto[] }) {
+  // Affichage : 1 photo → grande full-width ; 2 photos → côte à côte ;
+  // 3+ photos → 1 grande + thumbnails à droite.
+  if (photos.length === 0) return null;
+
+  const cols =
+    photos.length === 1
+      ? "grid-cols-1"
+      : photos.length === 2
+        ? "grid-cols-2"
+        : "grid-cols-3";
+
+  return (
+    <div className={`mt-5 grid gap-2 ${cols}`}>
+      {photos.slice(0, 3).map((p, i) => (
+        <a
+          key={`${p.url}-${i}`}
+          href={p.credit_url || p.url}
+          target="_blank"
+          rel="noreferrer"
+          className="group relative block aspect-[4/3] overflow-hidden rounded-lg ring-1 ring-border/40"
+          title={p.alt || ""}
+        >
+          <img
+            src={p.url}
+            alt={p.alt || ""}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          />
+          {p.credit && (
+            <span className="pointer-events-none absolute bottom-1.5 right-2 rounded-full bg-foreground/65 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-background opacity-0 transition group-hover:opacity-100">
+              {p.credit}
+            </span>
+          )}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+/* ---------- Day photos editor (edit mode) ---------- */
+
+function DayPhotosEditor({
+  photos,
+  defaultQuery,
+  roadbookId,
+  onChange,
+}: {
+  photos: DayPhoto[];
+  defaultQuery: string;
+  roadbookId: string;
+  onChange: (next: DayPhoto[]) => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handleConfirm = (added: PhotoEntry[]) => {
+    onChange([...(photos || []), ...added].slice(0, 6));
+  };
+
+  const removePhoto = (index: number) => {
+    const next = photos.filter((_, i) => i !== index);
+    onChange(next);
+  };
+
+  return (
+    <div className="mt-3">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Photos {photos.length > 0 ? `(${photos.length}/6)` : ""}
+        </p>
+        {photos.length < 6 && (
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
+          >
+            <Plus className="h-3 w-3" />
+            Ajouter
+          </button>
+        )}
+      </div>
+
+      {photos.length === 0 ? (
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-6 text-[12px] text-muted-foreground transition hover:border-primary/40 hover:bg-primary-soft/40 hover:text-primary"
+        >
+          <ImageIcon className="h-4 w-4" />
+          Ajouter des photos pour ce jour
+        </button>
+      ) : (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {photos.map((p, i) => (
+            <div
+              key={`${p.url}-${i}`}
+              className="group relative aspect-square overflow-hidden rounded-lg border border-border/60"
+            >
+              <img
+                src={p.url}
+                alt={p.alt || ""}
+                className="h-full w-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => removePhoto(i)}
+                className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-foreground/80 text-background opacity-0 transition group-hover:opacity-100"
+                aria-label="Retirer cette photo"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <PhotoPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        defaultQuery={defaultQuery}
+        roadbookId={roadbookId}
+        onConfirm={handleConfirm}
+      />
+    </div>
   );
 }
