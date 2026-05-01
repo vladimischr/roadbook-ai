@@ -1359,14 +1359,17 @@ function RoadbookPage() {
             <div className="flex items-stretch gap-2">
               <Input
                 readOnly
-                value={shareUrl || "Génération du lien…"}
+                value={
+                  shareUrl ||
+                  "Cliquez sur Copier pour générer le lien"
+                }
                 onFocus={(e) => e.currentTarget.select()}
                 className="font-mono text-[12.5px]"
               />
               <Button
                 type="button"
                 onClick={handleCopyShareLink}
-                disabled={!shareUrl || !isSharable}
+                disabled={!isSharable}
                 className="gap-1.5 rounded-md"
               >
                 {shareCopied ? (
@@ -1382,22 +1385,29 @@ function RoadbookPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <a
-                href={shareUrl || "#"}
-                target="_blank"
-                rel="noreferrer"
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-surface px-3.5 py-1.5 text-[12px] font-medium text-foreground/80 transition hover:border-primary/40 hover:text-primary",
-                  (!shareUrl || !isSharable) && "pointer-events-none opacity-50",
-                )}
-              >
-                <ExternalLink className="h-3 w-3" />
-                Ouvrir dans un nouvel onglet
-              </a>
+              {shareUrl ? (
+                <a
+                  href={shareUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-surface px-3.5 py-1.5 text-[12px] font-medium text-foreground/80 transition hover:border-primary/40 hover:text-primary",
+                    !isSharable && "pointer-events-none opacity-50",
+                  )}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Ouvrir dans un nouvel onglet
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-surface px-3.5 py-1.5 text-[12px] font-medium text-muted-foreground/60">
+                  <ExternalLink className="h-3 w-3" />
+                  Ouvrir dans un nouvel onglet
+                </span>
+              )}
               <button
                 type="button"
                 onClick={handleRegenerateShareToken}
-                disabled={shareTokenLoading}
+                disabled={shareTokenLoading || !isSharable}
                 className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-surface px-3.5 py-1.5 text-[12px] font-medium text-muted-foreground transition hover:border-destructive/40 hover:text-destructive disabled:opacity-50"
               >
                 {shareTokenLoading ? (
@@ -1405,7 +1415,7 @@ function RoadbookPage() {
                 ) : (
                   <RefreshCw className="h-3 w-3" />
                 )}
-                Régénérer le lien
+                {shareToken ? "Régénérer le lien" : "Générer le lien"}
               </button>
             </div>
           </div>
