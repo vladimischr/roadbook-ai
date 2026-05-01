@@ -620,41 +620,69 @@ function buildMapboxStaticUrl(
     .map((d) => ({ day: d.day, lat: d.lat as number, lng: d.lng as number }));
   if (points.length === 0) return null;
 
-  // Mapbox overlays : path d'abord (DESSOUS les markers), puis markers.
-  // Format : `path-{width}+{color}-{opacity}({encoded_polyline_or_geojson})`
-  // ou      `pin-l-{label}+{color}({lon},{lat})`
+  // Mapbox overlays — l'ORDRE compte (premier = dessous, dernier = dessus) :
+  //   1. Squelette (ligne fine semi-transparente reliant TOUS les points)
+  //      → garantit qu'aucun jour ne reste "orphelin" visuellement
+  //   2. Polylines réelles (épaisses, opaques) par-dessus le squelette
+  //      → là où on a une vraie route, elle écrase la ligne droite
+  //   3. Marqueurs (au-dessus de tout, pour qu'ils restent lisibles)
+  //
+  // Format Mapbox :
+  //   path-{width}+{color}-{opacity}({encoded_polyline})
+  //   pin-l-{label}+{color}({lon},{lat})
   const overlays: string[] = [];
 
-  // 1. Tracé : on tente d'abord les polylines réelles cachées
-  let usedRealPath = false;
-  let urlLen = 200; // marge de base pour le reste de l'URL
+  // ---- 1. Squelette : ligne fine reliant tous les points dans l'ordre ----
+  // Toujours présent. Garantit qu'on voit la silhouette du voyage entier.
+  if (points.length >= 2) {
+    const skeletonPolyline = encodePolyline(
+      points.map((p) => [p.lat, p.lng]),
+    );
+    overlays.push(
+      `path-2+0F6E56-0.55(${encodeURIComponent(skeletonPolyline)})`,
+    );
+  }
+
+  // ---- 2. Polylines réelles ----
+  // Budget URL : on garde de la marge pour les markers (estim. 1500 chars).
+  let urlLen = 250 + overlays[0]?.length || 0;
+  const MARKER_BUDGET = points.length * 45;
+  const PATH_BUDGET_MAX = 7500 - MARKER_BUDGET;
 
   if (segments && segments.length > 0) {
     for (const seg of segments) {
       if (!seg.encoded_polyline) continue;
-      // Mapbox accepte Google polyline format dans path-{w}+{c}-{o}(POLYLINE).
-      // L'encoded polyline contient des chars qui DOIVENT être URL-encodés
-      // (\, ?, etc.) sinon l'URL casse.
       const encoded = encodeURIComponent(seg.encoded_polyline);
-      const overlay = `path-5+0F6E56-0.9(${encoded})`;
-      if (urlLen + overlay.length + 1 > 8_000) break; // marge sûre
+      const overlay = `path-5+0F6E56-1.0(${encoded})`;
+      if (urlLen + overlay.length + 1 > PATH_BUDGET_MAX) break;
       overlays.push(overlay);
       urlLen += overlay.length + 1;
-      usedRealPath = true;
     }
   }
 
-  // Fallback : ligne entre points via GeoJSON encoded polyline
-  if (!usedRealPath && points.length >= 2) {
-    // On encode nous-mêmes les points en polyline format Google/Mapbox
-    const encoded = encodePolyline(points.map((p) => [p.lat, p.lng]));
-    overlays.push(`path-4+0F6E56-1.0(${encodeURIComponent(encoded)})`);
-  }
-
-  // 2. Marqueurs — Mapbox supporte 1-99 nativement (vs 0-9 pour Google)
+  // ---- 3. Marqueurs — Mapbox supporte labels 1-99 nativement ----
+  // Note : si plusieurs jours ont les mêmes lat/lng (ex: 3 nuits au même
+  // lodge), ils s'empilent. Pour les rendre tous visibles, on déduplique
+  // en gardant le LAST jour à chaque coord (numéro le plus haut visible).
+  const seenCoords = new Map<string, number>();
   for (const p of points) {
-    // pin-l-{label}+{color}({lon},{lat}) — note l'ordre lon,lat (pas lat,lng)
-    overlays.push(`pin-l-${p.day}+0F6E56(${p.lng},${p.lat})`);
+    const key = `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
+    const existing = seenCoords.get(key);
+    if (!existing || p.day > existing) {
+      seenCoords.set(key, p.day);
+    }
+  }
+  // Recrée la liste de markers sans doublons coord, mais en gardant la
+  // première occurrence par jour (donc on ne perd pas la séquence).
+  const markersAdded = new Set<string>();
+  for (const p of points) {
+    const key = `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
+    if (markersAdded.has(key)) continue;
+    markersAdded.add(key);
+    // On affiche le label du dernier jour à cette position (souvent le plus
+    // haut numéro = mieux pour comprendre "jusqu'à quel jour on reste ici")
+    const label = seenCoords.get(key) ?? p.day;
+    overlays.push(`pin-l-${label}+0F6E56(${p.lng},${p.lat})`);
   }
 
   const overlayStr = overlays.join(",");
