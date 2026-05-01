@@ -355,9 +355,14 @@ function RoadbookPage() {
       navigate({ to: "/login" });
       return;
     }
+    // Fetch principal — ne PAS inclure share_token ici. Si la migration
+    // share_token n'a pas encore été appliquée, ce SELECT échouerait et
+    // l'utilisateur serait bloqué hors de toutes ses pages roadbook.
+    // share_token est lu séparément dans un second fetch tolérant aux
+    // erreurs (cf. plus bas).
     supabase
       .from("roadbooks")
-      .select("content,destination,status,share_token")
+      .select("content,destination,status")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -372,8 +377,30 @@ function RoadbookPage() {
         }
         setRb(content);
         setStatus(normalizeStatus(data.status));
-        setShareToken((data as any).share_token ?? null);
         setLoading(false);
+      });
+
+    // Fetch optionnel du share_token — tolérant si la colonne n'existe
+    // pas encore (migration pas appliquée). Permet à la page de marcher
+    // même pendant la fenêtre de transition.
+    supabase
+      .from("roadbooks")
+      .select("share_token")
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          // Migration share_token pas encore appliquée — on s'en fout,
+          // la page fonctionne sans, juste le bouton Partager sera inerte.
+          console.info(
+            "[roadbook] share_token indisponible:",
+            error.message,
+          );
+          return;
+        }
+        if (data && (data as any).share_token) {
+          setShareToken((data as any).share_token as string);
+        }
       });
   }, [id, user, authLoading, navigate]);
 
