@@ -595,7 +595,117 @@ function formatDateFR(iso?: string): string {
 }
 
 /**
+ * Construit l'URL Mapbox Static Images pour la carte du PDF.
+ *
+ * Mapbox >> Google Static Maps pour le rendu éditorial : styles propres,
+ * marqueurs numérotés 1-99 supportés, auto-fit aux overlays, et gestion
+ * native des polylines encodées (compatibles Google polyline format).
+ *
+ * Style par défaut : `outdoors-v12` (terrain, idéal pour voyage / safari).
+ * Pour customiser, créer un style dans Mapbox Studio et passer son ID via
+ * `mapbox/{style-id}` ou `{username}/{style-id}`.
+ */
+function buildMapboxStaticUrl(
+  days: NonNullable<RoadbookContent["days"]>,
+  segments: Array<{
+    encoded_polyline?: string | null;
+    mode?: string;
+  }> | undefined,
+  accessToken: string,
+  styleId: string = "mapbox/outdoors-v12",
+): string | null {
+  if (!accessToken) return null;
+  const points = days
+    .filter((d) => typeof d.lat === "number" && typeof d.lng === "number")
+    .map((d) => ({ day: d.day, lat: d.lat as number, lng: d.lng as number }));
+  if (points.length === 0) return null;
+
+  // Mapbox overlays : path d'abord (DESSOUS les markers), puis markers.
+  // Format : `path-{width}+{color}-{opacity}({encoded_polyline_or_geojson})`
+  // ou      `pin-l-{label}+{color}({lon},{lat})`
+  const overlays: string[] = [];
+
+  // 1. Tracé : on tente d'abord les polylines réelles cachées
+  let usedRealPath = false;
+  let urlLen = 200; // marge de base pour le reste de l'URL
+
+  if (segments && segments.length > 0) {
+    for (const seg of segments) {
+      if (!seg.encoded_polyline) continue;
+      // Mapbox accepte Google polyline format dans path-{w}+{c}-{o}(POLYLINE).
+      // L'encoded polyline contient des chars qui DOIVENT être URL-encodés
+      // (\, ?, etc.) sinon l'URL casse.
+      const encoded = encodeURIComponent(seg.encoded_polyline);
+      const overlay = `path-5+0F6E56-0.9(${encoded})`;
+      if (urlLen + overlay.length + 1 > 8_000) break; // marge sûre
+      overlays.push(overlay);
+      urlLen += overlay.length + 1;
+      usedRealPath = true;
+    }
+  }
+
+  // Fallback : ligne entre points via GeoJSON encoded polyline
+  if (!usedRealPath && points.length >= 2) {
+    // On encode nous-mêmes les points en polyline format Google/Mapbox
+    const encoded = encodePolyline(points.map((p) => [p.lat, p.lng]));
+    overlays.push(`path-4+0F6E56-1.0(${encodeURIComponent(encoded)})`);
+  }
+
+  // 2. Marqueurs — Mapbox supporte 1-99 nativement (vs 0-9 pour Google)
+  for (const p of points) {
+    // pin-l-{label}+{color}({lon},{lat}) — note l'ordre lon,lat (pas lat,lng)
+    overlays.push(`pin-l-${p.day}+0F6E56(${p.lng},${p.lat})`);
+  }
+
+  const overlayStr = overlays.join(",");
+
+  // /auto/{w}x{h}@2x → Mapbox calcule center+zoom optimaux pour englober
+  // tous les overlays avec un padding raisonnable. Massive amélioration vs
+  // Google où il faut tout calculer soi-même.
+  const url =
+    `https://api.mapbox.com/styles/v1/${styleId}/static/` +
+    `${overlayStr}/auto/1280x840@2x` +
+    `?access_token=${encodeURIComponent(accessToken)}` +
+    `&logo=false&attribution=false`;
+
+  return url;
+}
+
+/**
+ * Encode un tableau de points [lat, lng] en polyline format Google/Mapbox.
+ * Implémentation minimale du Polyline Encoded Algorithm.
+ * Réf : https://developers.google.com/maps/documentation/utilities/polylinealgorithm
+ */
+function encodePolyline(coords: Array<[number, number]>): string {
+  let result = "";
+  let prevLat = 0;
+  let prevLng = 0;
+  for (const [lat, lng] of coords) {
+    const e5Lat = Math.round(lat * 1e5);
+    const e5Lng = Math.round(lng * 1e5);
+    result += encodeNumber(e5Lat - prevLat);
+    result += encodeNumber(e5Lng - prevLng);
+    prevLat = e5Lat;
+    prevLng = e5Lng;
+  }
+  return result;
+}
+
+function encodeNumber(num: number): string {
+  let n = num < 0 ? ~(num << 1) : num << 1;
+  let result = "";
+  while (n >= 0x20) {
+    result += String.fromCharCode((0x20 | (n & 0x1f)) + 63);
+    n >>= 5;
+  }
+  result += String.fromCharCode(n + 63);
+  return result;
+}
+
+/**
  * Construit l'URL Google Static Maps pour la carte du PDF.
+ *
+ * GARDE COMME FALLBACK si VITE_MAPBOX_TOKEN n'est pas configuré.
  *
  * IMPORTANT — pourquoi on construit l'URL "à la main" et pas via
  * URLSearchParams : Google Static Maps utilise des `|` non encodés comme
@@ -754,11 +864,16 @@ export function RoadbookPDF({
   const contacts = roadbook.contacts || [];
   const tips = roadbook.tips || [];
   const destination = roadbook.destination || cover.title || "Voyage";
-  const mapUrl = buildStaticMapUrl(
-    days,
-    roadbook.directions_segments,
-    mapsApiKey,
-  );
+  // Préfère Mapbox (rendu éditorial premium) ; fallback Google si pas de token.
+  // Le token est exposé client-side via VITE_MAPBOX_TOKEN — sécurisé par
+  // les URL restrictions configurées sur le dashboard Mapbox.
+  const mapboxToken =
+    typeof import.meta !== "undefined"
+      ? (import.meta as any).env?.VITE_MAPBOX_TOKEN
+      : undefined;
+  const mapUrl = mapboxToken
+    ? buildMapboxStaticUrl(days, roadbook.directions_segments, mapboxToken)
+    : buildStaticMapUrl(days, roadbook.directions_segments, mapsApiKey);
   const dayPages = chunk(days, 3);
 
   const pageMeta = `${roadbook.client_name || ""}${
@@ -912,8 +1027,12 @@ export function RoadbookPDF({
           </View>
 
           <Text style={styles.mapCaption}>
-            Tracé routier réel calculé via Google Maps · marqueurs J1 à J9
-            numérotés · les étapes au-delà sont représentées par des points.
+            Tracé du voyage avec étapes numérotées
+            {roadbook.directions_segments &&
+            roadbook.directions_segments.length > 0
+              ? " · routes réelles calculées"
+              : ""}
+            .
           </Text>
 
           {/* Mini-stats — distance / route / hébergements */}
