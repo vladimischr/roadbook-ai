@@ -266,6 +266,16 @@ function Login() {
                       Pas de mot de passe à retenir. Vérifiez vos spams si le
                       mail tarde.
                     </p>
+                    <p className="text-center text-[12.5px] text-muted-foreground">
+                      Pas encore inscrit ?{" "}
+                      <button
+                        type="button"
+                        onClick={() => setMode("signup")}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        Créer un compte
+                      </button>
+                    </p>
                   </form>
                 ) : (
                   <form

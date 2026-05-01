@@ -60,6 +60,22 @@ function ProfilePage() {
 
   useEffect(() => {
     if (authLoading || !user) return;
+
+    const empty: ProfileData = {
+      email: user.email ?? null,
+      display_name: null,
+      agency_name: null,
+      phone: null,
+      website: null,
+      avatar_url: null,
+      agency_logo_url: null,
+      brand_color: null,
+    };
+
+    // Tente une SELECT large avec tous les nouveaux champs.
+    // Si la migration n'est pas appliquée, retombe sur les champs minimaux
+    // pour ne pas bloquer la page (le user voit la page, peut éditer, mais
+    // les colonnes manquantes ignoreront le UPDATE).
     supabase
       .from("profiles")
       .select(
@@ -69,12 +85,32 @@ function ProfilePage() {
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) {
-          toast.error("Impossible de charger le profil");
-          setLoading(false);
+          // Probablement migration non appliquée — fallback gracieux
+          console.warn(
+            "[profil] SELECT large échouée, fallback minimal:",
+            error.message,
+          );
+          supabase
+            .from("profiles")
+            .select("email")
+            .eq("id", user.id)
+            .maybeSingle()
+            .then(({ data: minData }) => {
+              const p: ProfileData = {
+                ...empty,
+                email: (minData as any)?.email ?? user.email ?? null,
+              };
+              setProfile(p);
+              setDraft(p);
+              setLoading(false);
+              toast.message(
+                "Certaines fonctionnalités du profil nécessitent une mise à jour de la base. Contacte le support si le problème persiste.",
+                { duration: 6000 },
+              );
+            });
           return;
         }
-        const p = (data ?? {}) as ProfileData;
-        // Si email n'est pas dans profiles, prend celui de auth
+        const p: ProfileData = { ...empty, ...((data as any) ?? {}) };
         if (!p.email) p.email = user.email ?? null;
         setProfile(p);
         setDraft(p);
