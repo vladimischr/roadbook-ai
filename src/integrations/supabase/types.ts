@@ -25,7 +25,7 @@ export type Database = {
           end_date: string | null
           generation_mode: string
           id: string
-          share_token: string | null
+          share_token: string
           start_date: string | null
           status: string
           theme: string | null
@@ -44,7 +44,7 @@ export type Database = {
           end_date?: string | null
           generation_mode?: string
           id?: string
-          share_token?: string | null
+          share_token?: string
           start_date?: string | null
           status?: string
           theme?: string | null
@@ -63,7 +63,7 @@ export type Database = {
           end_date?: string | null
           generation_mode?: string
           id?: string
-          share_token?: string | null
+          share_token?: string
           start_date?: string | null
           status?: string
           theme?: string | null
@@ -74,32 +74,54 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          email: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          plan_key: string
+          plan_status: string
+          current_period_end: string | null
+          trial_ends_at: string | null
+          cancel_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          plan_key?: string
+          plan_status?: string
+          current_period_end?: string | null
+          trial_ends_at?: string | null
+          cancel_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          plan_key?: string
+          plan_status?: string
+          current_period_end?: string | null
+          trial_ends_at?: string | null
+          cancel_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_shared_roadbook: {
-        Args: { p_token: string }
-        Returns: {
-          budget_range: string
-          client_name: string
-          content: Json
-          destination: string
-          end_date: string
-          id: string
-          start_date: string
-          status: string
-          theme: string
-          traveler_profile: string
-          travelers_count: number
-          updated_at: string
-        }[]
-      }
-      regenerate_share_token: {
-        Args: { p_roadbook_id: string }
-        Returns: string
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

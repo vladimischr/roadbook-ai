@@ -2657,6 +2657,10 @@ function DaysTableSection({
   // Onglet actif dans la modale : "search" (Google Places) ou "gps" (lat/lng manuel)
   const [locateTab, setLocateTab] = useState<"search" | "gps">("search");
   const [gpsValue, setGpsValue] = useState("");
+  // Index du jour en cours d'édition individuelle via DayEditDialog.
+  // null = modale fermée. Permet d'éditer un jour sans entrer en mode
+  // "Tout modifier" pour la timeline entière.
+  const [editingSingleDayIdx, setEditingSingleDayIdx] = useState<number | null>(null);
 
   // Resync local draft whenever the parent days prop changes. Évite la
   // divergence quand une étape est ajoutée/supprimée via la carte ou via
@@ -2665,6 +2669,14 @@ function DaysTableSection({
   useEffect(() => {
     setDraft(days);
   }, [days]);
+
+  // Sauvegarde d'un seul jour modifié via la modale DayEditDialog.
+  // On ne passe pas par le draft local de la section (qui est utilisé pour
+  // le mode édition complet) — on persiste direct via onAutoSave.
+  const handleSingleDayUpdate = (index: number, updated: Day) => {
+    const next = days.map((d, i) => (i === index ? updated : d));
+    onAutoSave(next);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -2940,7 +2952,20 @@ function DaysTableSection({
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               </span>
-              <article className="hover-lift overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-soft">
+              <article className="hover-lift group/day relative overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-soft">
+                {/* Bouton Modifier — apparaît au survol de la carte (desktop)
+                    OU toujours visible sur mobile (pas de hover). Permet
+                    d'éditer un jour sans entrer en mode "Tout modifier". */}
+                <button
+                  type="button"
+                  onClick={() => setEditingSingleDayIdx(i)}
+                  className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-surface/95 px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground backdrop-blur-md transition-smooth hover:border-primary/40 hover:bg-primary-soft hover:text-primary opacity-0 group-hover/day:opacity-100 max-sm:opacity-100"
+                  aria-label={`Modifier le jour ${d.day}`}
+                >
+                  <Pencil className="h-3 w-3" />
+                  Modifier
+                </button>
+
                 <div className="flex flex-col gap-6 p-7 sm:flex-row sm:items-start sm:gap-8">
                   <div className="flex-shrink-0 sm:w-[140px]">
                     <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
@@ -3032,6 +3057,23 @@ function DaysTableSection({
         </ol>
       </section>
       {locateDialog}
+      <DayEditDialog
+        day={
+          editingSingleDayIdx !== null ? days[editingSingleDayIdx] ?? null : null
+        }
+        open={editingSingleDayIdx !== null}
+        onOpenChange={(o) => {
+          if (!o) setEditingSingleDayIdx(null);
+        }}
+        regionBias={regionBias}
+        roadbookId={roadbookId}
+        onSave={(updated) => {
+          if (editingSingleDayIdx !== null) {
+            handleSingleDayUpdate(editingSingleDayIdx, updated);
+            setEditingSingleDayIdx(null);
+          }
+        }}
+      />
       </>
     );
   }
@@ -3783,5 +3825,225 @@ function DayPhotosEditor({
         onConfirm={handleConfirm}
       />
     </div>
+  );
+}
+
+/* ---------- Day edit dialog (single-day inline editing) ---------- */
+
+function DayEditDialog({
+  day,
+  open,
+  onOpenChange,
+  regionBias,
+  roadbookId,
+  onSave,
+}: {
+  day: Day | null;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  regionBias?: string;
+  roadbookId: string;
+  onSave: (updated: Day) => void;
+}) {
+  const [draft, setDraft] = useState<Day | null>(day);
+
+  // Resync quand on ouvre la modale sur un autre jour
+  useEffect(() => {
+    setDraft(day);
+  }, [day]);
+
+  if (!draft) return null;
+
+  const update = <K extends keyof Day>(key: K, value: Day[K]) => {
+    setDraft((d) => (d ? { ...d, [key]: value } : d));
+  };
+
+  const handleSave = () => {
+    if (!draft) return;
+    onSave(draft);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <span className="rule-warm" aria-hidden />
+            <span className="eyebrow">
+              Jour {draft.day}
+              {draft.date ? ` · ${formatShortDate(draft.date)}` : ""}
+            </span>
+          </div>
+          <DialogTitle className="font-display mt-3 text-[24px] font-semibold leading-tight">
+            Modifier l'étape
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-1">
+            <label className="text-[12px] font-medium text-foreground/80">
+              Date
+            </label>
+            <Input
+              type="date"
+              value={draft.date}
+              onChange={(e) => update("date", e.target.value)}
+              className="mt-1.5"
+            />
+          </div>
+
+          <div className="sm:col-span-1">
+            <label className="text-[12px] font-medium text-foreground/80">
+              Type d'hébergement
+            </label>
+            <Input
+              value={draft.type}
+              onChange={(e) => update("type", e.target.value)}
+              placeholder="Lodge, Camp, Hôtel…"
+              className="mt-1.5"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-[12px] font-medium text-foreground/80">
+              Étape
+            </label>
+            <PlacesAutocompleteInput
+              value={draft.stage}
+              onChange={(v) => update("stage", v)}
+              onSelect={(p) => {
+                setDraft((d) =>
+                  d
+                    ? {
+                        ...d,
+                        stage: p.name,
+                        lat: p.lat ?? d.lat ?? null,
+                        lng: p.lng ?? d.lng ?? null,
+                        geocoding_status: p.lat != null ? "manual" : d.geocoding_status,
+                      }
+                    : d,
+                );
+              }}
+              regionBias={regionBias}
+              placeholder="Sesriem, Cratère du Ngorongoro…"
+              className="mt-1.5"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-[12px] font-medium text-foreground/80">
+              Hébergement
+            </label>
+            <PlacesAutocompleteInput
+              value={draft.accommodation}
+              onChange={(v) => update("accommodation", v)}
+              onSelect={(p) => {
+                setDraft((d) =>
+                  d
+                    ? {
+                        ...d,
+                        accommodation: p.name,
+                        // Si pas encore de coords sur la stage, on prend
+                        // celles de l'hébergement par défaut.
+                        ...(typeof d.lat !== "number" && p.lat != null
+                          ? { lat: p.lat, lng: p.lng, geocoding_status: "manual" as const }
+                          : {}),
+                      }
+                    : d,
+                );
+              }}
+              regionBias={regionBias}
+              types={["establishment"]}
+              placeholder="Brandberg White Lady Lodge…"
+              className="mt-1.5"
+            />
+          </div>
+
+          <div>
+            <label className="text-[12px] font-medium text-foreground/80">
+              Vols / Transports
+            </label>
+            <Input
+              value={draft.flight}
+              onChange={(e) => update("flight", e.target.value)}
+              placeholder="—"
+              className="mt-1.5"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[12px] font-medium text-foreground/80">
+                Distance (km)
+              </label>
+              <Input
+                type="number"
+                min={0}
+                value={draft.distance_km}
+                onChange={(e) =>
+                  update("distance_km", parseFloat(e.target.value) || 0)
+                }
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <label className="text-[12px] font-medium text-foreground/80">
+                Route (h)
+              </label>
+              <Input
+                type="number"
+                min={0}
+                step={0.5}
+                value={draft.drive_hours}
+                onChange={(e) =>
+                  update("drive_hours", parseFloat(e.target.value) || 0)
+                }
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-[12px] font-medium text-foreground/80">
+              Narrative
+            </label>
+            <Textarea
+              rows={4}
+              value={draft.narrative}
+              onChange={(e) => {
+                update("narrative", e.target.value);
+                update("narrative_user_modified", true);
+              }}
+              placeholder="Ce que vit le voyageur ce jour-là — détails concrets, activités, lieux."
+              className="mt-1.5"
+            />
+            <p className="mt-1 text-[11px] text-text-soft">
+              Si tu modifies, l'IA ne réécrira pas cette narrative au prochain
+              recalcul.
+            </p>
+          </div>
+
+          <div className="sm:col-span-2">
+            <DayPhotosEditor
+              photos={draft.photos || []}
+              defaultQuery={draft.stage || draft.accommodation || ""}
+              roadbookId={roadbookId}
+              onChange={(photos) => update("photos", photos)}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button onClick={handleSave} className="gap-2">
+            <Check className="h-4 w-4" />
+            Enregistrer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
