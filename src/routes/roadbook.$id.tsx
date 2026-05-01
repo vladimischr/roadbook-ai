@@ -2251,6 +2251,9 @@ function DaysTableSection({
   // Jour pour lequel on a ouvert la modale de localisation manuelle.
   const [locatingDay, setLocatingDay] = useState<Day | null>(null);
   const [locateValue, setLocateValue] = useState("");
+  // Onglet actif dans la modale : "search" (Google Places) ou "gps" (lat/lng manuel)
+  const [locateTab, setLocateTab] = useState<"search" | "gps">("search");
+  const [gpsValue, setGpsValue] = useState("");
 
   // Resync local draft whenever the parent days prop changes. Évite la
   // divergence quand une étape est ajoutée/supprimée via la carte ou via
@@ -2302,15 +2305,52 @@ function DaysTableSection({
     [list],
   );
 
-  // Modale de localisation manuelle (réutilisée en lecture et édition).
+  // Helper : parse "lat, lng" décimal (format Google Maps : "-22.4568, 17.0658").
+  // Tolère espaces multiples, tab, virgule ou point-virgule comme séparateur,
+  // et accepte le ° si l'utilisateur copie-colle depuis ailleurs.
+  const parseLatLng = (
+    raw: string,
+  ): { lat: number; lng: number } | null => {
+    const cleaned = raw.replace(/[°N°S°E°W]/gi, "").trim();
+    const m = cleaned.match(/^(-?\d+(?:[.,]\d+)?)[\s,;]+(-?\d+(?:[.,]\d+)?)$/);
+    if (!m) return null;
+    const lat = parseFloat(m[1].replace(",", "."));
+    const lng = parseFloat(m[2].replace(",", "."));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    return { lat, lng };
+  };
+
+  const closeLocate = () => {
+    setLocatingDay(null);
+    setLocateValue("");
+    setGpsValue("");
+    setLocateTab("search");
+  };
+
+  const handleGpsSubmit = () => {
+    const parsed = parseLatLng(gpsValue);
+    if (!parsed) {
+      toast.error(
+        "Coordonnées invalides. Format attendu : -22.4568, 17.0658",
+      );
+      return;
+    }
+    if (!locatingDay || !onManualLocate) return;
+    onManualLocate(locatingDay.day, {
+      name: `Coordonnées GPS (${parsed.lat.toFixed(4)}, ${parsed.lng.toFixed(4)})`,
+      lat: parsed.lat,
+      lng: parsed.lng,
+    });
+    closeLocate();
+  };
+
+  // Modale de localisation manuelle — 2 onglets : recherche / coordonnées GPS.
   const locateDialog = (
     <Dialog
       open={!!locatingDay}
       onOpenChange={(open) => {
-        if (!open) {
-          setLocatingDay(null);
-          setLocateValue("");
-        }
+        if (!open) closeLocate();
       }}
     >
       <DialogContent className="max-w-md">
@@ -2318,25 +2358,99 @@ function DaysTableSection({
           <DialogTitle>Localiser cette étape</DialogTitle>
           <DialogDescription>
             {locatingDay
-              ? `Jour ${locatingDay.day} — ${locatingDay.stage || locatingDay.accommodation || "étape sans nom"}. Recherche le lieu correct sur Google Maps.`
+              ? `Jour ${locatingDay.day} — ${locatingDay.stage || locatingDay.accommodation || "étape sans nom"}.`
               : ""}
           </DialogDescription>
         </DialogHeader>
-        <div className="pt-2">
-          <PlacesAutocompleteInput
-            value={locateValue}
-            onChange={setLocateValue}
-            onSelect={(p) => {
-              if (locatingDay && onManualLocate && p.lat != null && p.lng != null) {
-                onManualLocate(locatingDay.day, p);
-                setLocatingDay(null);
-                setLocateValue("");
-              }
-            }}
-            regionBias={regionBiasForLocate}
-            placeholder="Saisir un lieu, lodge, ville…"
-          />
+
+        {/* Tabs */}
+        <div className="mt-2 flex border-b border-border/60">
+          <button
+            type="button"
+            onClick={() => setLocateTab("search")}
+            className={cn(
+              "flex-1 border-b-2 pb-2.5 pt-1 text-[13px] font-medium transition",
+              locateTab === "search"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Recherche
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocateTab("gps")}
+            className={cn(
+              "flex-1 border-b-2 pb-2.5 pt-1 text-[13px] font-medium transition",
+              locateTab === "gps"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Coordonnées GPS
+          </button>
         </div>
+
+        {locateTab === "search" ? (
+          <div className="pt-3">
+            <PlacesAutocompleteInput
+              value={locateValue}
+              onChange={setLocateValue}
+              onSelect={(p) => {
+                if (locatingDay && onManualLocate && p.lat != null && p.lng != null) {
+                  onManualLocate(locatingDay.day, p);
+                  closeLocate();
+                }
+              }}
+              regionBias={regionBiasForLocate}
+              placeholder="Saisir un lieu, lodge, ville…"
+            />
+            <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
+              Cherche par nom de lieu (Google Places). Si l'endroit n'apparaît
+              pas, passe sur l'onglet « Coordonnées GPS ».
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3 pt-3">
+            <Input
+              value={gpsValue}
+              onChange={(e) => setGpsValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleGpsSubmit();
+                }
+              }}
+              placeholder="-22.4568, 17.0658"
+              className="font-mono text-[14px]"
+              autoFocus
+            />
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
+              Format attendu&nbsp;: <span className="font-mono">latitude, longitude</span> en décimal.
+              <br />
+              Astuce&nbsp;: sur{" "}
+              <a
+                href="https://maps.google.com"
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                Google Maps
+              </a>
+              , clic droit sur un point → la première ligne du menu est la
+              latitude/longitude. Cliquez dessus pour copier.
+            </p>
+            <Button
+              type="button"
+              onClick={handleGpsSubmit}
+              disabled={!gpsValue.trim()}
+              className="w-full gap-2 rounded-full"
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              Localiser à ces coordonnées
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
