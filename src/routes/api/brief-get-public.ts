@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { withSchemaRetry } from "@/lib/supabaseRetry.server";
 
 // ============================================================================
 // /api/brief-get-public?token=XXX — endpoint public pour la page formulaire
@@ -17,13 +18,15 @@ export const Route = createFileRoute("/api/brief-get-public")({
           return jsonResponse({ error: "Token invalide." }, 400);
         }
 
-        const { data: brief, error } = await supabaseAdmin
-          .from("briefs")
-          .select(
-            "id, status, client_name, destination_hint, designer_id, completed_at",
-          )
-          .eq("token", token)
-          .maybeSingle();
+        const { data: brief, error } = await withSchemaRetry(() =>
+          supabaseAdmin
+            .from("briefs")
+            .select(
+              "id, status, client_name, destination_hint, designer_id, completed_at",
+            )
+            .eq("token", token)
+            .maybeSingle(),
+        );
 
         if (error) {
           return jsonResponse({ error: "Erreur DB." }, 500);

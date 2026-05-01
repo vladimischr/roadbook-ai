@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { withSchemaRetry } from "@/lib/supabaseRetry.server";
 
 // ============================================================================
 // /api/brief-create — le designer crée un brief, on retourne le token public
@@ -46,19 +47,21 @@ export const Route = createFileRoute("/api/brief-create")({
         // Token public : 24 caractères base32 lisibles, peu de collisions
         const briefToken = generateBriefToken();
 
-        const { data, error } = await supabaseAdmin
-          .from("briefs")
-          .insert({
-            token: briefToken,
-            designer_id: userData.user.id,
-            client_name: parsed.data.client_name ?? null,
-            client_email: parsed.data.client_email ?? null,
-            destination_hint: parsed.data.destination_hint ?? null,
-            status: "pending",
-            answers: {},
-          })
-          .select("id, token")
-          .single();
+        const { data, error } = await withSchemaRetry(() =>
+          supabaseAdmin
+            .from("briefs")
+            .insert({
+              token: briefToken,
+              designer_id: userData.user.id,
+              client_name: parsed.data.client_name ?? null,
+              client_email: parsed.data.client_email ?? null,
+              destination_hint: parsed.data.destination_hint ?? null,
+              status: "pending",
+              answers: {},
+            })
+            .select("id, token")
+            .single(),
+        );
 
         if (error || !data) {
           return jsonResponse(

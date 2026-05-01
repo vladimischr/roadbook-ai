@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { withSchemaRetry } from "@/lib/supabaseRetry.server";
 
 // ============================================================================
 // /api/brief-mark-used — marque un brief comme "used" et le lie au roadbook
@@ -40,14 +41,16 @@ export const Route = createFileRoute("/api/brief-mark-used")({
           return jsonResponse({ error: "Données invalides" }, 400);
         }
 
-        const { error } = await supabaseAdmin
-          .from("briefs")
-          .update({
-            status: "used",
-            roadbook_id: parsed.data.roadbook_id,
-          })
-          .eq("id", parsed.data.brief_id)
-          .eq("designer_id", userData.user.id);
+        const { error } = await withSchemaRetry(() =>
+          supabaseAdmin
+            .from("briefs")
+            .update({
+              status: "used",
+              roadbook_id: parsed.data.roadbook_id,
+            })
+            .eq("id", parsed.data.brief_id)
+            .eq("designer_id", userData.user.id),
+        );
 
         if (error) {
           return jsonResponse(

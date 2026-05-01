@@ -29,3 +29,5 @@ CREATE POLICY "Users can update own profile fields"
     -- pourrait ajouter un trigger BEFORE UPDATE qui annule les écritures
     -- sur ces colonnes, mais le pattern actuel est suffisant en pratique.
   );
+
+NOTIFY pgrst, 'reload schema';

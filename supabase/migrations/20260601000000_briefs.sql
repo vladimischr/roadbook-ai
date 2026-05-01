@@ -47,3 +47,9 @@ CREATE POLICY "Designers update own briefs"
 CREATE POLICY "Designers delete own briefs"
   ON public.briefs FOR DELETE TO authenticated
   USING (auth.uid() = designer_id);
+
+-- Force PostgREST à rafraîchir son cache de schéma immédiatement après
+-- l'application de cette migration. Sans ça, les nouveaux endpoints
+-- voient "Could not find the table" jusqu'à la prochaine reload (peut
+-- prendre plusieurs minutes en prod).
+NOTIFY pgrst, 'reload schema';

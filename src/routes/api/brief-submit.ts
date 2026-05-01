@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { withSchemaRetry } from "@/lib/supabaseRetry.server";
 
 // ============================================================================
 // /api/brief-submit — le client envoie ses réponses (endpoint public via token)
@@ -34,11 +35,13 @@ export const Route = createFileRoute("/api/brief-submit")({
         const { token, answers } = parsed.data;
 
         // Lookup pour vérifier que le brief existe et n'est pas déjà completed
-        const { data: brief, error: lookupErr } = await supabaseAdmin
-          .from("briefs")
-          .select("id, status")
-          .eq("token", token)
-          .maybeSingle();
+        const { data: brief, error: lookupErr } = await withSchemaRetry(() =>
+          supabaseAdmin
+            .from("briefs")
+            .select("id, status")
+            .eq("token", token)
+            .maybeSingle(),
+        );
 
         if (lookupErr) {
           return jsonResponse({ error: "Erreur DB." }, 500);
@@ -53,14 +56,16 @@ export const Route = createFileRoute("/api/brief-submit")({
           );
         }
 
-        const { error: updateErr } = await supabaseAdmin
-          .from("briefs")
-          .update({
-            answers,
-            status: "completed",
-            completed_at: new Date().toISOString(),
-          })
-          .eq("id", (brief as any).id);
+        const { error: updateErr } = await withSchemaRetry(() =>
+          supabaseAdmin
+            .from("briefs")
+            .update({
+              answers,
+              status: "completed",
+              completed_at: new Date().toISOString(),
+            })
+            .eq("id", (brief as any).id),
+        );
 
         if (updateErr) {
           return jsonResponse(

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { withSchemaRetry } from "@/lib/supabaseRetry.server";
 
 // ============================================================================
 // /api/brief-list — liste les briefs du designer authentifié
@@ -24,13 +25,15 @@ export const Route = createFileRoute("/api/brief-list")({
           return jsonResponse({ error: "Session invalide." }, 401);
         }
 
-        const { data: briefs, error } = await supabaseAdmin
-          .from("briefs")
-          .select(
-            "id, token, client_name, client_email, destination_hint, status, answers, roadbook_id, created_at, completed_at",
-          )
-          .eq("designer_id", userData.user.id)
-          .order("created_at", { ascending: false });
+        const { data: briefs, error } = await withSchemaRetry(() =>
+          supabaseAdmin
+            .from("briefs")
+            .select(
+              "id, token, client_name, client_email, destination_hint, status, answers, roadbook_id, created_at, completed_at",
+            )
+            .eq("designer_id", userData.user.id)
+            .order("created_at", { ascending: false }),
+        );
 
         if (error) {
           return jsonResponse(
