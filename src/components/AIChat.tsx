@@ -208,11 +208,12 @@ export function AIChat({
           </div>
           <SheetDescription className="text-[12.5px]">
             Demande à l'IA d'ajouter, supprimer ou retoucher des étapes en
-            langage naturel. 1 crédit par demande.
+            langage naturel. 1 demande = 1 modification IA.
             {creditsRemaining !== null && (
               <span className="ml-1 font-medium text-foreground">
-                ({creditsRemaining} crédit{creditsRemaining > 1 ? "s" : ""}{" "}
-                restant{creditsRemaining > 1 ? "s" : ""})
+                ({creditsRemaining} modification
+                {creditsRemaining > 1 ? "s" : ""} restante
+                {creditsRemaining > 1 ? "s" : ""})
               </span>
             )}
           </SheetDescription>

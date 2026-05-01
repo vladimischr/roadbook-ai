@@ -433,8 +433,8 @@ function NewRoadbook() {
           currentPlanKey={subInfo.planKey}
           title="Quota atteint"
           subtitle={
-            subInfo.limit !== null
-              ? `Crédits IA épuisés (${subInfo.used} / ${subInfo.limit}) sur le plan ${subInfo.planKey}. Passe au plan supérieur ou attends le renouvellement.`
+            subInfo.roadbooksLimit !== null
+              ? `Quota roadbooks atteint (${subInfo.roadbooksUsed} / ${subInfo.roadbooksLimit}) sur le plan ${subInfo.planKey}. Passe au plan supérieur ou attends le renouvellement.`
               : "Ton abonnement n'autorise pas la génération de nouveaux roadbooks."
           }
         />

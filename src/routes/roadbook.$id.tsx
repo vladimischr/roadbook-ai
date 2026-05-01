@@ -1641,8 +1641,8 @@ function RoadbookPage() {
         onOpenChange={setAiChatOpen}
         roadbookId={id}
         currentContent={rb}
-        canUse={!!subInfo?.canGenerate && getPlan(subInfo?.planKey).allowsAIChat}
-        creditsRemaining={subInfo?.remaining ?? null}
+        canUse={!!subInfo?.canChat}
+        creditsRemaining={subInfo?.chatCreditsRemaining ?? null}
         onApplied={async (newContent) => {
           // L'IA a modifié le roadbook côté serveur (déjà persisté en DB).
           // On normalise le contenu reçu et on rafraîchit l'état local.

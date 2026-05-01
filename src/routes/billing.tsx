@@ -65,10 +65,22 @@ function Billing() {
 
   const plan = getPlan(info.planKey);
   const isPaid = info.planKey !== "free";
-  const usagePct =
-    info.limit === null
+  const roadbookPct =
+    info.roadbooksLimit === null
       ? 0
-      : Math.min(100, Math.round((info.used / info.limit) * 100));
+      : Math.min(
+          100,
+          Math.round((info.roadbooksUsed / info.roadbooksLimit) * 100),
+        );
+  const chatPct =
+    info.chatCreditsLimit === null
+      ? 0
+      : info.chatCreditsLimit === 0
+        ? 100
+        : Math.min(
+            100,
+            Math.round((info.chatCreditsUsed / info.chatCreditsLimit) * 100),
+          );
   const isPastDue =
     info.planStatus === "past_due" || info.planStatus === "unpaid";
   const isTrialing = info.planStatus === "trialing";
@@ -185,49 +197,96 @@ function Billing() {
               </div>
             </div>
 
-            {/* Compteur d'usage en crédits */}
-            <div className="mt-8 border-t border-border/60 pt-6">
-              <div className="flex items-baseline justify-between">
-                <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  Crédits IA consommés ce mois
-                </p>
-                <p className="text-[13px] text-muted-foreground">
-                  Réinitialisé le {formatDate(info.periodStart)}
-                </p>
-              </div>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="font-display text-[34px] font-semibold leading-none text-foreground">
-                  {info.used}
-                </span>
-                <span className="text-[14px] text-muted-foreground">
-                  / {info.limit === null ? "∞" : info.limit} crédit
-                  {info.limit && info.limit > 1 ? "s" : ""}
-                </span>
-              </div>
-              {info.limit !== null && (
-                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={`h-full transition-all ${
-                      usagePct >= 90
-                        ? "bg-destructive"
-                        : usagePct >= 75
-                          ? "bg-amber-500"
-                          : "bg-primary"
-                    }`}
-                    style={{ width: `${usagePct}%` }}
-                  />
-                </div>
-              )}
-              <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
-                1 crédit = 1 appel IA (génération, recalcul, import Excel,
-                modification par chat).
+            {/* Deux compteurs distincts — roadbooks + modifications IA */}
+            <div className="mt-8 space-y-7 border-t border-border/60 pt-6">
+              <p className="text-[12.5px] text-muted-foreground">
+                Réinitialisé le {formatDate(info.periodStart)}
               </p>
-              {info.limit !== null && info.remaining === 0 && (
-                <p className="mt-3 text-[13px] text-amber-700">
-                  Crédits épuisés. Passez au plan supérieur ou attendez le
-                  renouvellement le {formatDate(info.currentPeriodEnd ?? info.periodStart)}.
+
+              {/* Quota 1 : Roadbooks créés */}
+              <div>
+                <div className="flex items-baseline justify-between">
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-accent-warm">
+                    Roadbooks créés
+                  </p>
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="font-display text-[28px] font-semibold leading-none text-foreground">
+                    {info.roadbooksUsed}
+                  </span>
+                  <span className="text-[13px] text-muted-foreground">
+                    / {info.roadbooksLimit === null ? "∞" : info.roadbooksLimit}
+                  </span>
+                </div>
+                {info.roadbooksLimit !== null && (
+                  <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full transition-all ${
+                        roadbookPct >= 90
+                          ? "bg-destructive"
+                          : roadbookPct >= 75
+                            ? "bg-amber-500"
+                            : "bg-primary"
+                      }`}
+                      style={{ width: `${roadbookPct}%` }}
+                    />
+                  </div>
+                )}
+                <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground">
+                  Génération IA, saisie manuelle (avec assist IA) ou import
+                  Excel.
                 </p>
-              )}
+                {info.roadbooksLimit !== null && info.roadbooksRemaining === 0 && (
+                  <p className="mt-2 text-[12.5px] text-amber-700">
+                    Quota roadbooks épuisé.
+                  </p>
+                )}
+              </div>
+
+              {/* Quota 2 : Modifications IA (chat + recalcul) */}
+              <div>
+                <div className="flex items-baseline justify-between">
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-accent-warm">
+                    Modifications IA (chat + recalcul)
+                  </p>
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="font-display text-[28px] font-semibold leading-none text-foreground">
+                    {info.chatCreditsUsed}
+                  </span>
+                  <span className="text-[13px] text-muted-foreground">
+                    /{" "}
+                    {info.chatCreditsLimit === null
+                      ? "∞"
+                      : info.chatCreditsLimit}
+                  </span>
+                </div>
+                {info.chatCreditsLimit !== null && (
+                  <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full transition-all ${
+                        chatPct >= 90
+                          ? "bg-destructive"
+                          : chatPct >= 75
+                            ? "bg-amber-500"
+                            : "bg-primary"
+                      }`}
+                      style={{ width: `${chatPct}%` }}
+                    />
+                  </div>
+                )}
+                <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground">
+                  Chat IA (1 demande = 1 modification) ou recalcul complet
+                  (1 modification).
+                </p>
+                {info.chatCreditsLimit !== null &&
+                  info.chatCreditsRemaining === 0 && (
+                    <p className="mt-2 text-[12.5px] text-amber-700">
+                      Modifications IA épuisées. Tu peux toujours créer de
+                      nouveaux roadbooks et les éditer manuellement.
+                    </p>
+                  )}
+              </div>
             </div>
           </section>
 

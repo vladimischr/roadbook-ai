@@ -1,34 +1,89 @@
-// Helpers serveur pour vérifier le plan et le quota CRÉDITS d'un utilisateur.
-// Utilisés par les routes API qui consomment de l'IA (génération, recalcul,
-// import Excel, chat) ainsi que /api/me-subscription pour propager au client.
+// Helpers serveur — vérifient le plan + les DEUX QUOTAS DISTINCTS d'un user :
 //
-// 1 crédit = 1 appel IA. La consommation est calculée en comptant les
-// lignes de la table `ai_actions` sur la fenêtre de facturation courante.
+//   1. Roadbook quota   → nombre de nouveaux roadbooks créés (génération
+//                          IA, saisie manuelle avec assist IA, import Excel)
+//   2. Chat credits     → nombre de modifications IA post-création
+//                          (chat IA, recalcul complet)
+//
+// Les deux sont comptés depuis la table `ai_actions` filtrée par
+// `action_type` sur la fenêtre de facturation courante.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getPlan, type PlanKey } from "@/lib/plans";
 
 export interface UserSubscriptionInfo {
   planKey: PlanKey;
   planStatus: string;
-  /** Crédits consommés sur la période en cours. */
-  used: number;
-  /** Quota max sur la période (null = illimité). */
-  limit: number | null;
-  /** Reste à consommer ce mois (null = illimité). */
-  remaining: number | null;
-  /** Début de la fenêtre de comptage (utile pour debug + UI). */
-  periodStart: string;
-  /** L'utilisateur peut-il déclencher une action IA (générer, chat, etc.) ? */
+
+  /** Roadbooks créés sur la période. */
+  roadbooksUsed: number;
+  /** Quota max de roadbooks (null = illimité). */
+  roadbooksLimit: number | null;
+  /** Reste de roadbooks ce mois (null = illimité). */
+  roadbooksRemaining: number | null;
+  /** Peut créer un nouveau roadbook ? */
   canGenerate: boolean;
+
+  /** Crédits chat IA / recalcul consommés sur la période. */
+  chatCreditsUsed: number;
+  /** Quota max de chat credits (null = illimité). */
+  chatCreditsLimit: number | null;
+  /** Reste de chat credits ce mois. */
+  chatCreditsRemaining: number | null;
+  /** Peut utiliser le chat IA / recalcul ? */
+  canChat: boolean;
+
+  /** Backward compat — ancien champ "used" → roadbooks count. */
+  used: number;
+  /** Backward compat — ancien champ "limit" → roadbooks limit. */
+  limit: number | null;
+  /** Backward compat — ancien champ "remaining" → roadbooks remaining. */
+  remaining: number | null;
+
+  /** Début de la fenêtre de comptage. */
+  periodStart: string;
   currentPeriodEnd: string | null;
   trialEndsAt: string | null;
   cancelAt: string | null;
 }
 
+export type AiActionType = "generate" | "import" | "recompute" | "chat";
+
 /**
- * Récupère l'état d'abo + le quota crédits d'un utilisateur. Crée le profil
- * au vol si manquant (filet de sécurité — ne devrait pas arriver grâce au
- * trigger DB on_auth_user_created).
+ * Compte les actions d'un user sur la période courante, retourne un objet
+ * { generate, import, recompute, chat }. Tolérant si la table n'existe
+ * pas (retourne tous les compteurs à 0).
+ */
+async function countActions(
+  userId: string,
+  periodStart: string,
+): Promise<Record<AiActionType, number>> {
+  const counters: Record<AiActionType, number> = {
+    generate: 0,
+    import: 0,
+    recompute: 0,
+    chat: 0,
+  };
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("ai_actions")
+      .select("action_type")
+      .eq("user_id", userId)
+      .gte("created_at", periodStart);
+    if (!error && data) {
+      for (const row of data) {
+        const type = (row as any).action_type as AiActionType;
+        if (type in counters) counters[type] += 1;
+      }
+    }
+  } catch (e) {
+    console.info("[subscription] ai_actions indisponible:", e);
+  }
+  return counters;
+}
+
+/**
+ * Récupère l'état d'abo + les 2 quotas (roadbooks + chat). Crée le profil
+ * au vol si manquant (filet de sécurité).
  */
 export async function getUserSubscriptionInfo(
   userId: string,
@@ -58,43 +113,57 @@ export async function getUserSubscriptionInfo(
     profile?.current_period_end ?? null,
   );
 
-  // Crédits consommés = SOMME des credits_consumed dans ai_actions
-  // sur la fenêtre courante. Si la table n'existe pas encore (migration
-  // pas appliquée), on retombe sur 0 — backward compat.
-  let used = 0;
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("ai_actions")
-      .select("credits_consumed")
-      .eq("user_id", userId)
-      .gte("created_at", periodStart);
-    if (!error && data) {
-      used = data.reduce(
-        (acc, row) => acc + ((row as any).credits_consumed ?? 1),
-        0,
-      );
-    }
-  } catch (e) {
-    console.info("[subscription] ai_actions indisponible:", e);
-  }
+  const counters = await countActions(userId, periodStart);
 
-  const limit = plan.monthlyCredits;
-  const remaining = limit === null ? null : Math.max(0, limit - used);
+  // Roadbooks = generate + import (chaque nouveau roadbook créé).
+  const roadbooksUsed = counters.generate + counters.import;
+  const roadbooksLimit = plan.monthlyRoadbookLimit;
+  const roadbooksRemaining =
+    roadbooksLimit === null
+      ? null
+      : Math.max(0, roadbooksLimit - roadbooksUsed);
 
+  // Chat credits = chat + recompute (toutes modifications IA post-création).
+  const chatCreditsUsed = counters.chat + counters.recompute;
+  const chatCreditsLimit = plan.monthlyChatCredits;
+  const chatCreditsRemaining =
+    chatCreditsLimit === null
+      ? null
+      : Math.max(0, chatCreditsLimit - chatCreditsUsed);
+
+  // Status check global (paiement échoué bloque tout)
   const statusOk =
     planStatus === "active" ||
     planStatus === "trialing" ||
     planStatus === "canceled";
-  const canGenerate = statusOk && (limit === null || used < limit);
+
+  const canGenerate =
+    statusOk && (roadbooksLimit === null || roadbooksUsed < roadbooksLimit);
+  const canChat =
+    statusOk &&
+    plan.allowsAIChat &&
+    (chatCreditsLimit === null || chatCreditsUsed < chatCreditsLimit);
 
   return {
     planKey,
     planStatus,
-    used,
-    limit,
-    remaining,
-    periodStart,
+
+    roadbooksUsed,
+    roadbooksLimit,
+    roadbooksRemaining,
     canGenerate,
+
+    chatCreditsUsed,
+    chatCreditsLimit,
+    chatCreditsRemaining,
+    canChat,
+
+    // Backward compat
+    used: roadbooksUsed,
+    limit: roadbooksLimit,
+    remaining: roadbooksRemaining,
+
+    periodStart,
     currentPeriodEnd: profile?.current_period_end ?? null,
     trialEndsAt: profile?.trial_ends_at ?? null,
     cancelAt: profile?.cancel_at ?? null,
@@ -118,13 +187,14 @@ function computePeriodStart(
 }
 
 /**
- * Helper : insère une ligne dans ai_actions pour facturer un crédit.
- * Tolérant si la table n'existe pas (silently no-op pendant la transition
- * d'une ancienne base sans la migration credits).
+ * Helper : insère une ligne dans ai_actions pour facturer un appel IA.
+ * Le quota concerné dépend du type :
+ *   - 'generate' / 'import' → quota roadbooks
+ *   - 'chat' / 'recompute'  → quota chat credits
  */
 export async function logAiAction(
   userId: string,
-  actionType: "generate" | "recompute" | "import" | "chat",
+  actionType: AiActionType,
   roadbookId: string | null,
   metadata?: Record<string, unknown>,
 ): Promise<void> {

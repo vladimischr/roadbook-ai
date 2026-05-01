@@ -118,16 +118,17 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             return rateLimitedResponse(rl.retryAfterSec ?? 30);
           }
 
-          // Crédits check — refuse l'appel Anthropic si l'utilisateur n'a
-          // plus de crédits OU si son abo est past_due / unpaid.
+          // Quota roadbooks check — la génération crée un nouveau roadbook,
+          // donc consomme du quota roadbook (pas du chat credits).
           const subInfo = await getUserSubscriptionInfo(userData.user.id);
           if (!subInfo.canGenerate) {
             const reason =
               subInfo.planStatus === "past_due" ||
               subInfo.planStatus === "unpaid"
-                ? "Ton paiement a échoué — mets à jour ta carte bancaire dans le portail de facturation pour reprendre."
-                : subInfo.limit !== null && subInfo.used >= subInfo.limit
-                  ? `Crédits IA épuisés (${subInfo.used} / ${subInfo.limit}) sur le plan ${subInfo.planKey}. Passe au plan supérieur ou attends le renouvellement.`
+                ? "Ton paiement a échoué — mets à jour ta carte bancaire pour reprendre."
+                : subInfo.roadbooksLimit !== null &&
+                    subInfo.roadbooksUsed >= subInfo.roadbooksLimit
+                  ? `Quota roadbooks atteint (${subInfo.roadbooksUsed} / ${subInfo.roadbooksLimit}) sur le plan ${subInfo.planKey}. Passe au plan supérieur ou attends le renouvellement.`
                   : "Ton abonnement n'autorise pas la génération.";
             return new Response(
               JSON.stringify({

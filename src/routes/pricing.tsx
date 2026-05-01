@@ -96,11 +96,11 @@ function Pricing() {
                 Choisissez le plan adapté à votre volume.
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-[16px] leading-[1.65] text-muted-foreground sm:text-[17.5px]">
-                Le quota est en <strong className="text-foreground">crédits IA</strong>{" "}
-                : 1 crédit = 1 appel IA (génération, recalcul, import Excel
-                ou modification par chat). Tu choisis comment dépenser tes
-                crédits selon ton workflow. 14 jours d'essai, annulation en
-                un clic.
+                Deux quotas indépendants par plan :{" "}
+                <strong className="text-foreground">roadbooks créés</strong> (génération
+                IA, manuel ou import Excel) et{" "}
+                <strong className="text-foreground">modifications IA</strong> (chat ou
+                recalcul). 14 jours d'essai gratuit, annulation en un clic.
               </p>
 
               {/* Toggle Mensuel / Annuel */}
@@ -198,11 +198,21 @@ function Pricing() {
                     </p>
                   )}
 
-                  <p className="mt-3 text-[12.5px] text-muted-foreground">
-                    {plan.monthlyCredits === null
-                      ? "Crédits IA illimités"
-                      : `${plan.monthlyCredits} crédits IA/mois`}
-                  </p>
+                  {/* Quotas — affichés en deux lignes pour bien séparer */}
+                  <div className="mt-3 space-y-1 text-[12.5px] text-muted-foreground">
+                    <p>
+                      {plan.monthlyRoadbookLimit === null
+                        ? "Roadbooks illimités"
+                        : `${plan.monthlyRoadbookLimit} roadbooks/mois`}
+                    </p>
+                    <p>
+                      {plan.monthlyChatCredits === null
+                        ? "Modifications IA illimitées"
+                        : plan.monthlyChatCredits === 0
+                          ? "Chat IA non inclus"
+                          : `${plan.monthlyChatCredits} modifications IA (chat / recalcul)`}
+                    </p>
+                  </div>
 
                   <ul className="mt-7 space-y-2.5 text-[13.5px] leading-relaxed text-foreground/85">
                     {plan.features.map((f, i) => (
@@ -262,8 +272,8 @@ function Pricing() {
                 a: "Au bout de 14 jours, le premier prélèvement a lieu sauf si vous annulez avant. Aucun engagement.",
               },
               {
-                q: "Comment fonctionnent les crédits ?",
-                a: "1 crédit = 1 appel à l'IA. La génération d'un nouveau roadbook, un recalcul, un import Excel ou une modification via le chat IA consomment chacun 1 crédit. La saisie manuelle, les modifications éditoriales (texte, photos), l'export PDF et le partage de lien client n'utilisent aucun crédit. Vos crédits se réinitialisent à chaque renouvellement mensuel.",
+                q: "Comment fonctionnent les deux quotas ?",
+                a: "Le quota « roadbooks » compte les nouveaux voyages créés (génération IA, saisie manuelle ou import Excel). Le quota « modifications IA » compte les ajustements via chat IA ou recalcul complet. Les deux quotas sont indépendants : épuiser le chat ne vous empêche pas de créer un nouveau roadbook, et vice-versa. L'édition manuelle (texte, photos, étapes), l'export PDF et le partage de lien client n'utilisent aucun quota.",
               },
               {
                 q: "Mes clients voient-ils Roadbook.ai ?",

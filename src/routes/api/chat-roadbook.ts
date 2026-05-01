@@ -77,27 +77,39 @@ export const Route = createFileRoute("/api/chat-roadbook")({
             return rateLimitedResponse(rl.retryAfterSec ?? 30);
           }
 
-          // Crédits + plan check
+          // Crédits modifications IA check (quota chat distinct du quota roadbook)
           const subInfo = await getUserSubscriptionInfo(userId);
           const plan = getPlan(subInfo.planKey);
           if (!plan.allowsAIChat) {
             return jsonResponse(
               {
-                error: `Le chat IA n'est pas inclus dans le plan ${plan.name}. Passe au plan Solo ou supérieur.`,
+                error: `Le chat IA n'est pas inclus dans le plan ${plan.name}.`,
                 code: "feature_locked",
                 subscription: subInfo,
               },
               402,
             );
           }
-          if (!subInfo.canGenerate) {
-            const reason =
-              subInfo.planStatus === "past_due" ||
-              subInfo.planStatus === "unpaid"
-                ? "Ton paiement a échoué — mets à jour ta CB."
-                : `Crédits IA épuisés (${subInfo.used} / ${subInfo.limit}).`;
+          if (
+            subInfo.planStatus === "past_due" ||
+            subInfo.planStatus === "unpaid"
+          ) {
             return jsonResponse(
-              { error: reason, code: "quota_exceeded", subscription: subInfo },
+              {
+                error: "Ton paiement a échoué — mets à jour ta CB.",
+                code: "payment_required",
+                subscription: subInfo,
+              },
+              402,
+            );
+          }
+          if (!subInfo.canChat) {
+            return jsonResponse(
+              {
+                error: `Crédits modifications IA épuisés (${subInfo.chatCreditsUsed} / ${subInfo.chatCreditsLimit}). Passe au plan supérieur ou attends le renouvellement.`,
+                code: "quota_exceeded",
+                subscription: subInfo,
+              },
               402,
             );
           }

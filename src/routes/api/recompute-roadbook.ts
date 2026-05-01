@@ -79,11 +79,7 @@ export const Route = createFileRoute("/api/recompute-roadbook")({
             return rateLimitedResponse(rl.retryAfterSec ?? 30);
           }
 
-          // Recompute = appel Claude facturable. On le bloque sur les plans
-          // qui n'autorisent pas le recalcul (= free uniquement) et sur les
-          // abos en past_due. Le compteur d'usage n'est PAS incrémenté ici
-          // (le recompute ne crée pas de nouveau roadbook), mais on protège
-          // quand même le quota Anthropic.
+          // Recompute = consomme un crédit du quota CHAT (modifications IA).
           const subInfo = await getUserSubscriptionInfo(userData.user.id);
           const plan = getPlan(subInfo.planKey);
           if (!plan.allowsRecompute) {
@@ -105,6 +101,16 @@ export const Route = createFileRoute("/api/recompute-roadbook")({
                 error:
                   "Ton paiement a échoué — mets à jour ta carte bancaire pour reprendre.",
                 code: "payment_required",
+                subscription: subInfo,
+              }),
+              { status: 402, headers: { "Content-Type": "application/json" } },
+            );
+          }
+          if (!subInfo.canChat) {
+            return new Response(
+              JSON.stringify({
+                error: `Crédits modifications IA épuisés (${subInfo.chatCreditsUsed} / ${subInfo.chatCreditsLimit}) sur le plan ${plan.name}. Le recalcul consomme un crédit modification IA. Passe au plan supérieur ou attends le renouvellement.`,
+                code: "quota_exceeded",
                 subscription: subInfo,
               }),
               { status: 402, headers: { "Content-Type": "application/json" } },

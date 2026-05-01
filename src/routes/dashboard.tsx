@@ -451,17 +451,25 @@ function UsageBanner({
   onUpgradeClick: () => void;
 }) {
   const plan = getPlan(info.planKey);
-  const isUnlimited = info.limit === null;
+  const isUnlimited =
+    info.roadbooksLimit === null && info.chatCreditsLimit === null;
   const isFree = info.planKey === "free";
   const isPastDue =
     info.planStatus === "past_due" || info.planStatus === "unpaid";
   const isLow =
-    !isUnlimited &&
-    info.remaining !== null &&
-    info.remaining > 0 &&
-    info.remaining <= Math.max(1, Math.floor((info.limit ?? 1) * 0.2));
+    (info.roadbooksLimit !== null &&
+      info.roadbooksRemaining !== null &&
+      info.roadbooksRemaining > 0 &&
+      info.roadbooksRemaining <=
+        Math.max(1, Math.floor(info.roadbooksLimit * 0.2))) ||
+    (info.chatCreditsLimit !== null &&
+      info.chatCreditsRemaining !== null &&
+      info.chatCreditsRemaining > 0 &&
+      info.chatCreditsRemaining <=
+        Math.max(1, Math.floor(info.chatCreditsLimit * 0.2)));
   const isExceeded =
-    !isUnlimited && info.remaining !== null && info.remaining === 0;
+    (info.roadbooksLimit !== null && info.roadbooksRemaining === 0) ||
+    (info.chatCreditsLimit !== null && info.chatCreditsRemaining === 0);
 
   // On masque le bandeau pour les plans illimités sans souci de paiement.
   if (isUnlimited && !isPastDue) return null;
@@ -495,13 +503,29 @@ function UsageBanner({
           {isPastDue ? (
             "Paiement en échec — mets à jour ta CB pour reprendre."
           ) : isUnlimited ? (
-            "Crédits IA illimités."
+            "Roadbooks et modifications IA illimités."
           ) : (
             <>
-              <strong className="text-foreground">{info.used}</strong>
-              <span className="text-muted-foreground"> / {info.limit}</span>
+              <strong className="text-foreground">
+                {info.roadbooksUsed}
+              </strong>
+              <span className="text-muted-foreground">
+                {" "}
+                / {info.roadbooksLimit}
+              </span>
               <span className="ml-1 text-muted-foreground">
-                crédits IA ce mois
+                roadbooks
+              </span>
+              <span className="mx-2 text-muted-foreground/40">·</span>
+              <strong className="text-foreground">
+                {info.chatCreditsUsed}
+              </strong>
+              <span className="text-muted-foreground">
+                {" "}
+                / {info.chatCreditsLimit}
+              </span>
+              <span className="ml-1 text-muted-foreground">
+                modifs IA
               </span>
             </>
           )}
