@@ -895,12 +895,21 @@ export function RoadbookPDF({
   // Préfère Mapbox (rendu éditorial premium) ; fallback Google si pas de token.
   // Le token est exposé client-side via VITE_MAPBOX_TOKEN — sécurisé par
   // les URL restrictions configurées sur le dashboard Mapbox.
-  const mapboxToken =
+  // Style perso optionnel via VITE_MAPBOX_STYLE (format "username/style_id"),
+  // sinon on utilise outdoors-v12 par défaut.
+  const env =
     typeof import.meta !== "undefined"
-      ? (import.meta as any).env?.VITE_MAPBOX_TOKEN
+      ? (import.meta as any).env
       : undefined;
+  const mapboxToken = env?.VITE_MAPBOX_TOKEN as string | undefined;
+  const mapboxStyle = (env?.VITE_MAPBOX_STYLE as string | undefined) || "mapbox/outdoors-v12";
   const mapUrl = mapboxToken
-    ? buildMapboxStaticUrl(days, roadbook.directions_segments, mapboxToken)
+    ? buildMapboxStaticUrl(
+        days,
+        roadbook.directions_segments,
+        mapboxToken,
+        mapboxStyle,
+      )
     : buildStaticMapUrl(days, roadbook.directions_segments, mapsApiKey);
   const dayPages = chunk(days, 3);
 
