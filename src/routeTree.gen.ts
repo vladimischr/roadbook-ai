@@ -16,9 +16,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as RoadbookPreviewMockRouteImport } from './routes/roadbook.preview-mock'
 import { Route as RoadbookIdRouteImport } from './routes/roadbook.$id'
 import { Route as ApiRecomputeRoadbookRouteImport } from './routes/api/recompute-roadbook'
+import { Route as ApiMapsKeyRouteImport } from './routes/api/maps-key'
 import { Route as ApiImportRoadbookRouteImport } from './routes/api/import-roadbook'
 import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
-import { Route as ApiMapsKeyRouteImport } from './routes/api/maps-key'
 
 const NewRoute = NewRouteImport.update({
   id: '/new',
@@ -55,6 +55,11 @@ const ApiRecomputeRoadbookRoute = ApiRecomputeRoadbookRouteImport.update({
   path: '/api/recompute-roadbook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMapsKeyRoute = ApiMapsKeyRouteImport.update({
+  id: '/api/maps-key',
+  path: '/api/maps-key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiImportRoadbookRoute = ApiImportRoadbookRouteImport.update({
   id: '/api/import-roadbook',
   path: '/api/import-roadbook',
@@ -65,11 +70,6 @@ const ApiGenerateRoadbookRoute = ApiGenerateRoadbookRouteImport.update({
   path: '/api/generate-roadbook',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiMapsKeyRoute = ApiMapsKeyRouteImport.update({
-  id: '/api/maps-key',
-  path: '/api/maps-key',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -78,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/new': typeof NewRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
   '/api/import-roadbook': typeof ApiImportRoadbookRoute
+  '/api/maps-key': typeof ApiMapsKeyRoute
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
@@ -89,6 +90,7 @@ export interface FileRoutesByTo {
   '/new': typeof NewRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
   '/api/import-roadbook': typeof ApiImportRoadbookRoute
+  '/api/maps-key': typeof ApiMapsKeyRoute
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
@@ -101,6 +103,7 @@ export interface FileRoutesById {
   '/new': typeof NewRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
   '/api/import-roadbook': typeof ApiImportRoadbookRoute
+  '/api/maps-key': typeof ApiMapsKeyRoute
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
@@ -114,6 +117,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/api/generate-roadbook'
     | '/api/import-roadbook'
+    | '/api/maps-key'
     | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
@@ -125,6 +129,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/api/generate-roadbook'
     | '/api/import-roadbook'
+    | '/api/maps-key'
     | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
@@ -136,6 +141,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/api/generate-roadbook'
     | '/api/import-roadbook'
+    | '/api/maps-key'
     | '/api/recompute-roadbook'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
@@ -205,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRecomputeRoadbookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/maps-key': {
+      id: '/api/maps-key'
+      path: '/api/maps-key'
+      fullPath: '/api/maps-key'
+      preLoaderRoute: typeof ApiMapsKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/import-roadbook': {
       id: '/api/import-roadbook'
       path: '/api/import-roadbook'
@@ -217,13 +230,6 @@ declare module '@tanstack/react-router' {
       path: '/api/generate-roadbook'
       fullPath: '/api/generate-roadbook'
       preLoaderRoute: typeof ApiGenerateRoadbookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/maps-key': {
-      id: '/api/maps-key'
-      path: '/api/maps-key'
-      fullPath: '/api/maps-key'
-      preLoaderRoute: typeof ApiMapsKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
