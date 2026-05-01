@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Trash2, Sparkles, PenLine, ChevronDown, Check, Upload } from "lucide-react";
+import { Loader2, Plus, Trash2, Sparkles, PenLine, ChevronDown, Check, Upload, Send } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,19 @@ import { useAuth } from "@/lib/auth";
 import { Paywall } from "@/components/Paywall";
 import { useSubscription } from "@/lib/useSubscription";
 import { ImportRoadbookDialog } from "@/components/ImportRoadbookDialog";
+import { composePromptFromBrief } from "@/lib/briefQuestions";
+
+interface NewSearch {
+  brief_id?: string;
+}
 
 export const Route = createFileRoute("/new")({
   component: NewRoadbook,
   head: () => ({ meta: [{ title: "Nouveau roadbook — Roadbook.ai" }] }),
+  validateSearch: (search: Record<string, unknown>): NewSearch => ({
+    brief_id:
+      typeof search.brief_id === "string" ? search.brief_id : undefined,
+  }),
 });
 
 const TRAVELERS: { value: string; label: string }[] = [
@@ -66,10 +75,15 @@ function NewRoadbook() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { info: subInfo, refetch: refetchSub } = useSubscription();
+  const search = useSearch({ from: "/new" }) as NewSearch;
   const [submitting, setSubmitting] = useState(false);
   const [stepKey, setStepKey] = useState<GenerationStep>("prompt");
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [briefPrefilled, setBriefPrefilled] = useState<{
+    id: string;
+    clientName: string | null;
+  } | null>(null);
 
   const [form, setForm] = useState<RoadbookFormData>({
     client_name: "",
@@ -88,6 +102,58 @@ function NewRoadbook() {
 
   const update = <K extends keyof RoadbookFormData>(k: K, v: RoadbookFormData[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  // Si on arrive avec ?brief_id=xxx, on pré-remplit le formulaire IA depuis
+  // les réponses du client. Le designer voit tout le brief composé dans
+  // "agent_notes" et n'a plus qu'à cliquer Générer.
+  useEffect(() => {
+    if (!search.brief_id || !user || briefPrefilled) return;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) return;
+      const res = await fetch("/api/brief-list", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error("Impossible de charger le brief");
+        return;
+      }
+      const brief = (data?.briefs || []).find(
+        (b: any) => b.id === search.brief_id,
+      );
+      if (!brief) {
+        toast.error("Brief introuvable");
+        return;
+      }
+      if (brief.status === "pending") {
+        toast.error("Ce brief n'a pas encore été rempli par le client");
+        return;
+      }
+      const composed = composePromptFromBrief(
+        brief.answers || {},
+        brief.client_name,
+      );
+      setForm((f) => ({
+        ...f,
+        client_name: brief.client_name || f.client_name,
+        destination:
+          (brief.answers?.destination as string) ||
+          brief.destination_hint ||
+          f.destination,
+        generation_mode: "ai",
+        agent_notes: composed,
+      }));
+      setBriefPrefilled({
+        id: brief.id,
+        clientName: brief.client_name ?? null,
+      });
+      toast.success("Brief client chargé. Prêt à générer.");
+    })();
+  }, [search.brief_id, user, briefPrefilled]);
 
   const updateStep = (i: number, patch: Partial<NonNullable<RoadbookFormData["manual_steps"]>[number]>) =>
     setForm((f) => ({
@@ -180,6 +246,32 @@ function NewRoadbook() {
         return;
       }
 
+      // Si on est arrivé depuis un brief client, on le marque comme utilisé
+      // et on lie le roadbook fraîchement créé. Pas bloquant si l'appel
+      // échoue — le roadbook est déjà sauvegardé.
+      if (briefPrefilled) {
+        try {
+          const {
+            data: { session: s },
+          } = await supabase.auth.getSession();
+          if (s?.access_token) {
+            await fetch("/api/brief-mark-used", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${s.access_token}`,
+              },
+              body: JSON.stringify({
+                brief_id: briefPrefilled.id,
+                roadbook_id: data.id,
+              }),
+            });
+          }
+        } catch (e) {
+          console.warn("[new] brief-mark-used failed:", e);
+        }
+      }
+
       setStepKey("done");
       navigate({ to: "/roadbook/$id", params: { id: data.id } });
     } catch (error: any) {
@@ -222,6 +314,22 @@ function NewRoadbook() {
             Trois manières de démarrer — choisissez celle qui correspond
             à votre matière.
           </p>
+
+          {briefPrefilled && (
+            <div className="mt-6 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary-soft/40 px-5 py-4">
+              <Send className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div className="flex-1 text-[13.5px] leading-relaxed">
+                <p className="font-medium text-foreground">
+                  Brief client chargé
+                  {briefPrefilled.clientName ? ` — ${briefPrefilled.clientName}` : ""}
+                </p>
+                <p className="mt-0.5 text-muted-foreground">
+                  Les réponses ont été composées dans le brief IA ci-dessous.
+                  Tu peux ajuster avant de générer.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Choix du mode — bloc éducatif en haut, avant le formulaire */}
           <div className="mt-10 grid gap-3 sm:grid-cols-3">

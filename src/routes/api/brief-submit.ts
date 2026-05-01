@@ -1,0 +1,83 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+// ============================================================================
+// /api/brief-submit — le client envoie ses réponses (endpoint public via token)
+// ============================================================================
+
+const inputSchema = z.object({
+  token: z.string().min(16).max(64),
+  answers: z.record(
+    z.string(),
+    z.union([z.string(), z.array(z.string()), z.number(), z.null()]),
+  ),
+});
+
+export const Route = createFileRoute("/api/brief-submit")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        let body: unknown;
+        try {
+          body = await request.json();
+        } catch {
+          return jsonResponse({ error: "JSON invalide." }, 400);
+        }
+        const parsed = inputSchema.safeParse(body);
+        if (!parsed.success) {
+          return jsonResponse(
+            { error: "Données invalides", issues: parsed.error.issues },
+            400,
+          );
+        }
+        const { token, answers } = parsed.data;
+
+        // Lookup pour vérifier que le brief existe et n'est pas déjà completed
+        const { data: brief, error: lookupErr } = await supabaseAdmin
+          .from("briefs")
+          .select("id, status")
+          .eq("token", token)
+          .maybeSingle();
+
+        if (lookupErr) {
+          return jsonResponse({ error: "Erreur DB." }, 500);
+        }
+        if (!brief) {
+          return jsonResponse({ error: "Brief introuvable." }, 404);
+        }
+        if ((brief as any).status === "used") {
+          return jsonResponse(
+            { error: "Ce brief a déjà été utilisé pour générer un roadbook." },
+            409,
+          );
+        }
+
+        const { error: updateErr } = await supabaseAdmin
+          .from("briefs")
+          .update({
+            answers,
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", (brief as any).id);
+
+        if (updateErr) {
+          return jsonResponse(
+            { error: "Erreur sauvegarde: " + updateErr.message },
+            500,
+          );
+        }
+
+        return jsonResponse({ ok: true }, 200);
+      },
+    },
+  },
+});
+
+function jsonResponse(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
