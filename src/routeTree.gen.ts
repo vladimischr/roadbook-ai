@@ -57,6 +57,7 @@ import { Route as ApiBriefListRouteImport } from './routes/api/brief-list'
 import { Route as ApiBriefGetPublicRouteImport } from './routes/api/brief-get-public'
 import { Route as ApiBriefCreateRouteImport } from './routes/api/brief-create'
 import { Route as ApiAdminUsersRouteImport } from './routes/api/admin-users'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -298,6 +299,12 @@ const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
   path: '/api/admin-users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -348,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
   '/voyage/$token': typeof VoyageTokenRoute
   '/clients/': typeof ClientsIndexRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -398,6 +406,7 @@ export interface FileRoutesByTo {
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
   '/voyage/$token': typeof VoyageTokenRoute
   '/clients': typeof ClientsIndexRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -449,6 +458,7 @@ export interface FileRoutesById {
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
   '/voyage/$token': typeof VoyageTokenRoute
   '/clients/': typeof ClientsIndexRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -501,6 +511,7 @@ export interface FileRouteTypes {
     | '/roadbook/preview-mock'
     | '/voyage/$token'
     | '/clients/'
+    | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -551,6 +562,7 @@ export interface FileRouteTypes {
     | '/roadbook/preview-mock'
     | '/voyage/$token'
     | '/clients'
+    | '/lovable/email/queue/process'
   id:
     | '__root__'
     | '/'
@@ -601,6 +613,7 @@ export interface FileRouteTypes {
     | '/roadbook/preview-mock'
     | '/voyage/$token'
     | '/clients/'
+    | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -652,6 +665,7 @@ export interface RootRouteChildren {
   RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
   VoyageTokenRoute: typeof VoyageTokenRoute
   ClientsIndexRoute: typeof ClientsIndexRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -992,6 +1006,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1044,7 +1065,17 @@ const rootRouteChildren: RootRouteChildren = {
   RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
   VoyageTokenRoute: VoyageTokenRoute,
   ClientsIndexRoute: ClientsIndexRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
