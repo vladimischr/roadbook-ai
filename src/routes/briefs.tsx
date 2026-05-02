@@ -4,7 +4,7 @@ import {
   useNavigate,
   useSearch,
 } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Loader2,
   Plus,
@@ -83,10 +83,18 @@ function BriefsPage() {
     email: string | null;
   } | null>(null);
 
+  // Track quel client_id on a déjà traité — sinon, fermer le dialog réinit
+  // prefillClient à null, le useEffect re-trigger et le dialog ré-ouvre en
+  // boucle (puisque ?client_id=... est toujours dans l'URL).
+  const processedClientId = useRef<string | null>(null);
+
   // Si on arrive avec ?client_id=xxx (depuis la fiche client), on ouvre direct
-  // le dialog de création pré-rempli avec ses infos.
+  // le dialog de création pré-rempli avec ses infos. One-shot : on clear l'URL
+  // après pour qu'un refresh ne re-déclenche pas.
   useEffect(() => {
-    if (!search.client_id || !user || prefillClient) return;
+    if (!search.client_id || !user) return;
+    if (processedClientId.current === search.client_id) return;
+    processedClientId.current = search.client_id;
     (async () => {
       const {
         data: { session },
@@ -105,8 +113,10 @@ function BriefsPage() {
         email: data.client.email,
       });
       setCreateOpen(true);
+      // Clear l'URL — le pré-remplissage est consommé, plus besoin du param
+      navigate({ to: "/briefs", replace: true });
     })();
-  }, [search.client_id, user, prefillClient]);
+  }, [search.client_id, user, navigate]);
 
   const refresh = async () => {
     const {
