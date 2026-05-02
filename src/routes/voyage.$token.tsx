@@ -217,6 +217,13 @@ function RoadbookView({ roadbook }: { roadbook: SharedRoadbook }) {
         destination={destination}
         theme={content.theme || roadbook.theme}
         travelMode={content.travel_mode}
+        customImageUrl={cover.image_url}
+        imageCredit={
+          cover.image_source === "pexels" ? cover.image_credit : undefined
+        }
+        imageCreditUrl={
+          cover.image_source === "pexels" ? cover.image_credit_url : undefined
+        }
       />
 
       <main className="mx-auto max-w-[760px] px-6 pb-24 sm:px-10">
@@ -378,6 +385,9 @@ function Cover({
   destination,
   theme,
   travelMode,
+  customImageUrl,
+  imageCredit,
+  imageCreditUrl,
 }: {
   title: string;
   subtitle?: string;
@@ -386,8 +396,12 @@ function Cover({
   destination: string;
   theme?: string;
   travelMode?: string;
+  customImageUrl?: string;
+  imageCredit?: string;
+  imageCreditUrl?: string;
 }) {
-  const coverImage = useDestinationCover(destination);
+  const autoImage = useDestinationCover(destination);
+  const coverImage = customImageUrl || autoImage;
   const titleLen = (title || "").length;
   const fontSize =
     titleLen > 22
@@ -417,6 +431,21 @@ function Cover({
             "linear-gradient(to bottom, rgba(0,0,0,0.20) 0%, rgba(15,110,86,0.15) 35%, rgba(15,110,86,0.55) 75%, rgba(15,110,86,0.78) 100%)",
         }}
       />
+
+      {/* Crédit photo Pexels — petit lien discret en bas à gauche */}
+      {imageCredit && (
+        <div className="absolute bottom-2 left-3 z-10">
+          <a
+            href={imageCreditUrl ?? "#"}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-[10px] text-white/55 hover:text-white/85"
+          >
+            Photo : {imageCredit}
+          </a>
+        </div>
+      )}
+
       <div className="relative z-0 flex h-full w-full items-end justify-center pb-[28%] sm:pb-[22%]">
         <div className="mx-auto max-w-3xl px-6 text-center sm:px-10">
           <p className="text-[10.5px] font-semibold uppercase tracking-[0.32em] text-white/75">

@@ -98,6 +98,14 @@ interface Cover {
   subtitle: string;
   tagline: string;
   dates_label: string;
+  /** Photo de couverture personnalisée. Si présente, override la recherche
+   * Pexels automatique sur la destination. URL Pexels ou Supabase Storage. */
+  image_url?: string;
+  /** Source pour le crédit (uniquement pour Pexels — uploads = pas de crédit). */
+  image_source?: "pexels" | "upload";
+  /** Crédit photographe + lien (Pexels uniquement). */
+  image_credit?: string;
+  image_credit_url?: string;
 }
 interface DayPhoto {
   url: string;
@@ -349,6 +357,13 @@ function normalizeRoadbookContent(raw: unknown): Roadbook {
       subtitle: asString(cover.subtitle),
       tagline: asString(cover.tagline),
       dates_label: asString(cover.dates_label),
+      image_url: asString(cover.image_url) || undefined,
+      image_source:
+        cover.image_source === "pexels" || cover.image_source === "upload"
+          ? cover.image_source
+          : undefined,
+      image_credit: asString(cover.image_credit) || undefined,
+      image_credit_url: asString(cover.image_credit_url) || undefined,
     },
     overview: asString(c.overview),
     days,
@@ -1291,15 +1306,20 @@ function RoadbookPage() {
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
       const content = { ...rb! };
-      let coverImageUrl: string | null = null;
-      try {
-        const { fetchDestinationCover } = await import("@/lib/api");
-        const r = await fetchDestinationCover({
-          destination: content.destination || "",
-        });
-        coverImageUrl = r.url;
-      } catch (e) {
-        console.warn("Cover fetch failed (PDF):", e);
+      // Prio à l'image custom choisie par le designer ; fallback Pexels
+      // automatique sur la destination sinon.
+      let coverImageUrl: string | null =
+        content.cover?.image_url || null;
+      if (!coverImageUrl) {
+        try {
+          const { fetchDestinationCover } = await import("@/lib/api");
+          const r = await fetchDestinationCover({
+            destination: content.destination || "",
+          });
+          coverImageUrl = r.url;
+        } catch (e) {
+          console.warn("Cover fetch failed (PDF):", e);
+        }
       }
       const blob = await pdf(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1372,6 +1392,7 @@ function RoadbookPage() {
           destination={rb.destination}
           theme={rb.theme}
           travelMode={rb.travel_mode}
+          roadbookId={id}
           forceEdit={globalEdit}
           onSave={(cover) => persist({ ...rb, cover })}
           onAutoSave={(cover) => updateAndAutosave({ ...rb, cover })}
@@ -2154,6 +2175,7 @@ function CoverSection({
   destination,
   theme,
   travelMode,
+  roadbookId,
   forceEdit,
   onSave,
   onAutoSave,
@@ -2162,6 +2184,7 @@ function CoverSection({
   destination?: string;
   theme?: string;
   travelMode?: string;
+  roadbookId: string;
   forceEdit: boolean;
   onSave: (c: Cover) => void;
   onAutoSave: (c: Cover) => void;
@@ -2170,8 +2193,35 @@ function CoverSection({
   const [draft, setDraft] = useState(cover);
   const [scrollY, setScrollY] = useState(0);
   const [hideHint, setHideHint] = useState(false);
+  const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
   const editing = localEdit || forceEdit;
-  const coverImage = useDestinationCover(destination);
+
+  // Image affichée : image_url stockée en priorité, sinon Pexels auto sur
+  // la destination. Le designer peut changer la photo via le PhotoPicker.
+  const autoCoverImage = useDestinationCover(destination);
+  const coverImage = draft.image_url || autoCoverImage;
+
+  const setCoverImage = (entry: PhotoEntry | null) => {
+    const next: Cover = entry
+      ? {
+          ...draft,
+          image_url: entry.url,
+          image_source: entry.source,
+          image_credit: entry.credit,
+          image_credit_url: entry.credit_url,
+        }
+      : {
+          ...draft,
+          image_url: undefined,
+          image_source: undefined,
+          image_credit: undefined,
+          image_credit_url: undefined,
+        };
+    setDraft(next);
+    // Persist immédiatement — le changement de photo n'est pas un brouillon,
+    // c'est une action explicite via le picker.
+    onAutoSave(next);
+  };
 
   useEffect(() => {
     if (forceEdit) setDraft(cover);
@@ -2205,6 +2255,32 @@ function CoverSection({
   if (editing) {
     return (
       <div className="relative bg-primary px-8 py-20 text-white sm:px-14">
+        {/* Bouton "Photo" toujours visible en édition pour qu'on puisse
+         * changer la cover sans repasser en mode lecture. */}
+        <button
+          type="button"
+          onClick={() => setPhotoPickerOpen(true)}
+          className="absolute left-6 top-6 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[12px] font-medium text-white backdrop-blur-md transition-smooth hover:bg-white/20 sm:left-10"
+          title="Changer la photo de couverture"
+        >
+          <ImageIcon className="h-3.5 w-3.5" />
+          Photo
+        </button>
+
+        <PhotoPicker
+          open={photoPickerOpen}
+          onOpenChange={setPhotoPickerOpen}
+          defaultQuery={destination ?? ""}
+          roadbookId={roadbookId}
+          onConfirm={(photos) => {
+            if (photos.length > 0) {
+              setCoverImage(photos[0]);
+              toast.success("Photo de couverture mise à jour");
+            }
+            setPhotoPickerOpen(false);
+          }}
+        />
+
         {!forceEdit && (
           <div className="absolute right-6 top-6 flex items-center gap-1">
             <Button
@@ -2292,18 +2368,73 @@ function CoverSection({
         }}
       />
 
-      {/* Edit button */}
-      <button
-        type="button"
-        onClick={() => {
-          setDraft(cover);
-          setLocalEdit(true);
+      {/* Edit + Change photo buttons */}
+      <div className="absolute right-6 top-6 z-10 flex items-center gap-2 sm:right-10">
+        <button
+          type="button"
+          onClick={() => setPhotoPickerOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[12px] font-medium text-white backdrop-blur-md transition-smooth hover:bg-white/20"
+          title="Changer la photo de couverture"
+        >
+          <ImageIcon className="h-3.5 w-3.5" />
+          Photo
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setDraft(cover);
+            setLocalEdit(true);
+          }}
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[12px] font-medium text-white backdrop-blur-md transition-smooth hover:bg-white/20"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Modifier
+        </button>
+      </div>
+
+      {/* Photo picker modal */}
+      <PhotoPicker
+        open={photoPickerOpen}
+        onOpenChange={setPhotoPickerOpen}
+        defaultQuery={destination ?? ""}
+        roadbookId={roadbookId}
+        onConfirm={(photos) => {
+          if (photos.length > 0) {
+            setCoverImage(photos[0]);
+            toast.success("Photo de couverture mise à jour");
+          }
+          setPhotoPickerOpen(false);
         }}
-        className="absolute right-6 top-6 z-10 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[12px] font-medium text-white backdrop-blur-md transition-smooth hover:bg-white/20 sm:right-10"
-      >
-        <Pencil className="h-3.5 w-3.5" />
-        Modifier
-      </button>
+      />
+
+      {/* Petit bandeau crédit Pexels (uniquement si photo Pexels) */}
+      {draft.image_source === "pexels" && draft.image_credit && (
+        <div className="absolute bottom-3 left-4 z-10">
+          <a
+            href={draft.image_credit_url ?? "#"}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-[10px] text-white/60 hover:text-white/90"
+          >
+            Photo : {draft.image_credit}
+          </a>
+        </div>
+      )}
+
+      {/* Bouton "Reset auto" si une image custom est définie */}
+      {draft.image_url && (
+        <button
+          type="button"
+          onClick={() => {
+            setCoverImage(null);
+            toast.success("Photo de couverture remise par défaut");
+          }}
+          className="absolute bottom-3 right-4 z-10 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-medium text-white/80 backdrop-blur-md transition hover:bg-white/20 hover:text-white"
+          title="Revenir à la photo automatique de la destination"
+        >
+          Photo auto
+        </button>
+      )}
 
       {/* Content — centered vertically at ~60% */}
       <div className="relative z-0 flex h-full w-full items-end justify-center pb-[28%] sm:pb-[22%]">
