@@ -254,6 +254,10 @@ function Login() {
                     : "Connectez-vous via lien magique ou mot de passe."}
                 </p>
 
+                <div className="mt-6">
+                  <GoogleButton />
+                </div>
+
                 {/* Tabs Magic link / Password */}
                 <div className="mt-6 flex border-b border-border/60">
                   <button
