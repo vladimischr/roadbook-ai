@@ -2,23 +2,47 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { withSchemaRetry } from "@/lib/supabaseRetry.server";
+import { rateLimit, rateLimitedResponse } from "@/lib/rate-limit.server";
 
 // ============================================================================
 // /api/brief-submit — le client envoie ses réponses (endpoint public via token)
 // ============================================================================
+// Rate-limit anti-DOS : 10 soumissions/min par IP (un user normal en envoie
+// une seule par brief). Le payload `answers` est borné à des types simples
+// via zod, mais le rate-limit empêche un spammer de remplir la table briefs
+// avec des updates massifs.
+
+const MAX_ANSWER_STRING_LENGTH = 4000;
 
 const inputSchema = z.object({
   token: z.string().min(16).max(64),
   answers: z.record(
-    z.string(),
-    z.union([z.string(), z.array(z.string()), z.number(), z.null()]),
+    z.string().max(64),
+    z.union([
+      z.string().max(MAX_ANSWER_STRING_LENGTH),
+      z.array(z.string().max(MAX_ANSWER_STRING_LENGTH)).max(50),
+      z.number(),
+      z.null(),
+    ]),
   ),
 });
+
+function getClientIp(request: Request): string {
+  return (
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    "unknown"
+  );
+}
 
 export const Route = createFileRoute("/api/brief-submit")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const ip = getClientIp(request);
+        const rl = rateLimit(`brief-submit:${ip}`, 10, 60_000);
+        if (!rl.ok) return rateLimitedResponse(rl.retryAfterSec ?? 60);
+
         let body: unknown;
         try {
           body = await request.json();

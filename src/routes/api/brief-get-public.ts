@@ -1,17 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { withSchemaRetry } from "@/lib/supabaseRetry.server";
+import { rateLimit, rateLimitedResponse } from "@/lib/rate-limit.server";
 
 // ============================================================================
 // /api/brief-get-public?token=XXX — endpoint public pour la page formulaire
 // ============================================================================
 // Retourne juste les infos affichables (nom du designer, agence, hint dest).
 // Pas de policy RLS, donc on passe par supabaseAdmin et on filtre nous-même.
+//
+// Rate-limit anti-DOS / anti-énumération : 30 req/min par IP. Le token
+// (24 chars base32 = 31^24 combinaisons) est cryptographiquement non
+// brute-forçable — ce limit empêche juste le spam abusif.
+
+function getClientIp(request: Request): string {
+  return (
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    "unknown"
+  );
+}
 
 export const Route = createFileRoute("/api/brief-get-public")({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        const ip = getClientIp(request);
+        const rl = rateLimit(`brief-get:${ip}`, 30, 60_000);
+        if (!rl.ok) return rateLimitedResponse(rl.retryAfterSec ?? 30);
+
         const url = new URL(request.url);
         const token = url.searchParams.get("token");
         if (!token || token.length < 16 || token.length > 64) {

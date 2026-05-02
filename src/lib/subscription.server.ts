@@ -131,11 +131,14 @@ export async function getUserSubscriptionInfo(
       ? null
       : Math.max(0, chatCreditsLimit - chatCreditsUsed);
 
-  // Status check global (paiement échoué bloque tout)
-  const statusOk =
-    planStatus === "active" ||
-    planStatus === "trialing" ||
-    planStatus === "canceled";
+  // Status check global (paiement échoué ou abonnement annulé bloque tout).
+  // On accepte uniquement "active" et "trialing" comme statuts vivants. Un
+  // user passé "canceled" verra son plan_key remis à "free" par le webhook
+  // customer.subscription.deleted — il tombera donc naturellement sur les
+  // quotas du plan free (toujours canGenerate=true tant que < 2 roadbooks).
+  // Pour un user "free" sans abonnement Stripe, planStatus est "active" par
+  // défaut (set à la création du profil), donc ça marche aussi.
+  const statusOk = planStatus === "active" || planStatus === "trialing";
 
   const canGenerate =
     statusOk && (roadbooksLimit === null || roadbooksUsed < roadbooksLimit);

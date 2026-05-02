@@ -5,6 +5,15 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getUserSubscriptionInfo, logAiAction } from "@/lib/subscription.server";
 import { rateLimit, rateLimitedResponse } from "@/lib/rate-limit.server";
 
+// Logs de debug — désactivés par défaut pour ne pas leaker en prod les inputs
+// utilisateurs (noms de clients, destinations) dans les logs Cloudflare.
+// Active avec DEBUG_GENERATE=1 dans les secrets Lovable pour debugger.
+const DEBUG = process.env.DEBUG_GENERATE === "1";
+function debug(...args: unknown[]) {
+  // eslint-disable-next-line no-console
+  if (DEBUG) console.log(...args);
+}
+
 // Schéma Zod aligné sur RoadbookFormData (côté client) — refuse les payloads
 // invalides AVANT d'appeler Anthropic, pour ne pas brûler du quota sur du
 // garbage. Bornes strictes (longueurs max) pour éviter les attaques par
@@ -76,7 +85,7 @@ export const Route = createFileRoute("/api/generate-roadbook")({
       POST: async ({ request }) => {
         try {
           const apiKey = process.env.ANTHROPIC_API_KEY;
-          console.log(
+          debug(
             "[generate-roadbook] ANTHROPIC_API_KEY présente:",
             !!process.env.ANTHROPIC_API_KEY,
           );
@@ -156,7 +165,7 @@ export const Route = createFileRoute("/api/generate-roadbook")({
             );
           }
           const formData = parsed.data;
-          console.log(
+          debug(
             "[generate-roadbook] Reçu form:",
             JSON.stringify(formData),
           );
@@ -194,11 +203,11 @@ ${formData.generation_mode === "manual" && formData.manual_steps ? `- Étapes im
 Génère le roadbook complet en JSON conforme à la structure définie dans ton system prompt. Réponds UNIQUEMENT avec le JSON, démarrant directement par {.`;
           void inputs;
 
-          console.log(
+          debug(
             "[generate-roadbook] System prompt longueur:",
             ROADBOOK_SYSTEM_PROMPT.length,
           );
-          console.log("[generate-roadbook] Appel Claude...");
+          debug("[generate-roadbook] Appel Claude...");
           const t0 = Date.now();
           const resp = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
@@ -217,7 +226,7 @@ Génère le roadbook complet en JSON conforme à la structure définie dans ton 
               ],
             }),
           });
-          console.log(
+          debug(
             "[generate-roadbook] Anthropic responded in",
             Date.now() - t0,
             "ms status:",
@@ -239,7 +248,7 @@ Génère le roadbook complet en JSON conforme à la structure définie dans ton 
             );
           }
 
-          console.log("[generate-roadbook] Réponse Claude reçue, parsing...");
+          debug("[generate-roadbook] Réponse Claude reçue, parsing...");
           const data = await resp.json();
 
           if (data?.stop_reason === "max_tokens") {
@@ -259,14 +268,14 @@ Génère le roadbook complet en JSON conforme à la structure définie dans ton 
             data?.content?.[0]?.text ??
             data?.content?.map?.((c: any) => c.text).join("\n") ??
             "";
-          console.log(
+          debug(
             "[generate-roadbook] Texte brut Claude (300 premiers chars):",
             rawText.substring(0, 300),
           );
 
           rawText = cleanClaudeJsonText(rawText);
 
-          console.log(
+          debug(
             "[generate-roadbook] Texte nettoyé prêt à parser (200 premiers chars):",
             rawText.substring(0, 200),
           );

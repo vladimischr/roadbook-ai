@@ -280,14 +280,15 @@ function NewRoadbook() {
 
       // Si on est arrivé depuis un brief client, on le marque comme utilisé
       // et on lie le roadbook fraîchement créé. Pas bloquant si l'appel
-      // échoue — le roadbook est déjà sauvegardé.
+      // échoue — le roadbook est déjà sauvegardé. On log explicitement les
+      // 4xx/5xx pour pouvoir débugger si la timeline du client est incohérente.
       if (briefPrefilled) {
         try {
           const {
             data: { session: s },
           } = await supabase.auth.getSession();
           if (s?.access_token) {
-            await fetch("/api/brief-mark-used", {
+            const markRes = await fetch("/api/brief-mark-used", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -298,6 +299,13 @@ function NewRoadbook() {
                 roadbook_id: data.id,
               }),
             });
+            if (!markRes.ok) {
+              const errText = await markRes.text().catch(() => "");
+              console.warn(
+                `[new] brief-mark-used returned ${markRes.status}:`,
+                errText,
+              );
+            }
           }
         } catch (e) {
           console.warn("[new] brief-mark-used failed:", e);
