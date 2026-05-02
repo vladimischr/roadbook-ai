@@ -11,6 +11,7 @@ import {
   UserCircle2,
   ShieldCheck,
   Send,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut, useAuth } from "@/lib/auth";
@@ -51,6 +52,7 @@ export function useFocusMode() {
 const NAV_ITEMS = [
   { to: "/dashboard" as const, label: "Vos roadbooks", icon: BookOpen },
   { to: "/new" as const, label: "Nouveau", icon: Plus },
+  { to: "/clients" as const, label: "Clients", icon: Users },
   { to: "/briefs" as const, label: "Briefs clients", icon: Send },
 ];
 
@@ -279,7 +281,8 @@ type SidebarLinkPath =
   | "/billing"
   | "/profil"
   | "/admin"
-  | "/briefs";
+  | "/briefs"
+  | "/clients";
 
 function SidebarLink({
   to,
@@ -383,6 +386,22 @@ function DefaultBreadcrumb({ path }: { path: string }) {
         items={[
           { label: "Vos roadbooks", to: "/dashboard" },
           { label: "Briefs clients" },
+        ]}
+      />
+    );
+  }
+  if (path.startsWith("/clients")) {
+    const isDetail = path.length > "/clients".length;
+    return (
+      <BreadcrumbLine
+        items={[
+          { label: "Vos roadbooks", to: "/dashboard" },
+          ...(isDetail
+            ? [
+                { label: "Clients", to: "/clients" as const },
+                { label: "Fiche" },
+              ]
+            : [{ label: "Clients" }]),
         ]}
       />
     );

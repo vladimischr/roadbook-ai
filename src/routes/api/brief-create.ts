@@ -11,6 +11,7 @@ const inputSchema = z.object({
   client_name: z.string().max(120).optional().nullable(),
   client_email: z.string().email().max(200).optional().nullable(),
   destination_hint: z.string().max(200).optional().nullable(),
+  client_id: z.string().uuid().optional().nullable(),
 });
 
 export const Route = createFileRoute("/api/brief-create")({
@@ -56,9 +57,10 @@ export const Route = createFileRoute("/api/brief-create")({
               client_name: parsed.data.client_name ?? null,
               client_email: parsed.data.client_email ?? null,
               destination_hint: parsed.data.destination_hint ?? null,
+              client_id: parsed.data.client_id ?? null,
               status: "pending",
               answers: {},
-            })
+            } as any)
             .select("id, token")
             .single(),
         );

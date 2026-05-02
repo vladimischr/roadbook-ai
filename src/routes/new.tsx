@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Trash2, Sparkles, PenLine, ChevronDown, Check, Upload, Send } from "lucide-react";
+import { Loader2, Plus, Trash2, Sparkles, PenLine, ChevronDown, Check, Upload, Send, UserCircle2 as UserCircle2Icon } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { composePromptFromBrief } from "@/lib/briefQuestions";
 
 interface NewSearch {
   brief_id?: string;
+  client_id?: string;
 }
 
 export const Route = createFileRoute("/new")({
@@ -25,6 +26,8 @@ export const Route = createFileRoute("/new")({
   validateSearch: (search: Record<string, unknown>): NewSearch => ({
     brief_id:
       typeof search.brief_id === "string" ? search.brief_id : undefined,
+    client_id:
+      typeof search.client_id === "string" ? search.client_id : undefined,
   }),
 });
 
@@ -84,6 +87,10 @@ function NewRoadbook() {
     id: string;
     clientName: string | null;
   } | null>(null);
+  const [linkedClient, setLinkedClient] = useState<{
+    id: string;
+    display_name: string;
+  } | null>(null);
 
   const [form, setForm] = useState<RoadbookFormData>({
     client_name: "",
@@ -102,6 +109,30 @@ function NewRoadbook() {
 
   const update = <K extends keyof RoadbookFormData>(k: K, v: RoadbookFormData[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  // Si on arrive avec ?client_id=xxx (depuis la fiche client), on pré-remplit
+  // client_name et on garde l'id pour l'attacher au roadbook créé.
+  useEffect(() => {
+    if (!search.client_id || !user || linkedClient) return;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) return;
+      const res = await fetch(
+        `/api/client-get?id=${encodeURIComponent(search.client_id!)}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.client) return;
+      setLinkedClient({
+        id: data.client.id,
+        display_name: data.client.display_name,
+      });
+      setForm((f) => ({ ...f, client_name: data.client.display_name }));
+    })();
+  }, [search.client_id, user, linkedClient]);
 
   // Si on arrive avec ?brief_id=xxx, on pré-remplit le formulaire IA depuis
   // les réponses du client. Le designer voit tout le brief composé dans
@@ -224,6 +255,7 @@ function NewRoadbook() {
         .from("roadbooks")
         .insert({
           user_id: user.id,
+          client_id: linkedClient?.id ?? null,
           client_name: clientName,
           destination,
           start_date: startDate,
@@ -236,7 +268,7 @@ function NewRoadbook() {
           agent_notes: form.agent_notes || null,
           content: roadbook as any,
           status: "ready",
-        })
+        } as any)
         .select("id")
         .single();
 
@@ -326,6 +358,20 @@ function NewRoadbook() {
                 <p className="mt-0.5 text-muted-foreground">
                   Les réponses ont été composées dans le brief IA ci-dessous.
                   Tu peux ajuster avant de générer.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {linkedClient && !briefPrefilled && (
+            <div className="mt-6 flex items-start gap-3 rounded-xl border border-accent-warm/30 bg-accent-warm-soft px-5 py-4">
+              <UserCircle2Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent-warm" />
+              <div className="flex-1 text-[13.5px] leading-relaxed">
+                <p className="font-medium text-foreground">
+                  Roadbook pour {linkedClient.display_name}
+                </p>
+                <p className="mt-0.5 text-muted-foreground">
+                  Ce voyage sera automatiquement attaché à sa fiche client.
                 </p>
               </div>
             </div>

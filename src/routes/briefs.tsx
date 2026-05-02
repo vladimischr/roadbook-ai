@@ -2,6 +2,7 @@ import {
   createFileRoute,
   Link,
   useNavigate,
+  useSearch,
 } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -40,9 +41,17 @@ import { BRIEF_QUESTIONS } from "@/lib/briefQuestions";
 // /briefs — page designer pour gérer les briefs envoyés aux clients
 // ============================================================================
 
+interface BriefsSearch {
+  client_id?: string;
+}
+
 export const Route = createFileRoute("/briefs")({
   component: BriefsPage,
   head: () => ({ meta: [{ title: "Briefs clients — Roadbook.ai" }] }),
+  validateSearch: (search: Record<string, unknown>): BriefsSearch => ({
+    client_id:
+      typeof search.client_id === "string" ? search.client_id : undefined,
+  }),
 });
 
 interface Brief {
@@ -61,12 +70,43 @@ interface Brief {
 function BriefsPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const search = useSearch({ from: "/briefs" }) as BriefsSearch;
   const [briefs, setBriefs] = useState<Brief[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState<Brief | null>(null);
   const [detailOpen, setDetailOpen] = useState<Brief | null>(null);
+  const [prefillClient, setPrefillClient] = useState<{
+    id: string;
+    display_name: string;
+    email: string | null;
+  } | null>(null);
+
+  // Si on arrive avec ?client_id=xxx (depuis la fiche client), on ouvre direct
+  // le dialog de création pré-rempli avec ses infos.
+  useEffect(() => {
+    if (!search.client_id || !user || prefillClient) return;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) return;
+      const res = await fetch(
+        `/api/client-get?id=${encodeURIComponent(search.client_id!)}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.client) return;
+      setPrefillClient({
+        id: data.client.id,
+        display_name: data.client.display_name,
+        email: data.client.email,
+      });
+      setCreateOpen(true);
+    })();
+  }, [search.client_id, user, prefillClient]);
 
   const refresh = async () => {
     const {
@@ -117,6 +157,7 @@ function BriefsPage() {
         client_name: form.client_name || null,
         client_email: form.client_email || null,
         destination_hint: form.destination_hint || null,
+        client_id: prefillClient?.id ?? null,
       }),
     });
     const data = await res.json().catch(() => null);
@@ -246,9 +287,13 @@ function BriefsPage() {
 
       <CreateBriefDialog
         open={createOpen}
-        onOpenChange={setCreateOpen}
+        onOpenChange={(o) => {
+          setCreateOpen(o);
+          if (!o) setPrefillClient(null);
+        }}
         onSubmit={handleCreate}
         submitting={creating}
+        prefill={prefillClient}
       />
 
       <ShareBriefDialog
@@ -467,6 +512,7 @@ function CreateBriefDialog({
   onOpenChange,
   onSubmit,
   submitting,
+  prefill,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -476,6 +522,7 @@ function CreateBriefDialog({
     destination_hint: string;
   }) => void;
   submitting: boolean;
+  prefill?: { id: string; display_name: string; email: string | null } | null;
 }) {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -486,8 +533,11 @@ function CreateBriefDialog({
       setClientName("");
       setClientEmail("");
       setDestHint("");
+    } else if (prefill) {
+      setClientName(prefill.display_name);
+      setClientEmail(prefill.email ?? "");
     }
-  }, [open]);
+  }, [open, prefill]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

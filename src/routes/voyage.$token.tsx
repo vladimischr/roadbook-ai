@@ -18,6 +18,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useDestinationCover } from "@/lib/useDestinationCover";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 // ============================================================================
 // /voyage/{token} — vue publique d'un roadbook (lien envoyé au voyageur)
@@ -29,7 +30,7 @@ import { useDestinationCover } from "@/lib/useDestinationCover";
 
 export const Route = createFileRoute("/voyage/$token")({
   component: VoyagePublic,
-  head: () => ({
+  head: ({ params }) => ({
     meta: [
       { title: "Votre carnet de voyage" },
       {
@@ -40,6 +41,27 @@ export const Route = createFileRoute("/voyage/$token")({
       // Empêche l'indexation : ces liens contiennent des données personnelles
       // (noms de clients, contacts), ils ne doivent pas finir sur Google.
       { name: "robots", content: "noindex, nofollow" },
+      // PWA — apparence quand installée sur écran d'accueil iOS
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      {
+        name: "apple-mobile-web-app-status-bar-style",
+        content: "black-translucent",
+      },
+      { name: "apple-mobile-web-app-title", content: "Carnet de voyage" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+    ],
+    links: [
+      // Manifest dynamique : nom = destination, couleur = brand agence
+      {
+        rel: "manifest",
+        href: `/api/voyage-manifest?token=${encodeURIComponent(params.token)}`,
+      },
+      // Apple touch icon : SVG dynamique avec initiale agence + brand color
+      {
+        rel: "apple-touch-icon",
+        href: `/api/voyage-icon?token=${encodeURIComponent(params.token)}&size=192`,
+      },
     ],
   }),
 });
@@ -109,6 +131,16 @@ function VoyagePublic() {
     });
   }, [token]);
 
+  // Enregistrement du Service Worker pour mode offline. Scope limité à
+  // /voyage/ pour ne pas interférer avec les pages designer.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker
+      .register("/sw-voyage.js", { scope: "/voyage/" })
+      .catch((err) => console.warn("[voyage] SW registration failed:", err));
+  }, []);
+
   if (loading) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
@@ -121,7 +153,15 @@ function VoyagePublic() {
     return <ErrorState message={error || "Roadbook introuvable"} />;
   }
 
-  return <RoadbookView roadbook={roadbook} />;
+  // brand color de l'agence (si dispo dans content) pour styliser le prompt PWA
+  const brand = (roadbook.content?.brand_color as string | undefined) ?? undefined;
+
+  return (
+    <>
+      <RoadbookView roadbook={roadbook} />
+      <PWAInstallPrompt brand={brand} />
+    </>
+  );
 }
 
 /* ---------- Error state ---------- */
