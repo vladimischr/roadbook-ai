@@ -14,10 +14,273 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          credits_consumed: number
+          id: string
+          metadata: Json | null
+          roadbook_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          credits_consumed?: number
+          id?: string
+          metadata?: Json | null
+          roadbook_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          credits_consumed?: number
+          id?: string
+          metadata?: Json | null
+          roadbook_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_actions_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbook_view_stats"
+            referencedColumns: ["roadbook_id"]
+          },
+          {
+            foreignKeyName: "ai_actions_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefs: {
+        Row: {
+          answers: Json
+          client_email: string | null
+          client_id: string | null
+          client_name: string | null
+          completed_at: string | null
+          created_at: string
+          designer_id: string
+          destination_hint: string | null
+          id: string
+          roadbook_id: string | null
+          status: string
+          token: string
+        }
+        Insert: {
+          answers?: Json
+          client_email?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          completed_at?: string | null
+          created_at?: string
+          designer_id: string
+          destination_hint?: string | null
+          id?: string
+          roadbook_id?: string | null
+          status?: string
+          token: string
+        }
+        Update: {
+          answers?: Json
+          client_email?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          completed_at?: string | null
+          created_at?: string
+          designer_id?: string
+          destination_hint?: string | null
+          id?: string
+          roadbook_id?: string | null
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefs_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbook_view_stats"
+            referencedColumns: ["roadbook_id"]
+          },
+          {
+            foreignKeyName: "briefs_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          display_name: string
+          email: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          tags: string[]
+          updated_at: string
+          user_id: string
+          vip: boolean
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          display_name: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          tags?: string[]
+          updated_at?: string
+          user_id: string
+          vip?: boolean
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+          vip?: boolean
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          agency_logo_url: string | null
+          agency_name: string | null
+          avatar_url: string | null
+          brand_color: string | null
+          cancel_at: string | null
+          created_at: string
+          current_period_end: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          plan_key: string
+          plan_status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          agency_logo_url?: string | null
+          agency_name?: string | null
+          avatar_url?: string | null
+          brand_color?: string | null
+          cancel_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          display_name?: string | null
+          email?: string | null
+          id: string
+          phone?: string | null
+          plan_key?: string
+          plan_status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          agency_logo_url?: string | null
+          agency_name?: string | null
+          avatar_url?: string | null
+          brand_color?: string | null
+          cancel_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          plan_key?: string
+          plan_status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      roadbook_views: {
+        Row: {
+          created_at: string
+          device_type: string | null
+          id: string
+          referrer: string | null
+          roadbook_id: string
+          viewed_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          referrer?: string | null
+          roadbook_id: string
+          viewed_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          referrer?: string | null
+          roadbook_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadbook_views_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbook_view_stats"
+            referencedColumns: ["roadbook_id"]
+          },
+          {
+            foreignKeyName: "roadbook_views_roadbook_id_fkey"
+            columns: ["roadbook_id"]
+            isOneToOne: false
+            referencedRelation: "roadbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roadbooks: {
         Row: {
           agent_notes: string | null
           budget_range: string | null
+          client_id: string | null
           client_name: string
           content: Json | null
           created_at: string
@@ -25,7 +288,7 @@ export type Database = {
           end_date: string | null
           generation_mode: string
           id: string
-          share_token: string
+          share_token: string | null
           start_date: string | null
           status: string
           theme: string | null
@@ -37,6 +300,7 @@ export type Database = {
         Insert: {
           agent_notes?: string | null
           budget_range?: string | null
+          client_id?: string | null
           client_name: string
           content?: Json | null
           created_at?: string
@@ -44,7 +308,7 @@ export type Database = {
           end_date?: string | null
           generation_mode?: string
           id?: string
-          share_token?: string
+          share_token?: string | null
           start_date?: string | null
           status?: string
           theme?: string | null
@@ -56,6 +320,7 @@ export type Database = {
         Update: {
           agent_notes?: string | null
           budget_range?: string | null
+          client_id?: string | null
           client_name?: string
           content?: Json | null
           created_at?: string
@@ -63,7 +328,7 @@ export type Database = {
           end_date?: string | null
           generation_mode?: string
           id?: string
-          share_token?: string
+          share_token?: string | null
           start_date?: string | null
           status?: string
           theme?: string | null
@@ -72,77 +337,52 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          id: string
-          email: string | null
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
-          plan_key: string
-          plan_status: string
-          current_period_end: string | null
-          trial_ends_at: string | null
-          cancel_at: string | null
-          display_name: string | null
-          agency_name: string | null
-          phone: string | null
-          website: string | null
-          avatar_url: string | null
-          agency_logo_url: string | null
-          brand_color: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id: string
-          email?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          plan_key?: string
-          plan_status?: string
-          current_period_end?: string | null
-          trial_ends_at?: string | null
-          cancel_at?: string | null
-          display_name?: string | null
-          agency_name?: string | null
-          phone?: string | null
-          website?: string | null
-          avatar_url?: string | null
-          agency_logo_url?: string | null
-          brand_color?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          plan_key?: string
-          plan_status?: string
-          current_period_end?: string | null
-          trial_ends_at?: string | null
-          cancel_at?: string | null
-          display_name?: string | null
-          agency_name?: string | null
-          phone?: string | null
-          website?: string | null
-          avatar_url?: string | null
-          agency_logo_url?: string | null
-          brand_color?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "roadbooks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
-      [_ in never]: never
+      roadbook_view_stats: {
+        Row: {
+          desktop_count: number | null
+          last_viewed_at: string | null
+          mobile_count: number | null
+          roadbook_id: string | null
+          user_id: string | null
+          view_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_shared_roadbook: {
+        Args: { p_token: string }
+        Returns: {
+          budget_range: string
+          client_name: string
+          content: Json
+          destination: string
+          end_date: string
+          id: string
+          start_date: string
+          status: string
+          theme: string
+          traveler_profile: string
+          travelers_count: number
+          updated_at: string
+        }[]
+      }
+      regenerate_share_token: {
+        Args: { p_roadbook_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
