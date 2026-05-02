@@ -30,7 +30,10 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/clients")({
+// Index du dossier `clients/` → URL `/clients`. Note le slash final dans
+// l'ID de route, c'est la convention TanStack pour les fichiers index dans
+// un dossier.
+export const Route = createFileRoute("/clients/")({
   component: ClientsPage,
   head: () => ({ meta: [{ title: "Clients — Roadbook.ai" }] }),
 });

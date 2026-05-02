@@ -42,6 +42,10 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// Folder-based routing : `clients/index.tsx` = /clients (liste),
+// `clients/$id.tsx` = /clients/$id (détail). Pas de hiérarchie parent-enfant
+// puisque le dossier `clients/` n'a pas de fichier `route.tsx` qui définirait
+// un layout commun.
 export const Route = createFileRoute("/clients/$id")({
   component: ClientDetailPage,
   head: () => ({ meta: [{ title: "Fiche client — Roadbook.ai" }] }),
