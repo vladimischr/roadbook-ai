@@ -9,20 +9,78 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ProfilRouteImport } from './routes/profil'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as NewRouteImport } from './routes/new'
+import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
+import { Route as CguRouteImport } from './routes/cgu'
+import { Route as BriefsRouteImport } from './routes/briefs'
+import { Route as BillingRouteImport } from './routes/billing'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ClientsIndexRouteImport } from './routes/clients/index'
+import { Route as VoyageTokenRouteImport } from './routes/voyage.$token'
 import { Route as RoadbookPreviewMockRouteImport } from './routes/roadbook.preview-mock'
 import { Route as RoadbookIdRouteImport } from './routes/roadbook.$id'
+import { Route as ClientsIdRouteImport } from './routes/clients/$id'
+import { Route as BriefTokenRouteImport } from './routes/brief.$token'
+import { Route as ApiVoyageManifestRouteImport } from './routes/api/voyage-manifest'
+import { Route as ApiVoyageIconRouteImport } from './routes/api/voyage-icon'
+import { Route as ApiTrackViewRouteImport } from './routes/api/track-view'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe-webhook'
+import { Route as ApiStripeResyncRouteImport } from './routes/api/stripe-resync'
+import { Route as ApiStripePortalRouteImport } from './routes/api/stripe-portal'
+import { Route as ApiStripeCheckoutRouteImport } from './routes/api/stripe-checkout'
+import { Route as ApiSharedRoadbookRouteImport } from './routes/api/shared-roadbook'
 import { Route as ApiRecomputeRoadbookRouteImport } from './routes/api/recompute-roadbook'
-import { Route as ApiImportRoadbookRouteImport } from './routes/api/import-roadbook'
-import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
+import { Route as ApiPexelsSearchRouteImport } from './routes/api/pexels-search'
+import { Route as ApiMeSubscriptionRouteImport } from './routes/api/me-subscription'
 import { Route as ApiMapsKeyRouteImport } from './routes/api/maps-key'
+import { Route as ApiImportRoadbookRouteImport } from './routes/api/import-roadbook'
+import { Route as ApiGeocodePlaceRouteImport } from './routes/api/geocode-place'
+import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
+import { Route as ApiDirectionsSegmentRouteImport } from './routes/api/directions-segment'
+import { Route as ApiDestinationCoverRouteImport } from './routes/api/destination-cover'
+import { Route as ApiClientUpdateRouteImport } from './routes/api/client-update'
+import { Route as ApiClientListRouteImport } from './routes/api/client-list'
+import { Route as ApiClientGetRouteImport } from './routes/api/client-get'
+import { Route as ApiClientDeleteRouteImport } from './routes/api/client-delete'
+import { Route as ApiClientCreateRouteImport } from './routes/api/client-create'
+import { Route as ApiChatRoadbookRouteImport } from './routes/api/chat-roadbook'
+import { Route as ApiBriefSubmitRouteImport } from './routes/api/brief-submit'
+import { Route as ApiBriefMarkUsedRouteImport } from './routes/api/brief-mark-used'
+import { Route as ApiBriefListRouteImport } from './routes/api/brief-list'
+import { Route as ApiBriefGetPublicRouteImport } from './routes/api/brief-get-public'
+import { Route as ApiBriefCreateRouteImport } from './routes/api/brief-create'
+import { Route as ApiAdminUsersRouteImport } from './routes/api/admin-users'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilRoute = ProfilRouteImport.update({
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
+  id: '/mentions-legales',
+  path: '/mentions-legales',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -35,9 +93,44 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
+  id: '/confidentialite',
+  path: '/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CguRoute = CguRouteImport.update({
+  id: '/cgu',
+  path: '/cgu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BriefsRoute = BriefsRouteImport.update({
+  id: '/briefs',
+  path: '/briefs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillingRoute = BillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsIndexRoute = ClientsIndexRouteImport.update({
+  id: '/clients/',
+  path: '/clients/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VoyageTokenRoute = VoyageTokenRouteImport.update({
+  id: '/voyage/$token',
+  path: '/voyage/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RoadbookPreviewMockRoute = RoadbookPreviewMockRouteImport.update({
@@ -50,19 +143,69 @@ const RoadbookIdRoute = RoadbookIdRouteImport.update({
   path: '/roadbook/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientsIdRoute = ClientsIdRouteImport.update({
+  id: '/clients/$id',
+  path: '/clients/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BriefTokenRoute = BriefTokenRouteImport.update({
+  id: '/brief/$token',
+  path: '/brief/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVoyageManifestRoute = ApiVoyageManifestRouteImport.update({
+  id: '/api/voyage-manifest',
+  path: '/api/voyage-manifest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVoyageIconRoute = ApiVoyageIconRouteImport.update({
+  id: '/api/voyage-icon',
+  path: '/api/voyage-icon',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTrackViewRoute = ApiTrackViewRouteImport.update({
+  id: '/api/track-view',
+  path: '/api/track-view',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe-webhook',
+  path: '/api/stripe-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeResyncRoute = ApiStripeResyncRouteImport.update({
+  id: '/api/stripe-resync',
+  path: '/api/stripe-resync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripePortalRoute = ApiStripePortalRouteImport.update({
+  id: '/api/stripe-portal',
+  path: '/api/stripe-portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeCheckoutRoute = ApiStripeCheckoutRouteImport.update({
+  id: '/api/stripe-checkout',
+  path: '/api/stripe-checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSharedRoadbookRoute = ApiSharedRoadbookRouteImport.update({
+  id: '/api/shared-roadbook',
+  path: '/api/shared-roadbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRecomputeRoadbookRoute = ApiRecomputeRoadbookRouteImport.update({
   id: '/api/recompute-roadbook',
   path: '/api/recompute-roadbook',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiImportRoadbookRoute = ApiImportRoadbookRouteImport.update({
-  id: '/api/import-roadbook',
-  path: '/api/import-roadbook',
+const ApiPexelsSearchRoute = ApiPexelsSearchRouteImport.update({
+  id: '/api/pexels-search',
+  path: '/api/pexels-search',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiGenerateRoadbookRoute = ApiGenerateRoadbookRouteImport.update({
-  id: '/api/generate-roadbook',
-  path: '/api/generate-roadbook',
+const ApiMeSubscriptionRoute = ApiMeSubscriptionRouteImport.update({
+  id: '/api/me-subscription',
+  path: '/api/me-subscription',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMapsKeyRoute = ApiMapsKeyRouteImport.update({
@@ -70,97 +213,482 @@ const ApiMapsKeyRoute = ApiMapsKeyRouteImport.update({
   path: '/api/maps-key',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiImportRoadbookRoute = ApiImportRoadbookRouteImport.update({
+  id: '/api/import-roadbook',
+  path: '/api/import-roadbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGeocodePlaceRoute = ApiGeocodePlaceRouteImport.update({
+  id: '/api/geocode-place',
+  path: '/api/geocode-place',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGenerateRoadbookRoute = ApiGenerateRoadbookRouteImport.update({
+  id: '/api/generate-roadbook',
+  path: '/api/generate-roadbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDirectionsSegmentRoute = ApiDirectionsSegmentRouteImport.update({
+  id: '/api/directions-segment',
+  path: '/api/directions-segment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDestinationCoverRoute = ApiDestinationCoverRouteImport.update({
+  id: '/api/destination-cover',
+  path: '/api/destination-cover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiClientUpdateRoute = ApiClientUpdateRouteImport.update({
+  id: '/api/client-update',
+  path: '/api/client-update',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiClientListRoute = ApiClientListRouteImport.update({
+  id: '/api/client-list',
+  path: '/api/client-list',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiClientGetRoute = ApiClientGetRouteImport.update({
+  id: '/api/client-get',
+  path: '/api/client-get',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiClientDeleteRoute = ApiClientDeleteRouteImport.update({
+  id: '/api/client-delete',
+  path: '/api/client-delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiClientCreateRoute = ApiClientCreateRouteImport.update({
+  id: '/api/client-create',
+  path: '/api/client-create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatRoadbookRoute = ApiChatRoadbookRouteImport.update({
+  id: '/api/chat-roadbook',
+  path: '/api/chat-roadbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBriefSubmitRoute = ApiBriefSubmitRouteImport.update({
+  id: '/api/brief-submit',
+  path: '/api/brief-submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBriefMarkUsedRoute = ApiBriefMarkUsedRouteImport.update({
+  id: '/api/brief-mark-used',
+  path: '/api/brief-mark-used',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBriefListRoute = ApiBriefListRouteImport.update({
+  id: '/api/brief-list',
+  path: '/api/brief-list',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBriefGetPublicRoute = ApiBriefGetPublicRouteImport.update({
+  id: '/api/brief-get-public',
+  path: '/api/brief-get-public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBriefCreateRoute = ApiBriefCreateRouteImport.update({
+  id: '/api/brief-create',
+  path: '/api/brief-create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
+  id: '/api/admin-users',
+  path: '/api/admin-users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/billing': typeof BillingRoute
+  '/briefs': typeof BriefsRoute
+  '/cgu': typeof CguRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/new': typeof NewRoute
+  '/pricing': typeof PricingRoute
+  '/profil': typeof ProfilRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/api/admin-users': typeof ApiAdminUsersRoute
+  '/api/brief-create': typeof ApiBriefCreateRoute
+  '/api/brief-get-public': typeof ApiBriefGetPublicRoute
+  '/api/brief-list': typeof ApiBriefListRoute
+  '/api/brief-mark-used': typeof ApiBriefMarkUsedRoute
+  '/api/brief-submit': typeof ApiBriefSubmitRoute
+  '/api/chat-roadbook': typeof ApiChatRoadbookRoute
+  '/api/client-create': typeof ApiClientCreateRoute
+  '/api/client-delete': typeof ApiClientDeleteRoute
+  '/api/client-get': typeof ApiClientGetRoute
+  '/api/client-list': typeof ApiClientListRoute
+  '/api/client-update': typeof ApiClientUpdateRoute
+  '/api/destination-cover': typeof ApiDestinationCoverRoute
+  '/api/directions-segment': typeof ApiDirectionsSegmentRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
+  '/api/geocode-place': typeof ApiGeocodePlaceRoute
   '/api/import-roadbook': typeof ApiImportRoadbookRoute
+  '/api/maps-key': typeof ApiMapsKeyRoute
+  '/api/me-subscription': typeof ApiMeSubscriptionRoute
+  '/api/pexels-search': typeof ApiPexelsSearchRoute
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
+  '/api/shared-roadbook': typeof ApiSharedRoadbookRoute
+  '/api/stripe-checkout': typeof ApiStripeCheckoutRoute
+  '/api/stripe-portal': typeof ApiStripePortalRoute
+  '/api/stripe-resync': typeof ApiStripeResyncRoute
+  '/api/stripe-webhook': typeof ApiStripeWebhookRoute
+  '/api/track-view': typeof ApiTrackViewRoute
+  '/api/voyage-icon': typeof ApiVoyageIconRoute
+  '/api/voyage-manifest': typeof ApiVoyageManifestRoute
+  '/brief/$token': typeof BriefTokenRoute
+  '/clients/$id': typeof ClientsIdRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
+  '/voyage/$token': typeof VoyageTokenRoute
+  '/clients/': typeof ClientsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/billing': typeof BillingRoute
+  '/briefs': typeof BriefsRoute
+  '/cgu': typeof CguRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/new': typeof NewRoute
+  '/pricing': typeof PricingRoute
+  '/profil': typeof ProfilRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/api/admin-users': typeof ApiAdminUsersRoute
+  '/api/brief-create': typeof ApiBriefCreateRoute
+  '/api/brief-get-public': typeof ApiBriefGetPublicRoute
+  '/api/brief-list': typeof ApiBriefListRoute
+  '/api/brief-mark-used': typeof ApiBriefMarkUsedRoute
+  '/api/brief-submit': typeof ApiBriefSubmitRoute
+  '/api/chat-roadbook': typeof ApiChatRoadbookRoute
+  '/api/client-create': typeof ApiClientCreateRoute
+  '/api/client-delete': typeof ApiClientDeleteRoute
+  '/api/client-get': typeof ApiClientGetRoute
+  '/api/client-list': typeof ApiClientListRoute
+  '/api/client-update': typeof ApiClientUpdateRoute
+  '/api/destination-cover': typeof ApiDestinationCoverRoute
+  '/api/directions-segment': typeof ApiDirectionsSegmentRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
+  '/api/geocode-place': typeof ApiGeocodePlaceRoute
   '/api/import-roadbook': typeof ApiImportRoadbookRoute
+  '/api/maps-key': typeof ApiMapsKeyRoute
+  '/api/me-subscription': typeof ApiMeSubscriptionRoute
+  '/api/pexels-search': typeof ApiPexelsSearchRoute
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
+  '/api/shared-roadbook': typeof ApiSharedRoadbookRoute
+  '/api/stripe-checkout': typeof ApiStripeCheckoutRoute
+  '/api/stripe-portal': typeof ApiStripePortalRoute
+  '/api/stripe-resync': typeof ApiStripeResyncRoute
+  '/api/stripe-webhook': typeof ApiStripeWebhookRoute
+  '/api/track-view': typeof ApiTrackViewRoute
+  '/api/voyage-icon': typeof ApiVoyageIconRoute
+  '/api/voyage-manifest': typeof ApiVoyageManifestRoute
+  '/brief/$token': typeof BriefTokenRoute
+  '/clients/$id': typeof ClientsIdRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
+  '/voyage/$token': typeof VoyageTokenRoute
+  '/clients': typeof ClientsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/billing': typeof BillingRoute
+  '/briefs': typeof BriefsRoute
+  '/cgu': typeof CguRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/new': typeof NewRoute
+  '/pricing': typeof PricingRoute
+  '/profil': typeof ProfilRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/api/admin-users': typeof ApiAdminUsersRoute
+  '/api/brief-create': typeof ApiBriefCreateRoute
+  '/api/brief-get-public': typeof ApiBriefGetPublicRoute
+  '/api/brief-list': typeof ApiBriefListRoute
+  '/api/brief-mark-used': typeof ApiBriefMarkUsedRoute
+  '/api/brief-submit': typeof ApiBriefSubmitRoute
+  '/api/chat-roadbook': typeof ApiChatRoadbookRoute
+  '/api/client-create': typeof ApiClientCreateRoute
+  '/api/client-delete': typeof ApiClientDeleteRoute
+  '/api/client-get': typeof ApiClientGetRoute
+  '/api/client-list': typeof ApiClientListRoute
+  '/api/client-update': typeof ApiClientUpdateRoute
+  '/api/destination-cover': typeof ApiDestinationCoverRoute
+  '/api/directions-segment': typeof ApiDirectionsSegmentRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
+  '/api/geocode-place': typeof ApiGeocodePlaceRoute
   '/api/import-roadbook': typeof ApiImportRoadbookRoute
+  '/api/maps-key': typeof ApiMapsKeyRoute
+  '/api/me-subscription': typeof ApiMeSubscriptionRoute
+  '/api/pexels-search': typeof ApiPexelsSearchRoute
   '/api/recompute-roadbook': typeof ApiRecomputeRoadbookRoute
+  '/api/shared-roadbook': typeof ApiSharedRoadbookRoute
+  '/api/stripe-checkout': typeof ApiStripeCheckoutRoute
+  '/api/stripe-portal': typeof ApiStripePortalRoute
+  '/api/stripe-resync': typeof ApiStripeResyncRoute
+  '/api/stripe-webhook': typeof ApiStripeWebhookRoute
+  '/api/track-view': typeof ApiTrackViewRoute
+  '/api/voyage-icon': typeof ApiVoyageIconRoute
+  '/api/voyage-manifest': typeof ApiVoyageManifestRoute
+  '/brief/$token': typeof BriefTokenRoute
+  '/clients/$id': typeof ClientsIdRoute
   '/roadbook/$id': typeof RoadbookIdRoute
   '/roadbook/preview-mock': typeof RoadbookPreviewMockRoute
+  '/voyage/$token': typeof VoyageTokenRoute
+  '/clients/': typeof ClientsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
+    | '/billing'
+    | '/briefs'
+    | '/cgu'
+    | '/confidentialite'
     | '/dashboard'
     | '/login'
+    | '/mentions-legales'
     | '/new'
+    | '/pricing'
+    | '/profil'
+    | '/reset-password'
+    | '/api/admin-users'
+    | '/api/brief-create'
+    | '/api/brief-get-public'
+    | '/api/brief-list'
+    | '/api/brief-mark-used'
+    | '/api/brief-submit'
+    | '/api/chat-roadbook'
+    | '/api/client-create'
+    | '/api/client-delete'
+    | '/api/client-get'
+    | '/api/client-list'
+    | '/api/client-update'
+    | '/api/destination-cover'
+    | '/api/directions-segment'
     | '/api/generate-roadbook'
+    | '/api/geocode-place'
     | '/api/import-roadbook'
+    | '/api/maps-key'
+    | '/api/me-subscription'
+    | '/api/pexels-search'
     | '/api/recompute-roadbook'
+    | '/api/shared-roadbook'
+    | '/api/stripe-checkout'
+    | '/api/stripe-portal'
+    | '/api/stripe-resync'
+    | '/api/stripe-webhook'
+    | '/api/track-view'
+    | '/api/voyage-icon'
+    | '/api/voyage-manifest'
+    | '/brief/$token'
+    | '/clients/$id'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
+    | '/voyage/$token'
+    | '/clients/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
+    | '/billing'
+    | '/briefs'
+    | '/cgu'
+    | '/confidentialite'
     | '/dashboard'
     | '/login'
+    | '/mentions-legales'
     | '/new'
+    | '/pricing'
+    | '/profil'
+    | '/reset-password'
+    | '/api/admin-users'
+    | '/api/brief-create'
+    | '/api/brief-get-public'
+    | '/api/brief-list'
+    | '/api/brief-mark-used'
+    | '/api/brief-submit'
+    | '/api/chat-roadbook'
+    | '/api/client-create'
+    | '/api/client-delete'
+    | '/api/client-get'
+    | '/api/client-list'
+    | '/api/client-update'
+    | '/api/destination-cover'
+    | '/api/directions-segment'
     | '/api/generate-roadbook'
+    | '/api/geocode-place'
     | '/api/import-roadbook'
+    | '/api/maps-key'
+    | '/api/me-subscription'
+    | '/api/pexels-search'
     | '/api/recompute-roadbook'
+    | '/api/shared-roadbook'
+    | '/api/stripe-checkout'
+    | '/api/stripe-portal'
+    | '/api/stripe-resync'
+    | '/api/stripe-webhook'
+    | '/api/track-view'
+    | '/api/voyage-icon'
+    | '/api/voyage-manifest'
+    | '/brief/$token'
+    | '/clients/$id'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
+    | '/voyage/$token'
+    | '/clients'
   id:
     | '__root__'
     | '/'
+    | '/admin'
+    | '/billing'
+    | '/briefs'
+    | '/cgu'
+    | '/confidentialite'
     | '/dashboard'
     | '/login'
+    | '/mentions-legales'
     | '/new'
+    | '/pricing'
+    | '/profil'
+    | '/reset-password'
+    | '/api/admin-users'
+    | '/api/brief-create'
+    | '/api/brief-get-public'
+    | '/api/brief-list'
+    | '/api/brief-mark-used'
+    | '/api/brief-submit'
+    | '/api/chat-roadbook'
+    | '/api/client-create'
+    | '/api/client-delete'
+    | '/api/client-get'
+    | '/api/client-list'
+    | '/api/client-update'
+    | '/api/destination-cover'
+    | '/api/directions-segment'
     | '/api/generate-roadbook'
+    | '/api/geocode-place'
     | '/api/import-roadbook'
+    | '/api/maps-key'
+    | '/api/me-subscription'
+    | '/api/pexels-search'
     | '/api/recompute-roadbook'
+    | '/api/shared-roadbook'
+    | '/api/stripe-checkout'
+    | '/api/stripe-portal'
+    | '/api/stripe-resync'
+    | '/api/stripe-webhook'
+    | '/api/track-view'
+    | '/api/voyage-icon'
+    | '/api/voyage-manifest'
+    | '/brief/$token'
+    | '/clients/$id'
     | '/roadbook/$id'
     | '/roadbook/preview-mock'
+    | '/voyage/$token'
+    | '/clients/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  BillingRoute: typeof BillingRoute
+  BriefsRoute: typeof BriefsRoute
+  CguRoute: typeof CguRoute
+  ConfidentialiteRoute: typeof ConfidentialiteRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  MentionsLegalesRoute: typeof MentionsLegalesRoute
   NewRoute: typeof NewRoute
+  PricingRoute: typeof PricingRoute
+  ProfilRoute: typeof ProfilRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiAdminUsersRoute: typeof ApiAdminUsersRoute
+  ApiBriefCreateRoute: typeof ApiBriefCreateRoute
+  ApiBriefGetPublicRoute: typeof ApiBriefGetPublicRoute
+  ApiBriefListRoute: typeof ApiBriefListRoute
+  ApiBriefMarkUsedRoute: typeof ApiBriefMarkUsedRoute
+  ApiBriefSubmitRoute: typeof ApiBriefSubmitRoute
+  ApiChatRoadbookRoute: typeof ApiChatRoadbookRoute
+  ApiClientCreateRoute: typeof ApiClientCreateRoute
+  ApiClientDeleteRoute: typeof ApiClientDeleteRoute
+  ApiClientGetRoute: typeof ApiClientGetRoute
+  ApiClientListRoute: typeof ApiClientListRoute
+  ApiClientUpdateRoute: typeof ApiClientUpdateRoute
+  ApiDestinationCoverRoute: typeof ApiDestinationCoverRoute
+  ApiDirectionsSegmentRoute: typeof ApiDirectionsSegmentRoute
   ApiGenerateRoadbookRoute: typeof ApiGenerateRoadbookRoute
+  ApiGeocodePlaceRoute: typeof ApiGeocodePlaceRoute
   ApiImportRoadbookRoute: typeof ApiImportRoadbookRoute
   ApiMapsKeyRoute: typeof ApiMapsKeyRoute
+  ApiMeSubscriptionRoute: typeof ApiMeSubscriptionRoute
+  ApiPexelsSearchRoute: typeof ApiPexelsSearchRoute
   ApiRecomputeRoadbookRoute: typeof ApiRecomputeRoadbookRoute
+  ApiSharedRoadbookRoute: typeof ApiSharedRoadbookRoute
+  ApiStripeCheckoutRoute: typeof ApiStripeCheckoutRoute
+  ApiStripePortalRoute: typeof ApiStripePortalRoute
+  ApiStripeResyncRoute: typeof ApiStripeResyncRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
+  ApiTrackViewRoute: typeof ApiTrackViewRoute
+  ApiVoyageIconRoute: typeof ApiVoyageIconRoute
+  ApiVoyageManifestRoute: typeof ApiVoyageManifestRoute
+  BriefTokenRoute: typeof BriefTokenRoute
+  ClientsIdRoute: typeof ClientsIdRoute
   RoadbookIdRoute: typeof RoadbookIdRoute
   RoadbookPreviewMockRoute: typeof RoadbookPreviewMockRoute
+  VoyageTokenRoute: typeof VoyageTokenRoute
+  ClientsIndexRoute: typeof ClientsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profil': {
+      id: '/profil'
+      path: '/profil'
+      fullPath: '/profil'
+      preLoaderRoute: typeof ProfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/new': {
       id: '/new'
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentions-legales': {
+      id: '/mentions-legales'
+      path: '/mentions-legales'
+      fullPath: '/mentions-legales'
+      preLoaderRoute: typeof MentionsLegalesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -177,11 +705,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/confidentialite': {
+      id: '/confidentialite'
+      path: '/confidentialite'
+      fullPath: '/confidentialite'
+      preLoaderRoute: typeof ConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cgu': {
+      id: '/cgu'
+      path: '/cgu'
+      fullPath: '/cgu'
+      preLoaderRoute: typeof CguRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/briefs': {
+      id: '/briefs'
+      path: '/briefs'
+      fullPath: '/briefs'
+      preLoaderRoute: typeof BriefsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/billing': {
+      id: '/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof BillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients/': {
+      id: '/clients/'
+      path: '/clients'
+      fullPath: '/clients/'
+      preLoaderRoute: typeof ClientsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/voyage/$token': {
+      id: '/voyage/$token'
+      path: '/voyage/$token'
+      fullPath: '/voyage/$token'
+      preLoaderRoute: typeof VoyageTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/roadbook/preview-mock': {
@@ -198,6 +775,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoadbookIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clients/$id': {
+      id: '/clients/$id'
+      path: '/clients/$id'
+      fullPath: '/clients/$id'
+      preLoaderRoute: typeof ClientsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brief/$token': {
+      id: '/brief/$token'
+      path: '/brief/$token'
+      fullPath: '/brief/$token'
+      preLoaderRoute: typeof BriefTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/voyage-manifest': {
+      id: '/api/voyage-manifest'
+      path: '/api/voyage-manifest'
+      fullPath: '/api/voyage-manifest'
+      preLoaderRoute: typeof ApiVoyageManifestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/voyage-icon': {
+      id: '/api/voyage-icon'
+      path: '/api/voyage-icon'
+      fullPath: '/api/voyage-icon'
+      preLoaderRoute: typeof ApiVoyageIconRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/track-view': {
+      id: '/api/track-view'
+      path: '/api/track-view'
+      fullPath: '/api/track-view'
+      preLoaderRoute: typeof ApiTrackViewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe-webhook': {
+      id: '/api/stripe-webhook'
+      path: '/api/stripe-webhook'
+      fullPath: '/api/stripe-webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe-resync': {
+      id: '/api/stripe-resync'
+      path: '/api/stripe-resync'
+      fullPath: '/api/stripe-resync'
+      preLoaderRoute: typeof ApiStripeResyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe-portal': {
+      id: '/api/stripe-portal'
+      path: '/api/stripe-portal'
+      fullPath: '/api/stripe-portal'
+      preLoaderRoute: typeof ApiStripePortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe-checkout': {
+      id: '/api/stripe-checkout'
+      path: '/api/stripe-checkout'
+      fullPath: '/api/stripe-checkout'
+      preLoaderRoute: typeof ApiStripeCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/shared-roadbook': {
+      id: '/api/shared-roadbook'
+      path: '/api/shared-roadbook'
+      fullPath: '/api/shared-roadbook'
+      preLoaderRoute: typeof ApiSharedRoadbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/recompute-roadbook': {
       id: '/api/recompute-roadbook'
       path: '/api/recompute-roadbook'
@@ -205,18 +852,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRecomputeRoadbookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/import-roadbook': {
-      id: '/api/import-roadbook'
-      path: '/api/import-roadbook'
-      fullPath: '/api/import-roadbook'
-      preLoaderRoute: typeof ApiImportRoadbookRouteImport
+    '/api/pexels-search': {
+      id: '/api/pexels-search'
+      path: '/api/pexels-search'
+      fullPath: '/api/pexels-search'
+      preLoaderRoute: typeof ApiPexelsSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/generate-roadbook': {
-      id: '/api/generate-roadbook'
-      path: '/api/generate-roadbook'
-      fullPath: '/api/generate-roadbook'
-      preLoaderRoute: typeof ApiGenerateRoadbookRouteImport
+    '/api/me-subscription': {
+      id: '/api/me-subscription'
+      path: '/api/me-subscription'
+      fullPath: '/api/me-subscription'
+      preLoaderRoute: typeof ApiMeSubscriptionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/maps-key': {
@@ -226,20 +873,177 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMapsKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/import-roadbook': {
+      id: '/api/import-roadbook'
+      path: '/api/import-roadbook'
+      fullPath: '/api/import-roadbook'
+      preLoaderRoute: typeof ApiImportRoadbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/geocode-place': {
+      id: '/api/geocode-place'
+      path: '/api/geocode-place'
+      fullPath: '/api/geocode-place'
+      preLoaderRoute: typeof ApiGeocodePlaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/generate-roadbook': {
+      id: '/api/generate-roadbook'
+      path: '/api/generate-roadbook'
+      fullPath: '/api/generate-roadbook'
+      preLoaderRoute: typeof ApiGenerateRoadbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/directions-segment': {
+      id: '/api/directions-segment'
+      path: '/api/directions-segment'
+      fullPath: '/api/directions-segment'
+      preLoaderRoute: typeof ApiDirectionsSegmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/destination-cover': {
+      id: '/api/destination-cover'
+      path: '/api/destination-cover'
+      fullPath: '/api/destination-cover'
+      preLoaderRoute: typeof ApiDestinationCoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/client-update': {
+      id: '/api/client-update'
+      path: '/api/client-update'
+      fullPath: '/api/client-update'
+      preLoaderRoute: typeof ApiClientUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/client-list': {
+      id: '/api/client-list'
+      path: '/api/client-list'
+      fullPath: '/api/client-list'
+      preLoaderRoute: typeof ApiClientListRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/client-get': {
+      id: '/api/client-get'
+      path: '/api/client-get'
+      fullPath: '/api/client-get'
+      preLoaderRoute: typeof ApiClientGetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/client-delete': {
+      id: '/api/client-delete'
+      path: '/api/client-delete'
+      fullPath: '/api/client-delete'
+      preLoaderRoute: typeof ApiClientDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/client-create': {
+      id: '/api/client-create'
+      path: '/api/client-create'
+      fullPath: '/api/client-create'
+      preLoaderRoute: typeof ApiClientCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat-roadbook': {
+      id: '/api/chat-roadbook'
+      path: '/api/chat-roadbook'
+      fullPath: '/api/chat-roadbook'
+      preLoaderRoute: typeof ApiChatRoadbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/brief-submit': {
+      id: '/api/brief-submit'
+      path: '/api/brief-submit'
+      fullPath: '/api/brief-submit'
+      preLoaderRoute: typeof ApiBriefSubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/brief-mark-used': {
+      id: '/api/brief-mark-used'
+      path: '/api/brief-mark-used'
+      fullPath: '/api/brief-mark-used'
+      preLoaderRoute: typeof ApiBriefMarkUsedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/brief-list': {
+      id: '/api/brief-list'
+      path: '/api/brief-list'
+      fullPath: '/api/brief-list'
+      preLoaderRoute: typeof ApiBriefListRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/brief-get-public': {
+      id: '/api/brief-get-public'
+      path: '/api/brief-get-public'
+      fullPath: '/api/brief-get-public'
+      preLoaderRoute: typeof ApiBriefGetPublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/brief-create': {
+      id: '/api/brief-create'
+      path: '/api/brief-create'
+      fullPath: '/api/brief-create'
+      preLoaderRoute: typeof ApiBriefCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin-users': {
+      id: '/api/admin-users'
+      path: '/api/admin-users'
+      fullPath: '/api/admin-users'
+      preLoaderRoute: typeof ApiAdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  BillingRoute: BillingRoute,
+  BriefsRoute: BriefsRoute,
+  CguRoute: CguRoute,
+  ConfidentialiteRoute: ConfidentialiteRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  MentionsLegalesRoute: MentionsLegalesRoute,
   NewRoute: NewRoute,
+  PricingRoute: PricingRoute,
+  ProfilRoute: ProfilRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  ApiAdminUsersRoute: ApiAdminUsersRoute,
+  ApiBriefCreateRoute: ApiBriefCreateRoute,
+  ApiBriefGetPublicRoute: ApiBriefGetPublicRoute,
+  ApiBriefListRoute: ApiBriefListRoute,
+  ApiBriefMarkUsedRoute: ApiBriefMarkUsedRoute,
+  ApiBriefSubmitRoute: ApiBriefSubmitRoute,
+  ApiChatRoadbookRoute: ApiChatRoadbookRoute,
+  ApiClientCreateRoute: ApiClientCreateRoute,
+  ApiClientDeleteRoute: ApiClientDeleteRoute,
+  ApiClientGetRoute: ApiClientGetRoute,
+  ApiClientListRoute: ApiClientListRoute,
+  ApiClientUpdateRoute: ApiClientUpdateRoute,
+  ApiDestinationCoverRoute: ApiDestinationCoverRoute,
+  ApiDirectionsSegmentRoute: ApiDirectionsSegmentRoute,
   ApiGenerateRoadbookRoute: ApiGenerateRoadbookRoute,
+  ApiGeocodePlaceRoute: ApiGeocodePlaceRoute,
   ApiImportRoadbookRoute: ApiImportRoadbookRoute,
   ApiMapsKeyRoute: ApiMapsKeyRoute,
+  ApiMeSubscriptionRoute: ApiMeSubscriptionRoute,
+  ApiPexelsSearchRoute: ApiPexelsSearchRoute,
   ApiRecomputeRoadbookRoute: ApiRecomputeRoadbookRoute,
+  ApiSharedRoadbookRoute: ApiSharedRoadbookRoute,
+  ApiStripeCheckoutRoute: ApiStripeCheckoutRoute,
+  ApiStripePortalRoute: ApiStripePortalRoute,
+  ApiStripeResyncRoute: ApiStripeResyncRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
+  ApiTrackViewRoute: ApiTrackViewRoute,
+  ApiVoyageIconRoute: ApiVoyageIconRoute,
+  ApiVoyageManifestRoute: ApiVoyageManifestRoute,
+  BriefTokenRoute: BriefTokenRoute,
+  ClientsIdRoute: ClientsIdRoute,
   RoadbookIdRoute: RoadbookIdRoute,
   RoadbookPreviewMockRoute: RoadbookPreviewMockRoute,
+  VoyageTokenRoute: VoyageTokenRoute,
+  ClientsIndexRoute: ClientsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
