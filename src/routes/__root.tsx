@@ -60,6 +60,11 @@ export const Route = createRootRoute({
         content:
           "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1f7cd519-4193-4c47-b6d2-35474d5fc242/id-preview-837973a4--12d93a8e-2eb8-4c04-b489-c670094e0f37.lovable.app-1777492976344.png",
       },
+      { name: "description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
+      { property: "og:description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
+      { name: "twitter:description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2SgAqDgHVXTYrzM3eL9OcreqW5I2/social-images/social-1777825276276-R.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2SgAqDgHVXTYrzM3eL9OcreqW5I2/social-images/social-1777825276276-R.webp" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
