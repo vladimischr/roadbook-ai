@@ -62,7 +62,7 @@ export function Paywall({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overscroll-contain">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <span className="rule-warm" aria-hidden />
