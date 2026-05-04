@@ -62,8 +62,9 @@ export function Paywall({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overscroll-contain">
-        <DialogHeader>
+      <DialogContent className="left-3 right-3 top-3 bottom-3 max-h-none w-auto max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-2xl p-0 sm:left-[50%] sm:right-auto sm:top-[50%] sm:bottom-auto sm:max-h-[90vh] sm:w-full sm:max-w-3xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg">
+        <div className="flex h-full min-h-0 flex-col p-5 pt-6 sm:max-h-[90vh] sm:p-6">
+        <DialogHeader className="flex-shrink-0 pr-8">
           <div className="flex items-center gap-3">
             <span className="rule-warm" aria-hidden />
             <span className="eyebrow">Passer Pro</span>
@@ -77,7 +78,7 @@ export function Paywall({
         </DialogHeader>
 
         {/* Toggle Mensuel / Annuel — défaut Annuel pour pousser au -20% */}
-        <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex flex-shrink-0 justify-center">
           <div className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-surface p-1">
             <button
               type="button"
@@ -116,28 +117,29 @@ export function Paywall({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {PAID_PLAN_ORDER.map((key) => {
-            const plan = PLANS[key];
-            const isActive = key === currentPlanKey;
-            const isHighlighted = plan.highlighted;
-            const isLoading = loadingPlan === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handlePick(key)}
-                disabled={isActive || loadingPlan !== null}
-                className={cn(
-                  "group relative flex flex-col rounded-2xl border p-5 text-left transition-smooth",
-                  isActive
-                    ? "border-primary/40 bg-primary-soft/40 cursor-default opacity-70"
-                    : isHighlighted
-                      ? "border-primary/60 bg-surface shadow-soft-md hover:-translate-y-0.5 hover:shadow-soft-lg"
-                      : "border-border/70 bg-surface hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft-md",
-                  loadingPlan !== null && !isLoading && "opacity-50",
-                )}
-              >
+        <div className="-mx-2 mt-4 flex-1 overflow-y-auto overscroll-contain px-2 pb-2 [-webkit-overflow-scrolling:touch]">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {PAID_PLAN_ORDER.map((key) => {
+              const plan = PLANS[key];
+              const isActive = key === currentPlanKey;
+              const isHighlighted = plan.highlighted;
+              const isLoading = loadingPlan === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handlePick(key)}
+                  disabled={isActive || loadingPlan !== null}
+                  className={cn(
+                    "group relative flex flex-col rounded-2xl border p-5 text-left transition-smooth",
+                    isActive
+                      ? "border-primary/40 bg-primary-soft/40 cursor-default opacity-70"
+                      : isHighlighted
+                        ? "border-primary/60 bg-surface shadow-soft-md hover:-translate-y-0.5 hover:shadow-soft-lg"
+                        : "border-border/70 bg-surface hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft-md",
+                    loadingPlan !== null && !isLoading && "opacity-50",
+                  )}
+                >
                 {isHighlighted && !isActive && (
                   <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground">
                     Populaire
@@ -198,12 +200,13 @@ export function Paywall({
                     </>
                   )}
                 </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-[12px] text-text-soft">
+        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-border/50 pt-3 text-[12px] text-text-soft">
           <span>14 jours d'essai gratuit · Annulation en un clic</span>
           <Button
             variant="ghost"
@@ -213,6 +216,7 @@ export function Paywall({
           >
             Plus tard
           </Button>
+        </div>
         </div>
       </DialogContent>
     </Dialog>
