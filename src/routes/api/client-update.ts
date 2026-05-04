@@ -52,7 +52,7 @@ export const Route = createFileRoute("/api/client-update")({
         const { error } = await withSchemaRetry(() =>
           supabaseAdmin
             .from("clients")
-            .update(patch)
+            .update(patch as never)
             .eq("id", id)
             .eq("user_id", userData.user.id),
         );
