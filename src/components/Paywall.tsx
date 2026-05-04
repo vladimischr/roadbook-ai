@@ -62,8 +62,8 @@ export function Paywall({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="left-3 right-3 top-3 bottom-3 max-h-none w-auto max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-2xl p-0 sm:left-[50%] sm:right-auto sm:top-[50%] sm:bottom-auto sm:max-h-[90vh] sm:w-full sm:max-w-3xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg">
-        <div className="flex h-full min-h-0 flex-col p-5 pt-6 sm:max-h-[90vh] sm:p-6">
+      <DialogContent className="left-3 right-3 top-3 bottom-3 flex h-[calc(100dvh-1.5rem)] max-h-[calc(100dvh-1.5rem)] w-auto max-w-none translate-x-0 translate-y-0 flex-col overflow-hidden rounded-2xl p-0 sm:left-[50%] sm:right-auto sm:top-[50%] sm:bottom-auto sm:h-auto sm:max-h-[90dvh] sm:w-full sm:max-w-3xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg">
+        <div className="flex min-h-0 flex-1 flex-col p-5 pt-6 sm:p-6">
         <DialogHeader className="flex-shrink-0 pr-8">
           <div className="flex items-center gap-3">
             <span className="rule-warm" aria-hidden />
