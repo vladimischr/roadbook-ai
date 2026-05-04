@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type Stripe from "stripe";
+import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getStripe } from "@/integrations/stripe/client.server";
 import { planKeyForStripePrice, type PlanKey } from "@/lib/plans";

@@ -13,7 +13,7 @@
 const SCHEMA_CACHE_RE = /schema cache|could not find the (table|column|function)/i;
 
 export async function withSchemaRetry<T extends { error: any }>(
-  fn: () => Promise<T>,
+  fn: () => PromiseLike<T>,
   options: { delayMs?: number } = {},
 ): Promise<T> {
   const delayMs = options.delayMs ?? 1500;
