@@ -63,8 +63,8 @@ export const Route = createRootRoute({
       { name: "description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
       { property: "og:description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
       { name: "twitter:description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2SgAqDgHVXTYrzM3eL9OcreqW5I2/social-images/social-1777825276276-R.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2SgAqDgHVXTYrzM3eL9OcreqW5I2/social-images/social-1777825276276-R.webp" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2SgAqDgHVXTYrzM3eL9OcreqW5I2/social-images/social-1777969198844-ChatGPT_Image_5_mai_2026,_10_19_31.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2SgAqDgHVXTYrzM3eL9OcreqW5I2/social-images/social-1777969198844-ChatGPT_Image_5_mai_2026,_10_19_31.webp" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
