@@ -72,7 +72,7 @@ export function ContactSection() {
           </p>
           <div className="flex items-center gap-3 pt-2 text-[13.5px] text-foreground/80">
             <Mail className="h-4 w-4 text-primary" />
-            <span>vladimir@brakial.com</span>
+            <span>Réponse sous 24h ouvrées</span>
           </div>
         </div>
 
