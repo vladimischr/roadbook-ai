@@ -30,6 +30,7 @@ export const EmailChangeEmail = ({
   newEmail,
   confirmationUrl,
 }: EmailChangeEmailProps) => (
+<<<<<<< HEAD
   <Html lang="fr" dir="ltr">
     <Head />
     <Preview>Confirme le changement d'adresse email de ton compte {siteName}</Preview>
@@ -42,12 +43,27 @@ export const EmailChangeEmail = ({
             {oldEmail}
           </Link>{' '}
           vers{' '}
+=======
+  <Html lang="en" dir="ltr">
+    <Head />
+    <Preview>Confirm your email change for {siteName}</Preview>
+    <Body style={main}>
+      <Container style={container}>
+        <Heading style={h1}>Confirm your email change</Heading>
+        <Text style={text}>
+          You requested to change your email address for {siteName} from{' '}
+          <Link href={`mailto:${oldEmail}`} style={link}>
+            {oldEmail}
+          </Link>{' '}
+          to{' '}
+>>>>>>> 427df08072d5b09b2dcde4bb85d6993470d4f624
           <Link href={`mailto:${newEmail}`} style={link}>
             {newEmail}
           </Link>
           .
         </Text>
         <Text style={text}>
+<<<<<<< HEAD
           Clique sur le bouton ci-dessous pour confirmer ce changement :
         </Text>
         <Button style={button} href={confirmationUrl}>
@@ -57,6 +73,16 @@ export const EmailChangeEmail = ({
           Tu reçois cet email parce qu'un changement d'adresse a été demandé sur ton compte Roadbook.ai. Si tu n'es pas à l'origine de cette demande, sécurise ton compte immédiatement en réinitialisant ton mot de passe.
           <br /><br />
           — L'équipe Roadbook.ai
+=======
+          Click the button below to confirm this change:
+        </Text>
+        <Button style={button} href={confirmationUrl}>
+          Confirm Email Change
+        </Button>
+        <Text style={footer}>
+          If you didn't request this change, please secure your account
+          immediately.
+>>>>>>> 427df08072d5b09b2dcde4bb85d6993470d4f624
         </Text>
       </Container>
     </Body>

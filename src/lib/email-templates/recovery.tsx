@@ -20,6 +20,7 @@ export const RecoveryEmail = ({
   siteName,
   confirmationUrl,
 }: RecoveryEmailProps) => (
+<<<<<<< HEAD
   <Html lang="fr" dir="ltr">
     <Head />
     <Preview>Réinitialise ton mot de passe {siteName}</Preview>
@@ -39,6 +40,24 @@ export const RecoveryEmail = ({
           Tu reçois cet email parce qu'une réinitialisation de mot de passe a été demandée pour ton compte Roadbook.ai. Si tu n'es pas à l'origine de cette demande, ignore ce message — ton mot de passe restera inchangé.
           <br /><br />
           — L'équipe Roadbook.ai
+=======
+  <Html lang="en" dir="ltr">
+    <Head />
+    <Preview>Reset your password for {siteName}</Preview>
+    <Body style={main}>
+      <Container style={container}>
+        <Heading style={h1}>Reset your password</Heading>
+        <Text style={text}>
+          We received a request to reset your password for {siteName}. Click
+          the button below to choose a new password.
+        </Text>
+        <Button style={button} href={confirmationUrl}>
+          Reset Password
+        </Button>
+        <Text style={footer}>
+          If you didn't request a password reset, you can safely ignore this
+          email. Your password will not be changed.
+>>>>>>> 427df08072d5b09b2dcde4bb85d6993470d4f624
         </Text>
       </Container>
     </Body>

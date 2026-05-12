@@ -20,6 +20,7 @@ export const MagicLinkEmail = ({
   siteName,
   confirmationUrl,
 }: MagicLinkEmailProps) => (
+<<<<<<< HEAD
   <Html lang="fr" dir="ltr">
     <Head />
     <Preview>Ton lien de connexion à {siteName}</Preview>
@@ -39,6 +40,23 @@ export const MagicLinkEmail = ({
           Tu reçois cet email parce qu'une connexion à Roadbook.ai a été demandée avec ton adresse. Si tu n'es pas à l'origine de cette demande, ignore simplement ce message.
           <br /><br />
           — L'équipe Roadbook.ai
+=======
+  <Html lang="en" dir="ltr">
+    <Head />
+    <Preview>Your login link for {siteName}</Preview>
+    <Body style={main}>
+      <Container style={container}>
+        <Heading style={h1}>Your login link</Heading>
+        <Text style={text}>
+          Click the button below to log in to {siteName}. This link will expire
+          shortly.
+        </Text>
+        <Button style={button} href={confirmationUrl}>
+          Log In
+        </Button>
+        <Text style={footer}>
+          If you didn't request this link, you can safely ignore this email.
+>>>>>>> 427df08072d5b09b2dcde4bb85d6993470d4f624
         </Text>
       </Container>
     </Body>

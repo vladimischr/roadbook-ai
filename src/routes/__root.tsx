@@ -30,6 +30,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+<<<<<<< HEAD
       // Defense in depth — si Cloudflare ne sert pas /public/_headers (cas
       // Workers pur), ces meta s'appliquent côté navigateur quand même.
       {
@@ -40,6 +41,8 @@ export const Route = createRootRoute({
         name: "referrer",
         content: "strict-origin-when-cross-origin",
       },
+=======
+>>>>>>> 427df08072d5b09b2dcde4bb85d6993470d4f624
       { title: "Roadbook.ai — Votre roadbook en 5 minutes" },
       {
         name: "description",

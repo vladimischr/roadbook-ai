@@ -25,6 +25,7 @@ export const SignupEmail = ({
   recipient,
   confirmationUrl,
 }: SignupEmailProps) => (
+<<<<<<< HEAD
   <Html lang="fr" dir="ltr">
     <Head />
     <Preview>Confirmez votre email pour activer votre compte {siteName}</Preview>
@@ -52,6 +53,33 @@ export const SignupEmail = ({
           Tu reçois cet email parce qu'une inscription a été effectuée sur Roadbook.ai avec ton adresse. Si tu n'es pas à l'origine de cette demande, ignore simplement ce message.
           <br /><br />
           — L'équipe Roadbook.ai
+=======
+  <Html lang="en" dir="ltr">
+    <Head />
+    <Preview>Confirm your email for {siteName}</Preview>
+    <Body style={main}>
+      <Container style={container}>
+        <Heading style={h1}>Confirm your email</Heading>
+        <Text style={text}>
+          Thanks for signing up for{' '}
+          <Link href={siteUrl} style={link}>
+            <strong>{siteName}</strong>
+          </Link>
+          !
+        </Text>
+        <Text style={text}>
+          Please confirm your email address (
+          <Link href={`mailto:${recipient}`} style={link}>
+            {recipient}
+          </Link>
+          ) by clicking the button below:
+        </Text>
+        <Button style={button} href={confirmationUrl}>
+          Verify Email
+        </Button>
+        <Text style={footer}>
+          If you didn't create an account, you can safely ignore this email.
+>>>>>>> 427df08072d5b09b2dcde4bb85d6993470d4f624
         </Text>
       </Container>
     </Body>
