@@ -13,6 +13,13 @@ export interface SubscriptionInfo {
   currentPeriodEnd: string | null;
   trialEndsAt: string | null;
   cancelAt: string | null;
+  roadbooksUsed: number;
+  roadbooksLimit: number | null;
+  roadbooksRemaining: number | null;
+  chatCreditsUsed: number;
+  chatCreditsLimit: number | null;
+  chatCreditsRemaining: number | null;
+  canChat: boolean;
 }
 
 /**

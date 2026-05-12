@@ -50,14 +50,16 @@ export const PLANS: Record<PlanKey, Plan> = {
     tagline: "Pour goûter à l'outil",
     priceMonthly: 0,
     priceAnnual: 0,
-    monthlyRoadbookLimit: 2,
-    monthlyChatCredits: 5,
+    // Quotas calibrés pour permettre un vrai test (1-2 projets réels)
+    // avant friction d'upgrade. Coût marginal Claude ~0.40€/user/mois.
+    monthlyRoadbookLimit: 5,
+    monthlyChatCredits: 25,
     allowsPdfExport: true,
     allowsRecompute: false,
     allowsAIChat: true,
     features: [
-      "2 roadbooks par mois",
-      "5 modifications IA (chat) pour goûter",
+      "5 roadbooks par mois",
+      "25 modifications IA pour explorer",
       "Carte interactive Google Maps",
       "Export PDF avec mention « via Roadbook.ai »",
     ],

@@ -1,0 +1,34 @@
+{
+  "name": "Roadbook.ai",
+  "short_name": "Roadbook",
+  "description": "Composez en quelques minutes des roadbooks éditoriaux pour vos voyageurs.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbf6ef",
+  "theme_color": "#1a1a1a",
+  "lang": "fr",
+  "categories": ["travel", "productivity", "business"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Composer un roadbook",
+      "short_name": "Composer",
+      "description": "Démarrer un nouveau roadbook",
+      "url": "/new"
+    },
+    {
+      "name": "Mon atelier",
+      "short_name": "Atelier",
+      "description": "Voir mes roadbooks",
+      "url": "/dashboard"
+    }
+  ]
+}

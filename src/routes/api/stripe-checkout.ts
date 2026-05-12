@@ -22,6 +22,49 @@ const inputSchema = z.object({
   origin: z.string().url(),
 });
 
+/**
+ * Valide qu'une origin reçue du client est autorisée. Sans ça, un attaquant
+ * peut créer une session Stripe avec `origin=https://attacker.com` et
+ * détourner la redirection post-paiement (phishing).
+ *
+ * Configuration : ALLOWED_ORIGINS = "roadbook.ai,www.roadbook.ai,localhost:3000"
+ * (CSV de hosts, avec ou sans port). Si la variable est vide, on fallback sur
+ * une whitelist sûre minimale + warning prod.
+ */
+function isOriginAllowed(originUrl: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(originUrl);
+  } catch {
+    return false;
+  }
+  // Refuse les schémas non http(s)
+  if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+
+  const allowedRaw = process.env.ALLOWED_ORIGINS ?? "";
+  const allowed = allowedRaw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  // Fallback dev : si rien n'est configuré, on accepte uniquement localhost.
+  if (allowed.length === 0) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "[stripe-checkout] ALLOWED_ORIGINS non configuré en production — refus par sécurité",
+      );
+      return false;
+    }
+    return (
+      url.hostname === "localhost" || url.hostname === "127.0.0.1"
+    );
+  }
+
+  const host = url.host.toLowerCase(); // inclut le port
+  const hostname = url.hostname.toLowerCase();
+  return allowed.some((entry) => entry === host || entry === hostname);
+}
+
 export const Route = createFileRoute("/api/stripe-checkout")({
   server: {
     handlers: {
@@ -50,6 +93,19 @@ export const Route = createFileRoute("/api/stripe-checkout")({
             );
           }
           const { plan_key, billing, origin } = parsed.data;
+
+          // Anti-phishing : refuse les origins inconnues pour ne pas qu'un
+          // attaquant détourne le success_url vers son domaine.
+          if (!isOriginAllowed(origin)) {
+            console.warn(
+              "[stripe-checkout] origin refusée:",
+              new URL(origin).host,
+            );
+            return jsonResponse(
+              { error: "Origin non autorisée." },
+              400,
+            );
+          }
 
           const priceId = stripePriceIdFor(plan_key as PlanKey, billing);
           if (!priceId) {

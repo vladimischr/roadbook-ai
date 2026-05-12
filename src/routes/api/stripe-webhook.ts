@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type Stripe from "stripe";
+import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getStripe } from "@/integrations/stripe/client.server";
 import { planKeyForStripePrice, type PlanKey } from "@/lib/plans";
@@ -63,6 +63,43 @@ export const Route = createFileRoute("/api/stripe-webhook")({
           return new Response(`webhook signature invalide: ${msg}`, {
             status: 400,
           });
+        }
+
+        // ============================================================
+        // IDEMPOTENCE — empêche le double-traitement si Stripe retry.
+        // ============================================================
+        // On INSERT event.id dans stripe_webhook_events. Si la ligne existe
+        // déjà (PK violation), c'est qu'on a déjà traité cet event → on
+        // répond 200 sans rien faire. Cf. migration 20260605000000.
+        const { error: idemErr } = await supabaseAdmin
+          .from("stripe_webhook_events")
+          .insert({ event_id: event.id, event_type: event.type });
+        if (idemErr) {
+          // Code 23505 = unique_violation Postgres. Cas attendu = event déjà
+          // traité, on l'ignore. Tout autre code = vrai problème DB → on
+          // laisse Stripe retry.
+          const isDuplicate =
+            (idemErr as { code?: string }).code === "23505" ||
+            /duplicate key/i.test(idemErr.message ?? "");
+          if (isDuplicate) {
+            console.log(
+              `[stripe-webhook] event ${event.id} déjà traité — skip`,
+            );
+            return new Response(
+              JSON.stringify({ received: true, duplicate: true }),
+              {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+          }
+          // Si la table n'existe pas (migration pas encore tournée), on
+          // log mais on continue le traitement — fail-open pour ne pas
+          // perdre d'events pendant la fenêtre de déploiement.
+          console.warn(
+            `[stripe-webhook] idempotency check failed (continuing anyway):`,
+            idemErr.message,
+          );
         }
 
         try {

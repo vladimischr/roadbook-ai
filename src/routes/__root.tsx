@@ -30,13 +30,23 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Roadbook.ai — Travel roadbooks in 5 minutes" },
+      // Defense in depth — si Cloudflare ne sert pas /public/_headers (cas
+      // Workers pur), ces meta s'appliquent côté navigateur quand même.
+      {
+        httpEquiv: "X-Content-Type-Options",
+        content: "nosniff",
+      },
+      {
+        name: "referrer",
+        content: "strict-origin-when-cross-origin",
+      },
+      { title: "Roadbook.ai — Votre roadbook en 5 minutes" },
       {
         name: "description",
         content:
           "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes.",
       },
-      { property: "og:title", content: "Roadbook.ai — Travel roadbooks in 5 minutes" },
+      { property: "og:title", content: "Roadbook.ai — Votre roadbook en 5 minutes" },
       {
         property: "og:description",
         content:
@@ -49,7 +59,7 @@ export const Route = createRootRoute({
           "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1f7cd519-4193-4c47-b6d2-35474d5fc242/id-preview-837973a4--12d93a8e-2eb8-4c04-b489-c670094e0f37.lovable.app-1777492976344.png",
       },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Roadbook.ai — Travel roadbooks in 5 minutes" },
+      { name: "twitter:title", content: "Roadbook.ai — Votre roadbook en 5 minutes" },
       {
         name: "twitter:description",
         content:
@@ -60,9 +70,15 @@ export const Route = createRootRoute({
         content:
           "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1f7cd519-4193-4c47-b6d2-35474d5fc242/id-preview-837973a4--12d93a8e-2eb8-4c04-b489-c670094e0f37.lovable.app-1777492976344.png",
       },
+      { name: "description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
+      { property: "og:description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
+      { name: "twitter:description", content: "AI-powered web app for travel designers to generate professional PDF roadbooks in minutes." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2SgAqDgHVXTYrzM3eL9OcreqW5I2/social-images/social-1777969198844-ChatGPT_Image_5_mai_2026,_10_19_31.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/2SgAqDgHVXTYrzM3eL9OcreqW5I2/social-images/social-1777969198844-ChatGPT_Image_5_mai_2026,_10_19_31.webp" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.json" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

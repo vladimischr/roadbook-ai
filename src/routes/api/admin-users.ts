@@ -1,22 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { isAdminUser } from "@/lib/admin.server";
 
 // ============================================================================
-// /api/admin-users — endpoint protégé par ADMIN_EMAILS
+// /api/admin-users — endpoint protégé par admin_roles (avec fallback env)
 // ============================================================================
 // Retourne la liste de tous les utilisateurs avec leur plan, statut, dates
-// d'inscription et compteurs d'usage. Réservé aux admins définis dans
-// l'env var ADMIN_EMAILS (liste séparée par virgules).
-
-function isAdmin(email: string | undefined | null): boolean {
-  if (!email) return false;
-  const list = (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  if (list.length === 0) return false;
-  return list.includes(email.toLowerCase());
-}
+// d'inscription et compteurs d'usage. Réservé aux admins :
+//   - listés dans la table public.admin_roles (autorité finale)
+//   - OU listés dans ADMIN_EMAILS env var (bootstrap initial)
 
 export const Route = createFileRoute("/api/admin-users")({
   server: {
@@ -34,7 +26,11 @@ export const Route = createFileRoute("/api/admin-users")({
         if (userErr || !userData?.user) {
           return jsonResponse({ error: "Session invalide." }, 401);
         }
-        if (!isAdmin(userData.user.email)) {
+        const admin = await isAdminUser(
+          userData.user.id,
+          userData.user.email,
+        );
+        if (!admin) {
           return jsonResponse({ error: "Accès admin requis." }, 403);
         }
 

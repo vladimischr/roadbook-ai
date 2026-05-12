@@ -41,6 +41,19 @@ export const Route = createFileRoute("/voyage/$token")({
       // Empêche l'indexation : ces liens contiennent des données personnelles
       // (noms de clients, contacts), ils ne doivent pas finir sur Google.
       { name: "robots", content: "noindex, nofollow" },
+      // OG cards quand le voyageur partage le lien (WhatsApp, iMessage,
+      // Telegram). Pas d'image dédiée par roadbook (ferait fuir le client
+      // name dans l'aperçu OG), on utilise l'image générique brand.
+      { property: "og:type", content: "article" },
+      { property: "og:title", content: "Mon carnet de voyage" },
+      {
+        property: "og:description",
+        content: "Préparé avec soin par mon travel designer.",
+      },
+      { property: "og:site_name", content: "Roadbook.ai" },
+      { name: "twitter:card", content: "summary_large_image" },
+      // Note : Cloudflare/Workers ignore _headers, donc on s'appuie aussi
+      // sur la meta httpEquiv globale dans __root.tsx.
       // PWA — apparence quand installée sur écran d'accueil iOS
       { name: "apple-mobile-web-app-capable", content: "yes" },
       {
@@ -663,7 +676,10 @@ function PublicFooter() {
         <p className="mt-2 text-[11.5px] uppercase tracking-[0.22em] text-text-soft">
           Composé sur Roadbook.ai
         </p>
-        <Link to="/pricing">
+        {/* UTM-tagged pour mesurer le funnel viral voyage → signup.
+            On utilise un <a> plutôt que <Link> pour garder les UTM en
+            query string (crawl-friendly, analytics-friendly). */}
+        <a href="/pricing?utm_source=voyage_share&utm_medium=viral_footer&utm_campaign=shared_roadbook">
           <Button
             size="sm"
             variant="outline"
@@ -672,7 +688,7 @@ function PublicFooter() {
             <Sparkles className="h-3.5 w-3.5" />
             Vous êtes travel designer ? Composez le vôtre
           </Button>
-        </Link>
+        </a>
       </div>
     </footer>
   );

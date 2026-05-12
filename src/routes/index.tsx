@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { ContactSection } from "@/components/ContactSection";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -37,6 +38,7 @@ function Landing() {
         <HowItWorks />
         <ShowcaseStrip />
         <Testimonial />
+        <ContactSection />
         <CTASection />
       </main>
       <SiteFooter />

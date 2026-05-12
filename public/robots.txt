@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Pages applicatives protégées — pas d'indexation
+Disallow: /dashboard
+Disallow: /new
+Disallow: /briefs
+Disallow: /clients
+Disallow: /profil
+Disallow: /admin
+Disallow: /billing
+Disallow: /roadbook/
+Disallow: /api/
+Disallow: /reset-password
+
+# Liens partagés via token — pas d'indexation (contiennent contenu client)
+Disallow: /voyage/
+Disallow: /brief/
+
+Sitemap: https://roadbook.ai/sitemap.xml

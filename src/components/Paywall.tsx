@@ -20,6 +20,14 @@ import {
 import { redirectToCheckout } from "@/lib/useSubscription";
 import { cn } from "@/lib/utils";
 
+export type PaywallReason =
+  | "quota_roadbooks"
+  | "quota_chat"
+  | "feature_recompute"
+  | "feature_pdf"
+  | "past_due"
+  | "generic";
+
 interface PaywallProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,7 +37,49 @@ interface PaywallProps {
   title?: string;
   /** Sous-titre éditorial — pourquoi l'utilisateur voit cette modale. */
   subtitle?: string;
+  /**
+   * Raison contextuelle du déclenchement. Si fourni, override le couple
+   * title/subtitle générique par un message ciblé qui dit clairement ce
+   * que l'utilisateur a essayé de faire et pourquoi c'est bloqué.
+   */
+  reason?: PaywallReason;
 }
+
+const REASON_COPY: Record<
+  PaywallReason,
+  { title: string; subtitle: string }
+> = {
+  quota_roadbooks: {
+    title: "Vous avez atteint votre quota de roadbooks ce mois-ci",
+    subtitle:
+      "Pour continuer à composer dès aujourd'hui, choisissez un plan avec plus de capacité. Vos roadbooks existants restent accessibles.",
+  },
+  quota_chat: {
+    title: "Vous avez utilisé toutes vos modifications IA ce mois-ci",
+    subtitle:
+      "Le chat IA et le recalcul sont temporairement bloqués. Passez à un plan supérieur pour reprendre, ou attendez la réinitialisation.",
+  },
+  feature_recompute: {
+    title: "Le recalcul IA est inclus dans les plans payants",
+    subtitle:
+      "Régénérez intelligemment tout un roadbook après vos modifications. Disponible dès le plan Solo.",
+  },
+  feature_pdf: {
+    title: "Le PDF sans watermark est inclus dans les plans payants",
+    subtitle:
+      "Livrez un PDF éditorial signé de votre nom à vos clients. Disponible dès le plan Solo.",
+  },
+  past_due: {
+    title: "Votre paiement a échoué",
+    subtitle:
+      "Mettez à jour votre carte bancaire pour reprendre — vos roadbooks ne sont pas perdus.",
+  },
+  generic: {
+    title: "Passez à la vitesse supérieure",
+    subtitle:
+      "Vous avez atteint la limite de votre plan actuel. Choisissez un plan adapté à votre volume.",
+  },
+};
 
 /**
  * Modale qui s'ouvre quand un utilisateur tente une action bloquée par son
@@ -41,11 +91,17 @@ export function Paywall({
   open,
   onOpenChange,
   currentPlanKey,
-  title = "Passe à la vitesse supérieure",
-  subtitle = "Tu as atteint la limite de ton plan actuel. Choisis un plan adapté à ton volume.",
+  title,
+  subtitle,
+  reason,
 }: PaywallProps) {
   const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
   const [billing, setBilling] = useState<Billing>("annual");
+
+  // Priorité : title/subtitle explicites > reason > fallback générique
+  const copy = REASON_COPY[reason ?? "generic"];
+  const finalTitle = title ?? copy.title;
+  const finalSubtitle = subtitle ?? copy.subtitle;
 
   const handlePick = async (planKey: PlanKey) => {
     if (planKey === "free" || planKey === currentPlanKey) return;
@@ -62,22 +118,23 @@ export function Paywall({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="left-3 right-3 top-3 bottom-3 flex h-[calc(100dvh-1.5rem)] max-h-[calc(100dvh-1.5rem)] w-auto max-w-none translate-x-0 translate-y-0 flex-col overflow-hidden rounded-2xl p-0 sm:left-[50%] sm:right-auto sm:top-[50%] sm:bottom-auto sm:h-auto sm:max-h-[90dvh] sm:w-full sm:max-w-3xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg">
+        <div className="flex min-h-0 flex-1 flex-col p-5 pt-6 sm:p-6">
+        <DialogHeader className="flex-shrink-0 pr-8">
           <div className="flex items-center gap-3">
             <span className="rule-warm" aria-hidden />
             <span className="eyebrow">Passer Pro</span>
           </div>
           <DialogTitle className="font-display mt-3 text-[26px] font-semibold leading-tight tracking-tight text-foreground sm:text-[30px]">
-            {title}
+            {finalTitle}
           </DialogTitle>
           <DialogDescription className="pt-2 text-[14px] leading-relaxed">
-            {subtitle}
+            {finalSubtitle}
           </DialogDescription>
         </DialogHeader>
 
         {/* Toggle Mensuel / Annuel — défaut Annuel pour pousser au -20% */}
-        <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex flex-shrink-0 justify-center">
           <div className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-surface p-1">
             <button
               type="button"
@@ -116,28 +173,29 @@ export function Paywall({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {PAID_PLAN_ORDER.map((key) => {
-            const plan = PLANS[key];
-            const isActive = key === currentPlanKey;
-            const isHighlighted = plan.highlighted;
-            const isLoading = loadingPlan === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handlePick(key)}
-                disabled={isActive || loadingPlan !== null}
-                className={cn(
-                  "group relative flex flex-col rounded-2xl border p-5 text-left transition-smooth",
-                  isActive
-                    ? "border-primary/40 bg-primary-soft/40 cursor-default opacity-70"
-                    : isHighlighted
-                      ? "border-primary/60 bg-surface shadow-soft-md hover:-translate-y-0.5 hover:shadow-soft-lg"
-                      : "border-border/70 bg-surface hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft-md",
-                  loadingPlan !== null && !isLoading && "opacity-50",
-                )}
-              >
+        <div className="-mx-2 mt-4 flex-1 overflow-y-auto overscroll-contain px-2 pb-2 [-webkit-overflow-scrolling:touch]">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {PAID_PLAN_ORDER.map((key) => {
+              const plan = PLANS[key];
+              const isActive = key === currentPlanKey;
+              const isHighlighted = plan.highlighted;
+              const isLoading = loadingPlan === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handlePick(key)}
+                  disabled={isActive || loadingPlan !== null}
+                  className={cn(
+                    "group relative flex flex-col rounded-2xl border p-5 text-left transition-smooth",
+                    isActive
+                      ? "border-primary/40 bg-primary-soft/40 cursor-default opacity-70"
+                      : isHighlighted
+                        ? "border-primary/60 bg-surface shadow-soft-md hover:-translate-y-0.5 hover:shadow-soft-lg"
+                        : "border-border/70 bg-surface hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft-md",
+                    loadingPlan !== null && !isLoading && "opacity-50",
+                  )}
+                >
                 {isHighlighted && !isActive && (
                   <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground">
                     Populaire
@@ -198,12 +256,13 @@ export function Paywall({
                     </>
                   )}
                 </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-[12px] text-text-soft">
+        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-border/50 pt-3 text-[12px] text-text-soft">
           <span>14 jours d'essai gratuit · Annulation en un clic</span>
           <Button
             variant="ghost"
@@ -213,6 +272,7 @@ export function Paywall({
           >
             Plus tard
           </Button>
+        </div>
         </div>
       </DialogContent>
     </Dialog>

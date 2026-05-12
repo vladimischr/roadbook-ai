@@ -435,6 +435,18 @@ function Dashboard() {
           open={paywallOpen}
           onOpenChange={setPaywallOpen}
           currentPlanKey={subInfo.planKey}
+          reason={
+            subInfo.planStatus === "past_due" ||
+            subInfo.planStatus === "unpaid"
+              ? "past_due"
+              : subInfo.roadbooksLimit !== null &&
+                  subInfo.roadbooksRemaining === 0
+                ? "quota_roadbooks"
+                : subInfo.chatCreditsLimit !== null &&
+                    subInfo.chatCreditsRemaining === 0
+                  ? "quota_chat"
+                  : "generic"
+          }
         />
       )}
     </AppShell>
@@ -470,6 +482,26 @@ function UsageBanner({
   const isExceeded =
     (info.roadbooksLimit !== null && info.roadbooksRemaining === 0) ||
     (info.chatCreditsLimit !== null && info.chatCreditsRemaining === 0);
+
+  // Date de prochaine reset des quotas, affichée pour réduire l'anxiété
+  // "vais-je tout perdre". Free = 1er du mois suivant UTC, payant =
+  // current_period_end.
+  const nextReset: Date | null = (() => {
+    if (info.planKey === "free") {
+      const now = new Date();
+      return new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+      );
+    }
+    if (info.currentPeriodEnd) return new Date(info.currentPeriodEnd);
+    return null;
+  })();
+  const nextResetLabel = nextReset
+    ? nextReset.toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "long",
+      })
+    : null;
 
   // On masque le bandeau pour les plans illimités sans souci de paiement.
   if (isUnlimited && !isPastDue) return null;
@@ -527,6 +559,11 @@ function UsageBanner({
               <span className="ml-1 text-muted-foreground">
                 modifs IA
               </span>
+              {nextResetLabel && (
+                <span className="ml-2 text-[12px] text-muted-foreground">
+                  · reset le {nextResetLabel}
+                </span>
+              )}
             </>
           )}
         </span>
@@ -587,7 +624,8 @@ function EmptyState({ onImport }: { onImport: () => void }) {
         </p>
       </div>
 
-      {/* 3 cartes éducatives — onboarding visuel */}
+      {/* 3 cartes éducatives — onboarding visuel. L'IA est highlight comme
+          chemin le plus rapide (5 min pour un premier roadbook). */}
       <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-3">
         <OnboardCard
           step="01"
@@ -595,6 +633,8 @@ function EmptyState({ onImport }: { onImport: () => void }) {
           body="Donnez le brief, l'IA dessine la trame en quelques secondes."
           cta="Créer avec l'IA"
           href="/new"
+          highlighted
+          badge="Le plus rapide"
         />
         <OnboardCard
           step="02"
@@ -602,7 +642,6 @@ function EmptyState({ onImport }: { onImport: () => void }) {
           body="Vos coins secrets, vos lodges. L'IA met en forme autour."
           cta="Saisir manuellement"
           href="/new"
-          highlighted
         />
         <OnboardCard
           step="03"
@@ -629,6 +668,7 @@ function OnboardCard({
   href,
   onClick,
   highlighted,
+  badge,
 }: {
   step: string;
   title: string;
@@ -637,16 +677,22 @@ function OnboardCard({
   href?: string;
   onClick?: () => void;
   highlighted?: boolean;
+  badge?: string;
 }) {
   const inner = (
     <div
       className={cn(
-        "flex h-full flex-col rounded-2xl border bg-surface p-5 text-left transition-smooth hover:-translate-y-0.5 hover:shadow-soft-md",
+        "relative flex h-full flex-col rounded-2xl border bg-surface p-5 text-left transition-smooth hover:-translate-y-0.5 hover:shadow-soft-md",
         highlighted
           ? "border-primary/40 shadow-soft"
           : "border-border/60 shadow-soft",
       )}
     >
+      {badge && (
+        <span className="absolute -top-2.5 left-4 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-foreground">
+          {badge}
+        </span>
+      )}
       <span className="font-display text-[24px] font-semibold leading-none text-accent-warm">
         {step}
       </span>

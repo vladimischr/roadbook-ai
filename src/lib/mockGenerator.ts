@@ -16,7 +16,7 @@ export interface RoadbookFormData {
   manual_steps?: { location: string; nights: number; activities: string }[];
 }
 
-// Legacy structured type — preserved for pdfExport / roadbook.$id consumers.
+// Type historique encore consommé par roadbook.$id et la preview mock.
 export interface RoadbookContent {
   cover: { title: string; subtitle: string; tagline: string };
   overview: string;

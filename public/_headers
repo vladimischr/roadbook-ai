@@ -1,0 +1,27 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(self), interest-cohort=()
+  X-DNS-Prefetch-Control: on
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  X-Robots-Tag: index, follow
+
+# Page voyageur partagée — pas iframée par défaut, mais autoriser embed sur sites partenaires (futur).
+/voyage/*
+  X-Frame-Options: SAMEORIGIN
+  X-Robots-Tag: noindex
+
+# Assets long-cache
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Service worker — doit toujours être frais
+/sw-voyage.js
+  Cache-Control: no-store, must-revalidate
+  Service-Worker-Allowed: /
+
+# Manifest PWA
+/manifest.json
+  Cache-Control: public, max-age=3600

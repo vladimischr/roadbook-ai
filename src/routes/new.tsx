@@ -593,11 +593,16 @@ function NewRoadbook() {
           open={paywallOpen}
           onOpenChange={setPaywallOpen}
           currentPlanKey={subInfo.planKey}
-          title="Quota atteint"
+          reason={
+            subInfo.planStatus === "past_due" ||
+            subInfo.planStatus === "unpaid"
+              ? "past_due"
+              : "quota_roadbooks"
+          }
           subtitle={
             subInfo.roadbooksLimit !== null
-              ? `Quota roadbooks atteint (${subInfo.roadbooksUsed} / ${subInfo.roadbooksLimit}) sur le plan ${subInfo.planKey}. Passe au plan supérieur ou attends le renouvellement.`
-              : "Ton abonnement n'autorise pas la génération de nouveaux roadbooks."
+              ? `Vous êtes à ${subInfo.roadbooksUsed} / ${subInfo.roadbooksLimit} roadbooks ce mois-ci sur le plan ${subInfo.planKey}. Pour continuer maintenant, choisissez un plan plus généreux — sinon votre quota se réinitialise au prochain cycle.`
+              : undefined
           }
         />
       )}

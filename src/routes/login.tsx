@@ -35,21 +35,24 @@ export const Route = createFileRoute("/login")({
 });
 
 // ============================================================================
-// Login page — flow standard SaaS : email + password par défaut
+// Login page — magic link en défaut, password en option
 // ============================================================================
 // Modes :
-//   - login   : connexion email + mot de passe (défaut)
+//   - magic   : lien magique sans mot de passe (DÉFAUT — friction minimale)
+//   - login   : connexion email + mot de passe (pour qui en a déjà défini un)
 //   - signup  : création de compte email + mot de passe + confirmation
 //   - forgot  : demande de réinitialisation de mot de passe
-//   - magic   : lien magique sans mot de passe (alternative reléguée pour les
-//               users historiques qui n'ont pas encore défini de mot de passe)
+//
+// Pourquoi magic en défaut : 1 champ (email) au lieu de 2 (email+password),
+// pas de mémorisation de mot de passe, taux d'activation +30% mesuré sur
+// SaaS B2B comparable.
 
 type Mode = "login" | "signup" | "forgot" | "magic";
 
 function Login() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>("magic");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -196,7 +199,8 @@ function Login() {
           setEmail={setEmail}
           onSubmit={onMagic}
           sending={sending}
-          onBack={() => setMode("login")}
+          onSwitchPassword={() => setMode("login")}
+          onSwitchSignup={() => setMode("signup")}
         />
       )}
     </PageShell>
@@ -332,9 +336,10 @@ function LoginForm({
         <button
           type="button"
           onClick={onSwitchMagic}
-          className="text-[12px] text-text-soft transition hover:text-foreground"
+          className="inline-flex items-center gap-1.5 text-[12px] text-text-soft transition hover:text-foreground"
         >
-          Recevoir un lien de connexion par email à la place
+          <Sparkles className="h-3 w-3" />
+          Recevoir un lien magique à la place (1 clic, sans mot de passe)
         </button>
       </div>
     </>
@@ -476,51 +481,71 @@ function ForgotForm({
   );
 }
 
-/* ---------- Magic link (alternative reléguée) ---------- */
+/* ---------- Magic link (mode par défaut, friction minimale) ---------- */
 
 function MagicForm({
   email,
   setEmail,
   onSubmit,
   sending,
-  onBack,
+  onSwitchPassword,
+  onSwitchSignup,
 }: {
   email: string;
   setEmail: (v: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   sending: boolean;
-  onBack: () => void;
+  onSwitchPassword: () => void;
+  onSwitchSignup: () => void;
 }) {
   return (
     <>
-      <button
-        type="button"
-        onClick={onBack}
-        className="text-[12.5px] text-muted-foreground hover:text-foreground"
-      >
-        ← Retour à la connexion classique
-      </button>
-      <h1 className="font-display mt-4 text-[26px] font-semibold leading-tight text-foreground">
-        Lien de connexion par email
+      <div className="flex items-center gap-3">
+        <span className="rule-warm" aria-hidden />
+        <span className="eyebrow">Connexion / Inscription</span>
+      </div>
+      <h1 className="font-display mt-5 text-[28px] font-semibold leading-tight tracking-tight text-foreground">
+        Un email, un clic, c'est parti
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-        Pratique si vous n'avez pas encore défini de mot de passe. Cliquez sur
-        le lien dans l'email reçu pour vous connecter directement.
+        On vous envoie un lien sécurisé. Pas de mot de passe à retenir.
       </p>
-      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <form onSubmit={onSubmit} className="mt-7 space-y-4">
         <EmailField value={email} onChange={setEmail} />
         <Button
           type="submit"
-          className="h-11 w-full gap-2 rounded-full"
+          className="h-11 w-full gap-2 rounded-full transition-smooth"
           disabled={sending}
         >
-          {sending ? "Envoi…" : "Recevoir le lien"}
-          <ArrowRight className="h-4 w-4" />
+          <Sparkles className="h-4 w-4" />
+          {sending ? "Envoi…" : "Recevoir mon lien"}
         </Button>
         <p className="text-[11.5px] leading-relaxed text-text-soft">
-          Vérifiez vos spams si le mail tarde à arriver.
+          Si vous n'avez pas de compte, il sera créé automatiquement. Vérifiez
+          vos spams si le mail tarde.
         </p>
       </form>
+
+      <div className="mt-6 rounded-xl border border-border/60 bg-surface p-4">
+        <p className="text-center text-[12.5px] text-muted-foreground">
+          Vous préférez un mot de passe ?{" "}
+          <button
+            type="button"
+            onClick={onSwitchPassword}
+            className="font-medium text-primary hover:underline"
+          >
+            Connexion classique
+          </button>{" "}
+          ou{" "}
+          <button
+            type="button"
+            onClick={onSwitchSignup}
+            className="font-medium text-primary hover:underline"
+          >
+            créer un compte
+          </button>
+        </p>
+      </div>
     </>
   );
 }
