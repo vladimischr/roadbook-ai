@@ -15,7 +15,6 @@ interface ReauthenticationEmailProps {
 }
 
 export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
-<<<<<<< HEAD
   <Html lang="fr" dir="ltr">
     <Head />
     <Preview>Ton code de vérification Roadbook.ai</Preview>
@@ -33,19 +32,6 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
           Tu reçois cet email parce qu'une action sensible a été demandée sur ton compte Roadbook.ai. Si tu n'es pas à l'origine de cette demande, ignore ce message et envisage de changer ton mot de passe.
           <br /><br />
           — L'équipe Roadbook.ai
-=======
-  <Html lang="en" dir="ltr">
-    <Head />
-    <Preview>Your verification code</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>Confirm reauthentication</Heading>
-        <Text style={text}>Use the code below to confirm your identity:</Text>
-        <Text style={codeStyle}>{token}</Text>
-        <Text style={footer}>
-          This code will expire shortly. If you didn't request this, you can
-          safely ignore this email.
->>>>>>> 427df08072d5b09b2dcde4bb85d6993470d4f624
         </Text>
       </Container>
     </Body>
