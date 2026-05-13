@@ -17,6 +17,25 @@ import { redirectToCheckout } from "@/lib/useSubscription";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+const PRICING_FAQ = [
+  {
+    q: "Puis-je changer de plan à tout moment ?",
+    a: "Oui. Le portail Stripe permet de monter ou descendre de plan en un clic. Le prorata est calculé automatiquement.",
+  },
+  {
+    q: "Que se passe-t-il après l'essai gratuit ?",
+    a: "Au bout de 14 jours, le premier prélèvement a lieu sauf si vous annulez avant. Aucun engagement.",
+  },
+  {
+    q: "Comment fonctionnent les deux quotas ?",
+    a: "Le quota « roadbooks » compte les nouveaux voyages créés (génération IA, saisie manuelle ou import Excel). Le quota « modifications IA » compte les ajustements via chat IA ou recalcul complet. Les deux quotas sont indépendants : épuiser le chat ne vous empêche pas de créer un nouveau roadbook, et vice-versa. L'édition manuelle (texte, photos, étapes), l'export PDF et le partage de lien client n'utilisent aucun quota.",
+  },
+  {
+    q: "Mes clients voient-ils Roadbook.ai ?",
+    a: "Le PDF exporté est neutre — uniquement le nom de votre agence. Le mode marque blanche est inclus dès le plan Atelier.",
+  },
+];
+
 export const Route = createFileRoute("/pricing")({
   component: Pricing,
   head: () => ({
@@ -26,6 +45,28 @@ export const Route = createFileRoute("/pricing")({
         name: "description",
         content:
           "Choisissez le plan adapté à votre volume — du Découverte gratuit à l'Atelier illimité.",
+      },
+      { property: "og:title", content: "Tarifs — Roadbook.ai" },
+      {
+        property: "og:description",
+        content:
+          "Choisissez le plan adapté à votre volume — du Découverte gratuit à l'Atelier illimité.",
+      },
+      { property: "og:url", content: "https://getroadbook.com/pricing" },
+    ],
+    links: [{ rel: "canonical", href: "https://getroadbook.com/pricing" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: PRICING_FAQ.map((it) => ({
+            "@type": "Question",
+            name: it.q,
+            acceptedAnswer: { "@type": "Answer", text: it.a },
+          })),
+        }),
       },
     ],
   }),
@@ -262,24 +303,7 @@ function Pricing() {
 
           {/* FAQ rapide pour rassurer */}
           <div className="mt-24 grid gap-x-12 gap-y-10 md:grid-cols-2">
-            {[
-              {
-                q: "Puis-je changer de plan à tout moment ?",
-                a: "Oui. Le portail Stripe permet de monter ou descendre de plan en un clic. Le prorata est calculé automatiquement.",
-              },
-              {
-                q: "Que se passe-t-il après l'essai gratuit ?",
-                a: "Au bout de 14 jours, le premier prélèvement a lieu sauf si vous annulez avant. Aucun engagement.",
-              },
-              {
-                q: "Comment fonctionnent les deux quotas ?",
-                a: "Le quota « roadbooks » compte les nouveaux voyages créés (génération IA, saisie manuelle ou import Excel). Le quota « modifications IA » compte les ajustements via chat IA ou recalcul complet. Les deux quotas sont indépendants : épuiser le chat ne vous empêche pas de créer un nouveau roadbook, et vice-versa. L'édition manuelle (texte, photos, étapes), l'export PDF et le partage de lien client n'utilisent aucun quota.",
-              },
-              {
-                q: "Mes clients voient-ils Roadbook.ai ?",
-                a: "Le PDF exporté est neutre — uniquement le nom de votre agence. Le mode marque blanche est inclus dès le plan Atelier.",
-              },
-            ].map((it, i) => (
+            {PRICING_FAQ.map((it, i) => (
               <div key={i}>
                 <h3 className="font-display text-[18px] font-semibold leading-tight text-foreground">
                   {it.q}

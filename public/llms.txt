@@ -1,0 +1,17 @@
+# Roadbook.ai
+
+> Outil SaaS pour travel designers : composez en quelques minutes des roadbooks éditoriaux sur-mesure pour vos voyageurs. L'IA pose la trame, vous gardez la main.
+
+Roadbook.ai aide les agences de voyage et travel designers indépendants à produire des roadbooks PDF haut de gamme à partir d'une génération IA, d'une saisie manuelle, ou d'un import Excel.
+
+## Pages
+
+- [Accueil](/): Présentation du produit et des trois modes de composition (IA, manuel, import).
+- [Tarifs](/pricing): Plans Découverte, Solo, Studio et Atelier — essai gratuit 14 jours.
+- [Connexion](/login): Authentification par email.
+
+## Légal
+
+- [CGU](/cgu): Conditions générales d'utilisation et de vente.
+- [Confidentialité](/confidentialite): Politique de protection des données personnelles.
+- [Mentions légales](/mentions-legales): Éditeur, hébergeur, contact.
