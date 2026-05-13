@@ -17,4 +17,4 @@ Disallow: /reset-password
 Disallow: /voyage/
 Disallow: /brief/
 
-Sitemap: https://roadbook.ai/sitemap.xml
+Sitemap: https://getroadbook.com/sitemap.xml
