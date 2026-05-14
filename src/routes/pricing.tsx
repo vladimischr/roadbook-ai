@@ -34,6 +34,22 @@ const PRICING_FAQ = [
     q: "Mes clients voient-ils Roadbook.ai ?",
     a: "Le PDF exporté est neutre — uniquement le nom de votre agence. Le mode marque blanche est inclus dès le plan Atelier.",
   },
+  {
+    q: "Et si je dépasse mon quota un mois exceptionnel ?",
+    a: "Tu reçois une alerte à 80% d'utilisation. Tu peux passer au plan supérieur instantanément (prorata calculé) ou attendre la réinitialisation au début du cycle suivant. Pas de surcharge cachée.",
+  },
+  {
+    q: "Mes données partent-elles aux US ?",
+    a: "Non. La base est hébergée en Europe (Supabase Frankfurt) et le PDF est généré dans ton navigateur. Seules les requêtes de génération de plan transitent par l'API Claude (Anthropic) — anonymisées (pas de nom client transmis).",
+  },
+  {
+    q: "Je suis déjà sur HARVEST / O2S / Quantalys — vous remplacez ?",
+    a: "Non, on est complémentaires. Eux gèrent le devis, la résa, la facturation. Nous, on gère le livrable que tu envoies au client. La plupart de nos utilisateurs gardent leur outil PMS et utilisent Roadbook juste pour la production du carnet de voyage.",
+  },
+  {
+    q: "Le générateur IA va-t-il inventer des choses fausses ?",
+    a: "Le plan généré est une trame de départ — toujours à valider par toi avant envoi client. On affiche les sources quand on les a (Google Maps pour les lieux, base hôtelière pour les hébergements). Mais c'est ton expertise qui valide. Le but : te faire gagner les 80% mécaniques, pas remplacer ton œil.",
+  },
 ];
 
 export const Route = createFileRoute("/pricing")({
@@ -376,44 +392,7 @@ function Pricing() {
 
           {/* FAQ rapide pour rassurer */}
           <div className="mt-24 grid gap-x-12 gap-y-10 md:grid-cols-2">
-<<<<<<< HEAD
-            {[
-              {
-                q: "Puis-je changer de plan à tout moment ?",
-                a: "Oui. Le portail Stripe permet de monter ou descendre de plan en un clic. Le prorata est calculé automatiquement.",
-              },
-              {
-                q: "Que se passe-t-il après l'essai gratuit ?",
-                a: "Au bout de 14 jours, le premier prélèvement a lieu sauf si vous annulez avant. Aucun engagement.",
-              },
-              {
-                q: "Comment fonctionnent les deux quotas ?",
-                a: "Le quota « roadbooks » compte les nouveaux voyages créés (génération IA, saisie manuelle ou import Excel). Le quota « modifications IA » compte les ajustements via chat IA ou recalcul complet. Les deux quotas sont indépendants : épuiser le chat ne vous empêche pas de créer un nouveau roadbook, et vice-versa. L'édition manuelle (texte, photos, étapes), l'export PDF et le partage de lien client n'utilisent aucun quota.",
-              },
-              {
-                q: "Mes clients voient-ils Roadbook.ai ?",
-                a: "Le PDF exporté est neutre — uniquement le nom de votre agence. Le mode marque blanche est inclus dès le plan Atelier.",
-              },
-              {
-                q: "Et si je dépasse mon quota un mois exceptionnel ?",
-                a: "Tu reçois une alerte à 80% d'utilisation. Tu peux passer au plan supérieur instantanément (prorata calculé) ou attendre la réinitialisation au début du cycle suivant. Pas de surcharge cachée.",
-              },
-              {
-                q: "Mes données partent-elles aux US ?",
-                a: "Non. La base est hébergée en Europe (Supabase Frankfurt) et le PDF est généré dans ton navigateur. Seules les requêtes de génération de plan transitent par l'API Claude (Anthropic) — anonymisées (pas de nom client transmis).",
-              },
-              {
-                q: "Je suis déjà sur HARVEST / O2S / Quantalys — vous remplacez ?",
-                a: "Non, on est complémentaires. Eux gèrent le devis, la résa, la facturation. Nous, on gère le livrable que tu envoies au client. La plupart de nos utilisateurs gardent leur outil PMS et utilisent Roadbook juste pour la production du carnet de voyage.",
-              },
-              {
-                q: "Le générateur IA va-t-il inventer des choses fausses ?",
-                a: "Le plan généré est une trame de départ — toujours à valider par toi avant envoi client. On affiche les sources quand on les a (Google Maps pour les lieux, base hôtelière pour les hébergements). Mais c'est ton expertise qui valide. Le but : te faire gagner les 80% mécaniques, pas remplacer ton oeil.",
-              },
-            ].map((it, i) => (
-=======
             {PRICING_FAQ.map((it, i) => (
->>>>>>> ed0053909d2a1235ad85e2319c9bd2e22c40a0a1
               <div key={i}>
                 <h3 className="font-display text-[18px] font-semibold leading-tight text-foreground">
                   {it.q}
