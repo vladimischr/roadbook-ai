@@ -183,22 +183,25 @@ function makeStyles(p: PdfPalette) {
   },
   coverTitle: {
     fontFamily: "Playfair",
+    fontStyle: "italic",
     fontWeight: 700,
-    fontSize: 78,
-    lineHeight: 1,
+    fontSize: 96,
+    lineHeight: 0.95,
     color: PAPER,
-    marginBottom: 14,
+    marginBottom: 18,
     textAlign: "center",
+    letterSpacing: -1,
   },
   coverSubtitle: {
-    fontFamily: "Playfair",
-    fontStyle: "italic",
+    fontFamily: "Inter",
     fontWeight: 400,
-    fontSize: 22,
+    fontSize: 16,
     color: PAPER,
-    opacity: 0.95,
-    marginBottom: 12,
+    opacity: 0.92,
+    marginBottom: 14,
     textAlign: "center",
+    letterSpacing: 0.5,
+    lineHeight: 1.5,
   },
   coverTagline: {
     fontFamily: "Inter",
@@ -358,36 +361,54 @@ function makeStyles(p: PdfPalette) {
     color: INK,
   },
 
-  // Day card
+  // Bloc jour (layout 2 colonnes : "01" XXL à gauche, contenu à droite)
   day: {
-    marginBottom: 22,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: TEAL,
+    flexDirection: "row",
+    gap: 18,
+    marginBottom: 28,
+    paddingBottom: 24,
+    borderBottomWidth: 0.5,
+    borderBottomColor: STRIPE,
+  },
+  dayCol: {
+    flex: 1,
+  },
+  dayNum: {
+    fontFamily: "Playfair",
+    fontStyle: "italic",
+    fontWeight: 700,
+    fontSize: 64,
+    lineHeight: 0.85,
+    color: TEAL,
+    width: 70,
+    letterSpacing: -2,
   },
   dayHead: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 14,
-    marginBottom: 6,
+    gap: 12,
+    marginBottom: 4,
   },
-  dayNum: {
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: 2,
+  dayKicker: {
+    fontSize: 8.5,
+    fontWeight: 600,
+    letterSpacing: 1.5,
     color: TEAL,
     textTransform: "uppercase",
   },
   dayDate: {
-    fontSize: 10,
+    fontSize: 9.5,
     color: MUTED,
+    letterSpacing: 0.3,
   },
   dayStage: {
     fontFamily: "Playfair",
     fontWeight: 600,
-    fontSize: 18,
+    fontSize: 22,
+    lineHeight: 1.1,
     color: INK,
-    marginBottom: 6,
+    marginBottom: 8,
+    marginTop: 2,
   },
   dayLine: {
     fontSize: 10.5,
@@ -487,19 +508,27 @@ function makeStyles(p: PdfPalette) {
   // Tips
   tipRow: {
     flexDirection: "row",
-    marginBottom: 10,
+    gap: 14,
+    marginBottom: 16,
+    alignItems: "flex-start",
   },
+  // Numérotation éditoriale "01", "02"... en Playfair italic — touche magazine
   tipBullet: {
-    width: 14,
-    fontSize: 14,
+    fontFamily: "Playfair",
+    fontStyle: "italic",
+    fontWeight: 600,
+    width: 30,
+    fontSize: 22,
+    lineHeight: 1.0,
     color: TEAL,
-    lineHeight: 1.4,
+    textAlign: "right",
   },
   tipText: {
     flex: 1,
     fontSize: 11,
-    lineHeight: 1.65,
+    lineHeight: 1.7,
     color: INK,
+    paddingTop: 4,
   },
 
   // Map
@@ -597,17 +626,32 @@ function makeStyles(p: PdfPalette) {
   endTitle: {
     fontFamily: "Playfair",
     fontStyle: "italic",
-    fontWeight: 600,
-    fontSize: 32,
+    fontWeight: 700,
+    fontSize: 48,
+    lineHeight: 1.0,
     color: TEAL,
     textAlign: "center",
     marginBottom: 20,
+    letterSpacing: -1,
+  },
+  endQuote: {
+    fontFamily: "Playfair",
+    fontStyle: "italic",
+    fontWeight: 400,
+    fontSize: 16,
+    lineHeight: 1.5,
+    color: INK,
+    textAlign: "center",
+    paddingHorizontal: 60,
+    marginBottom: 24,
+    opacity: 0.85,
   },
   endText: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: MUTED,
     textAlign: "center",
     marginBottom: 6,
+    letterSpacing: 0.2,
   },
   endBrand: {
     marginTop: 30,
@@ -1056,7 +1100,10 @@ export function RoadbookPDF({
         mapboxStyle,
       )
     : buildStaticMapUrl(days, roadbook.directions_segments, mapsApiKey);
-  const dayPages = chunk(days, 3);
+  // 2 jours par page : aération éditoriale premium (vs 3 jours = trop dense).
+  // Pour un voyage 10 jours = 5 pages d'itinéraire au lieu de 4. Acceptable
+  // compte tenu du gain en lisibilité et en sensation "magazine haut de gamme".
+  const dayPages = chunk(days, 2);
 
   const pageMeta = sanitizeText(
     `${roadbook.client_name || ""}${
@@ -1317,56 +1364,62 @@ export function RoadbookPDF({
 
           {group.map((d) => (
             <View key={`d-${d.day}`} style={styles.day} wrap={false}>
-              <View style={styles.dayHead}>
-                <Text style={styles.dayNum}>Jour {d.day}</Text>
-                <Text style={styles.dayDate}>{formatDateFR(d.date)}</Text>
-              </View>
-              {d.stage ? <Text style={styles.dayStage}>{s(d.stage)}</Text> : null}
-              {d.accommodation && d.accommodation !== "—" ? (
-                <Text style={styles.dayLine}>
-                  Hébergement : {d.accommodation}
-                  {d.type ? ` · ${d.type}` : ""}
-                </Text>
-              ) : null}
-              <Text style={styles.dayMeta}>
-                {[
-                  d.distance_km && d.distance_km > 0
-                    ? `${d.distance_km} km`
-                    : null,
-                  d.drive_hours && d.drive_hours > 0
-                    ? `${d.drive_hours} h de route`
-                    : null,
-                  d.flight && d.flight !== "—" ? d.flight : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+              {/* Numéro du jour XXL en italic Playfair — signature éditoriale */}
+              <Text style={styles.dayNum}>
+                {String(d.day).padStart(2, "0")}
               </Text>
-              {d.narrative ? (
-                <Text style={styles.dayNarrative}>{d.narrative}</Text>
-              ) : null}
-              {d.photos && d.photos.length > 0 ? (
-                <>
-                  <View style={styles.dayPhotosRow}>
-                    {d.photos.slice(0, 3).map((p, idx) => (
-                      <Image
-                        key={`photo-${idx}`}
-                        src={p.url}
-                        style={styles.dayPhoto}
-                      />
-                    ))}
-                  </View>
-                  {/* Crédit photographe si Pexels (obligation) */}
-                  {d.photos.some((p) => p.credit) ? (
-                    <Text style={styles.dayPhotoCredit}>
-                      {d.photos
-                        .slice(0, 3)
-                        .map((p) => p.credit)
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </Text>
-                  ) : null}
-                </>
-              ) : null}
+              <View style={styles.dayCol}>
+                <View style={styles.dayHead}>
+                  <Text style={styles.dayKicker}>Jour {d.day}</Text>
+                  <Text style={styles.dayDate}>{formatDateFR(d.date)}</Text>
+                </View>
+                {d.stage ? <Text style={styles.dayStage}>{s(d.stage)}</Text> : null}
+                {d.accommodation && d.accommodation !== "—" ? (
+                  <Text style={styles.dayLine}>
+                    Hébergement : {d.accommodation}
+                    {d.type ? ` · ${d.type}` : ""}
+                  </Text>
+                ) : null}
+                <Text style={styles.dayMeta}>
+                  {[
+                    d.distance_km && d.distance_km > 0
+                      ? `${d.distance_km} km`
+                      : null,
+                    d.drive_hours && d.drive_hours > 0
+                      ? `${d.drive_hours} h de route`
+                      : null,
+                    d.flight && d.flight !== "—" ? d.flight : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+                {d.narrative ? (
+                  <Text style={styles.dayNarrative}>{d.narrative}</Text>
+                ) : null}
+                {d.photos && d.photos.length > 0 ? (
+                  <>
+                    <View style={styles.dayPhotosRow}>
+                      {d.photos.slice(0, 3).map((p, idx) => (
+                        <Image
+                          key={`photo-${idx}`}
+                          src={p.url}
+                          style={styles.dayPhoto}
+                        />
+                      ))}
+                    </View>
+                    {/* Crédit photographe si Pexels (obligation) */}
+                    {d.photos.some((p) => p.credit) ? (
+                      <Text style={styles.dayPhotoCredit}>
+                        {d.photos
+                          .slice(0, 3)
+                          .map((p) => p.credit)
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </Text>
+                    ) : null}
+                  </>
+                ) : null}
+              </View>
             </View>
           ))}
 
@@ -1459,8 +1512,10 @@ export function RoadbookPDF({
           <View style={styles.rule} />
           {tips.map((t, i) => (
             <View key={i} style={styles.tipRow} wrap={false}>
-              <Text style={styles.tipBullet}>•</Text>
-              <Text style={styles.tipText}>{t}</Text>
+              <Text style={styles.tipBullet}>
+                {String(i + 1).padStart(2, "0")}
+              </Text>
+              <Text style={styles.tipText}>{s(t)}</Text>
             </View>
           ))}
           <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
@@ -1473,11 +1528,15 @@ export function RoadbookPDF({
       ) : null}
 
       {/* ---------- End page ---------- */}
-      <Page size="A4" style={styles.endPage}>
+      <Page size="A4" style={styles.endPage} wrap={false}>
         <Text style={styles.endEyebrow}>Bon voyage</Text>
         <View style={styles.endRule} />
-        <Text style={styles.endTitle}>{cover.title || destination}</Text>
+        <Text style={styles.endTitle}>{s(cover.title || destination)}</Text>
         <View style={styles.endRule} />
+        <Text style={styles.endQuote}>
+          « Le vrai voyage de découverte ne consiste pas à chercher
+          de nouveaux paysages, mais à avoir de nouveaux yeux. »
+        </Text>
         <Text style={styles.endText}>Roadbook préparé avec soin</Text>
         <Text style={styles.endText}>Généré le {generatedOn}</Text>
         <Text style={styles.endBrand}>roadbook.ai</Text>
