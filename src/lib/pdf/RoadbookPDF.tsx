@@ -175,7 +175,7 @@ function makeStyles(p: PdfPalette) {
   eyebrow: {
     fontSize: 10,
     fontWeight: 500,
-    letterSpacing: 4,
+    letterSpacing: 2,
     color: PAPER,
     opacity: 0.7,
     textTransform: "uppercase",
@@ -317,7 +317,7 @@ function makeStyles(p: PdfPalette) {
   sectionEyebrow: {
     fontSize: 9,
     fontWeight: 600,
-    letterSpacing: 2.5,
+    letterSpacing: 1.5,
     color: TEAL,
     textTransform: "uppercase",
     marginBottom: 10,
@@ -613,7 +613,7 @@ function makeStyles(p: PdfPalette) {
     marginTop: 30,
     fontSize: 10,
     fontWeight: 600,
-    letterSpacing: 3,
+    letterSpacing: 2,
     color: TEAL,
     textTransform: "uppercase",
   },
@@ -630,7 +630,7 @@ function makeStyles(p: PdfPalette) {
   endEyebrow: {
     fontSize: 10,
     fontWeight: 500,
-    letterSpacing: 4,
+    letterSpacing: 2,
     color: TEAL,
     opacity: 0.85,
     textTransform: "uppercase",
@@ -658,6 +658,44 @@ function makeStyles(p: PdfPalette) {
 const styles = makeStyles(DEFAULT_PALETTE);
 
 // ---------- Helpers ----------
+
+/**
+ * Nettoie un texte pour le rendu PDF.
+ *
+ * Le moteur @react-pdf ne supporte que les glyphes présents dans les fonts
+ * WOFF chargées (Inter + Playfair Display). Certains caractères Unicode
+ * "invisibles" ou "exotiques" présents dans le contenu généré par Claude
+ * cassent le rendu :
+ *
+ *   - U+202F (narrow no-break space) — produit par toLocaleString("fr-FR")
+ *     → "1 010" rendu comme "1?010" ou "1/010"
+ *   - U+00A0 (no-break space) — idem mais standard, on normalise
+ *   - U+200B (zero-width space) — coupe des mots à l'intérieur
+ *     → "Tor[zwsp]res" rendu "Tor res"
+ *   - U+00AD (soft hyphen) — idem
+ *   - U+2192 (rightwards arrow) → flèche → invisible
+ *   - U+2190 (leftwards arrow) ←
+ *   - U+27A1, U+2794, U+2B95 — variantes flèches
+ *
+ * Solution : remplacer par des équivalents supportés (espace ASCII, em-dash,
+ * ou guillemet droit français qui sont dans toutes les fonts).
+ */
+function sanitizeText(input: string | undefined | null): string {
+  if (!input) return "";
+  return String(input)
+    // Espaces unicode → espace ASCII
+    .replace(/[    ]/g, " ")
+    // Invisibles → rien
+    .replace(/[​‌‍­﻿]/g, "")
+    // Flèches droite → guillemet français droit "›" (supporté Inter)
+    .replace(/[→➡➔⮕⭢]/g, "›")
+    // Flèches gauche → guillemet français gauche
+    .replace(/[←⬅⭠]/g, "‹")
+    // Espaces consécutifs → 1 seul
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /**
  * Convertit un code hex (#RRGGBB ou #RGB) en notation rgba avec alpha.
  * Utilisé pour appliquer un overlay coloré au-dessus de la cover image.
@@ -988,6 +1026,11 @@ export function RoadbookPDF({
   // (~1ms pour 70 entries de StyleSheet) et seulement à chaque render initial
   // d'un PDF (pas pendant la création des pages).
   const styles = React.useMemo(() => makeStyles(palette), [palette]);
+
+  // Helper local pour sanitize tout le contenu textuel qu'on rend.
+  // Plus rapide que de muter l'objet : on appelle s(x) à chaque <Text>.
+  const s = sanitizeText;
+
   const cover = roadbook.cover || {};
   const days = roadbook.days || [];
   const accommodations = roadbook.accommodations_summary || [];
@@ -1015,9 +1058,11 @@ export function RoadbookPDF({
     : buildStaticMapUrl(days, roadbook.directions_segments, mapsApiKey);
   const dayPages = chunk(days, 3);
 
-  const pageMeta = `${roadbook.client_name || ""}${
-    roadbook.client_name && destination ? " · " : ""
-  }${destination}`;
+  const pageMeta = sanitizeText(
+    `${roadbook.client_name || ""}${
+      roadbook.client_name && destination ? " · " : ""
+    }${destination}`,
+  );
 
   const generatedOn = new Date().toLocaleDateString("fr-FR", {
     day: "numeric",
@@ -1030,8 +1075,11 @@ export function RoadbookPDF({
       title={`Roadbook — ${roadbook.client_name || ""} — ${destination}`}
       author="Roadbook.ai"
     >
-      {/* ---------- Cover ---------- */}
-      <Page size="A4" style={styles.coverPage}>
+      {/* ---------- Cover ----------
+          wrap={false} : empêche react-pdf de splitter la cover sur 2 pages
+          (bug observé quand l'Image absolute "consomme" de la hauteur layout
+          et force le texte sur une page suivante). Garantit cover = 1 page. */}
+      <Page size="A4" style={styles.coverPage} wrap={false}>
         {coverImageUrl ? (
           <Image
             src={coverImageUrl}
@@ -1064,22 +1112,22 @@ export function RoadbookPDF({
           <Text style={styles.eyebrow}>Roadbook</Text>
           {/* Rule décorative entre eyebrow et titre — touche éditoriale magazine */}
           <View style={styles.coverRule} />
-          <Text style={styles.coverTitle}>{cover.title || destination}</Text>
+          <Text style={styles.coverTitle}>{s(cover.title || destination)}</Text>
           {cover.subtitle ? (
             <>
               <View style={styles.coverRuleThin} />
-              <Text style={styles.coverSubtitle}>{cover.subtitle}</Text>
+              <Text style={styles.coverSubtitle}>{s(cover.subtitle)}</Text>
             </>
           ) : null}
           {cover.tagline ? (
-            <Text style={styles.coverTagline}>{cover.tagline}</Text>
+            <Text style={styles.coverTagline}>{s(cover.tagline)}</Text>
           ) : null}
           <View style={styles.pillRow}>
             {cover.dates_label ? (
-              <Text style={styles.pill}>{cover.dates_label}</Text>
+              <Text style={styles.pill}>{s(cover.dates_label)}</Text>
             ) : null}
             {roadbook.travel_mode ? (
-              <Text style={styles.pillSmallCaps}>{roadbook.travel_mode}</Text>
+              <Text style={styles.pillSmallCaps}>{s(roadbook.travel_mode)}</Text>
             ) : null}
           </View>
         </View>
@@ -1196,7 +1244,7 @@ export function RoadbookPDF({
                   <Text style={styles.mapStatLabel}>Distance</Text>
                   <View style={{ flexDirection: "row", alignItems: "baseline" }}>
                     <Text style={styles.mapStatValue}>
-                      {totalKm > 0 ? totalKm.toLocaleString("fr-FR") : "—"}
+                      {totalKm > 0 ? totalKm.toLocaleString("fr-FR").replace(/[    ]/g, " ") : "—"}
                     </Text>
                     {totalKm > 0 ? (
                       <Text style={styles.mapStatUnit}>km</Text>
@@ -1235,7 +1283,7 @@ export function RoadbookPDF({
                 <View key={`legend-${d.day}`} style={styles.mapLegendItem}>
                   <Text style={styles.mapLegendNum}>{d.day}</Text>
                   <Text style={styles.mapLegendText}>
-                    {d.stage || d.accommodation || "Étape"}
+                    {s(d.stage || d.accommodation || "Étape")}
                   </Text>
                 </View>
               ))}
@@ -1273,7 +1321,7 @@ export function RoadbookPDF({
                 <Text style={styles.dayNum}>Jour {d.day}</Text>
                 <Text style={styles.dayDate}>{formatDateFR(d.date)}</Text>
               </View>
-              {d.stage ? <Text style={styles.dayStage}>{d.stage}</Text> : null}
+              {d.stage ? <Text style={styles.dayStage}>{s(d.stage)}</Text> : null}
               {d.accommodation && d.accommodation !== "—" ? (
                 <Text style={styles.dayLine}>
                   Hébergement : {d.accommodation}
