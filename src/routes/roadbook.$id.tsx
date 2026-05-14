@@ -1693,10 +1693,12 @@ function RoadbookPage() {
         />
       )}
 
-      {/* Sélecteur de palette PDF avant export */}
+      {/* Sélecteur de palette PDF avant export — suggère une palette adaptée
+          à la destination (ex: Maroc → Ocre, Tokyo → Minuit). */}
       <PdfExportDialog
         open={pdfDialogOpen}
         onOpenChange={setPdfDialogOpen}
+        destination={rb?.destination}
         onConfirm={generatePdfWithPalette}
         generating={pdfGenerating}
       />

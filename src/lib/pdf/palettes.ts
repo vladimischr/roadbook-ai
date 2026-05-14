@@ -148,3 +148,140 @@ export function getPalette(id: string | null | undefined): PdfPalette {
   if (!id) return DEFAULT_PALETTE;
   return PDF_PALETTES_BY_ID[id as PdfPaletteId] ?? DEFAULT_PALETTE;
 }
+
+// ============================================================================
+// Auto-suggestion : palette suggérée selon la destination
+// ============================================================================
+//
+// Heuristique simple basée sur des mots-clés présents dans le nom de la
+// destination. Volontairement lâche (ne couvre pas tout) — fallback EMERALD
+// si aucun match. Retourne null si pas de suggestion forte.
+//
+// Pattern : on évite les faux positifs. Mieux vaut PAS suggérer que mal
+// suggérer.
+// ============================================================================
+
+const DESTINATION_PALETTE_MAP: Array<{
+  paletteId: PdfPaletteId;
+  /** Patterns regex case-insensitive testés contre la destination. */
+  patterns: RegExp[];
+}> = [
+  {
+    paletteId: "ochre",
+    patterns: [
+      /\bmaroc(c|c)?ai?n?e?\b/i,
+      /\bmarrakech\b/i,
+      /\bsahara\b/i, // Conflict avec sand — testé après dans l'ordre du tableau
+      /\btanzani[ea]\b/i,
+      /\bkeny[ae]\b/i,
+      /\bnamibi[ea]\b/i,
+      /\btoscan[ea]\b/i,
+      /\bfloren[cz]e?\b/i,
+      /\barizona\b/i,
+      /\butah\b/i,
+    ],
+  },
+  {
+    paletteId: "midnight",
+    patterns: [
+      /\bnew[- ]?york\b/i,
+      /\bny[ ]city\b/i,
+      /\btokyo\b/i,
+      /\blondre[s]?\b/i,
+      /\blondon\b/i,
+      /\bhong[- ]?kong\b/i,
+      /\bsingap(o|ou)r[e]?\b/i,
+      /\bduba[iï]\b/i,
+      /\bberlin\b/i,
+      /\bseoul\b/i,
+    ],
+  },
+  {
+    paletteId: "burgundy",
+    patterns: [
+      /\bitali[ea]\b/i,
+      /\btus?can(y|ie|e)\b/i,
+      /\bbourgogne\b/i,
+      /\bbordeaux\b/i,
+      /\bproven[cç]e\b/i,
+      /\bargentin[ea]\b/i,
+      /\bespagn[ea]\b/i,
+      /\bandalou[s]?ie\b/i,
+      /\bro[ÿy][ -]?aume[ -]?uni\b/i, // moins, garder pour culture
+    ],
+  },
+  {
+    paletteId: "sand",
+    patterns: [
+      /\bjorda?n[ie]?\b/i,
+      /\bwadi\s*rum\b/i,
+      /\batacam[ae]\b/i,
+      /\bchili\b/i,
+      /\bperou\b/i,
+      /\bp[eé]rou\b/i,
+      /\bbolivi[ea]\b/i,
+      /\bs[ée]n[ée]gal\b/i,
+      /\bmali\b/i,
+      /\bsahara\b/i, // Si pas matché en ochre via Maroc/Tanzanie
+    ],
+  },
+  {
+    paletteId: "cobalt",
+    patterns: [
+      /\bgr[èe]ce\b/i,
+      /\bsantorin[ie]?\b/i,
+      /\bcrète?\b/i,
+      /\bcroati[ea]\b/i,
+      /\bc[ôo]te[ -]?d[' ]?azur\b/i,
+      /\bamalfi\b/i,
+      /\bcapri\b/i,
+      /\bporquerolle?s?\b/i,
+      /\bcorse\b/i,
+      /\bsicile\b/i,
+      /\bibiza\b/i,
+      /\bmykonos\b/i,
+    ],
+  },
+  {
+    paletteId: "emerald",
+    patterns: [
+      /\bislande\b/i,
+      /\bnorv[èe]ge\b/i,
+      /\bsu[èe]de\b/i,
+      /\bcanada\b/i,
+      /\balaska\b/i,
+      /\bcosta[ -]?rica\b/i,
+      /\b[ée]quateur\b/i,
+      /\bp[ée]rou\b/i, // remapped si pas matché ailleurs
+      /\bsafari\b/i,
+      /\bafriqu[ea]\b/i,
+    ],
+  },
+];
+
+/**
+ * Suggère une palette adaptée à la destination du roadbook.
+ *
+ * Retourne null si aucune correspondance — le caller utilise alors :
+ * 1. La dernière palette stockée en localStorage (UX persistance)
+ * 2. La palette par défaut (EMERALD) si rien en localStorage
+ *
+ * @example
+ *   suggestPaletteForDestination("Maroc, Marrakech") → "ochre"
+ *   suggestPaletteForDestination("Tokyo Japon")       → "midnight"
+ *   suggestPaletteForDestination("Lyon week-end")     → null
+ */
+export function suggestPaletteForDestination(
+  destination: string | null | undefined,
+): PdfPaletteId | null {
+  if (!destination) return null;
+  const text = destination.trim();
+  if (!text) return null;
+
+  for (const entry of DESTINATION_PALETTE_MAP) {
+    if (entry.patterns.some((re) => re.test(text))) {
+      return entry.paletteId;
+    }
+  }
+  return null;
+}

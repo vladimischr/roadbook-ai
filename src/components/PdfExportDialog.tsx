@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, Check, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -12,16 +12,25 @@ import { Button } from "@/components/ui/button";
 import {
   PDF_PALETTES,
   DEFAULT_PALETTE,
+  suggestPaletteForDestination,
   type PdfPalette,
   type PdfPaletteId,
 } from "@/lib/pdf/palettes";
 import { cn } from "@/lib/utils";
+
+const LAST_PALETTE_LS_KEY = "roadbook-ai:last-pdf-palette";
 
 interface PdfExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Palette préselectionnée (ex. dernière utilisée sur ce roadbook). */
   defaultPaletteId?: PdfPaletteId;
+  /**
+   * Destination du roadbook — sert à l'auto-suggestion de palette.
+   * Le caller passe `roadbook.destination` et on calcule la palette
+   * suggérée selon des heuristiques (Maroc → Ocre, Tokyo → Minuit, etc).
+   */
+  destination?: string | null;
   /** Appelé quand le user clique "Télécharger" — reçoit la palette choisie. */
   onConfirm: (palette: PdfPalette) => Promise<void> | void;
   /**
@@ -43,17 +52,50 @@ export function PdfExportDialog({
   open,
   onOpenChange,
   defaultPaletteId,
+  destination,
   onConfirm,
   generating = false,
 }: PdfExportDialogProps) {
-  const [selectedId, setSelectedId] = useState<PdfPaletteId>(
-    defaultPaletteId ?? DEFAULT_PALETTE.id,
-  );
+  // Auto-suggestion par destination (Maroc → Ocre, Tokyo → Minuit, etc).
+  // Null si la destination ne matche aucun pattern → on tombe sur localStorage
+  // ou EMERALD.
+  const suggestedId = suggestPaletteForDestination(destination);
+
+  // Priorité d'init :
+  // 1. defaultPaletteId (prop explicite — futur stockage DB par-roadbook)
+  // 2. suggestedId (heuristique destination)
+  // 3. localStorage (dernière utilisée par ce designer)
+  // 4. DEFAULT_PALETTE (Émeraude)
+  const [selectedId, setSelectedId] = useState<PdfPaletteId>(() => {
+    if (defaultPaletteId) return defaultPaletteId;
+    if (suggestedId) return suggestedId;
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(LAST_PALETTE_LS_KEY);
+      if (stored && PDF_PALETTES.some((p) => p.id === stored)) {
+        return stored as PdfPaletteId;
+      }
+    }
+    return DEFAULT_PALETTE.id;
+  });
+
+  // Si la prop defaultPaletteId change (ex. ouvre roadbook avec sa palette
+  // stockée en DB), on resync.
+  useEffect(() => {
+    if (defaultPaletteId) setSelectedId(defaultPaletteId);
+  }, [defaultPaletteId]);
 
   const selected =
     PDF_PALETTES.find((p) => p.id === selectedId) ?? DEFAULT_PALETTE;
 
   const handleConfirm = async () => {
+    // Persiste avant l'export (au cas où le user ferme avant la fin).
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(LAST_PALETTE_LS_KEY, selected.id);
+      } catch {
+        // localStorage peut throw en mode privé Safari — silencieux.
+      }
+    }
     await onConfirm(selected);
   };
 
@@ -74,6 +116,7 @@ export function PdfExportDialog({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {PDF_PALETTES.map((p) => {
             const isActive = p.id === selectedId;
+            const isSuggested = p.id === suggestedId;
             return (
               <button
                 key={p.id}
@@ -90,6 +133,11 @@ export function PdfExportDialog({
                 )}
                 aria-pressed={isActive}
               >
+                {isSuggested && !isActive && (
+                  <span className="absolute -top-2 right-3 rounded-full bg-accent-warm px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.12em] text-foreground shadow-soft">
+                    Suggéré
+                  </span>
+                )}
                 {/* Disques de couleurs — preview rapide */}
                 <div className="flex items-center gap-1.5">
                   <span

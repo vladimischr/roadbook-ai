@@ -249,6 +249,24 @@ function makeStyles(p: PdfPalette) {
     letterSpacing: 2,
     textTransform: "uppercase",
   },
+  // Rule décorative sur cover (entre eyebrow et titre)
+  coverRule: {
+    height: 1,
+    width: 48,
+    backgroundColor: PAPER,
+    opacity: 0.55,
+    marginBottom: 28,
+    alignSelf: "center",
+  },
+  // Rule décorative plus subtile entre titre et subtitle
+  coverRuleThin: {
+    height: 1,
+    width: 24,
+    backgroundColor: PAPER,
+    opacity: 0.4,
+    marginVertical: 18,
+    alignSelf: "center",
+  },
 
   // Standard page
   page: {
@@ -598,6 +616,26 @@ function makeStyles(p: PdfPalette) {
     letterSpacing: 3,
     color: TEAL,
     textTransform: "uppercase",
+  },
+  // Rule décorative sur la page de fin
+  endRule: {
+    height: 1,
+    width: 56,
+    backgroundColor: TEAL,
+    opacity: 0.4,
+    marginVertical: 22,
+    alignSelf: "center",
+  },
+  // Eyebrow spécial pour la page de fin (variation chromatique)
+  endEyebrow: {
+    fontSize: 10,
+    fontWeight: 500,
+    letterSpacing: 4,
+    color: TEAL,
+    opacity: 0.85,
+    textTransform: "uppercase",
+    marginBottom: 24,
+    textAlign: "center",
   },
 
   // Footer page number
@@ -1024,9 +1062,14 @@ export function RoadbookPDF({
         />
         <View style={styles.coverWrap}>
           <Text style={styles.eyebrow}>Roadbook</Text>
+          {/* Rule décorative entre eyebrow et titre — touche éditoriale magazine */}
+          <View style={styles.coverRule} />
           <Text style={styles.coverTitle}>{cover.title || destination}</Text>
           {cover.subtitle ? (
-            <Text style={styles.coverSubtitle}>{cover.subtitle}</Text>
+            <>
+              <View style={styles.coverRuleThin} />
+              <Text style={styles.coverSubtitle}>{cover.subtitle}</Text>
+            </>
           ) : null}
           {cover.tagline ? (
             <Text style={styles.coverTagline}>{cover.tagline}</Text>
@@ -1383,8 +1426,10 @@ export function RoadbookPDF({
 
       {/* ---------- End page ---------- */}
       <Page size="A4" style={styles.endPage}>
-        <Text style={styles.eyebrow}>Bon voyage</Text>
+        <Text style={styles.endEyebrow}>Bon voyage</Text>
+        <View style={styles.endRule} />
         <Text style={styles.endTitle}>{cover.title || destination}</Text>
+        <View style={styles.endRule} />
         <Text style={styles.endText}>Roadbook préparé avec soin</Text>
         <Text style={styles.endText}>Généré le {generatedOn}</Text>
         <Text style={styles.endBrand}>roadbook.ai</Text>
