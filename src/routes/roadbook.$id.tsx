@@ -65,6 +65,8 @@ import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
 import { useDestinationCover } from "@/lib/useDestinationCover";
 // PostHog analytics
 import { track } from "@/lib/analytics";
+// PDF palette picker before export
+import { PdfExportDialog } from "@/components/PdfExportDialog";
 import { RoadbookMap, type DirectionsSegment } from "@/components/RoadbookMap";
 import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
 import { geocodePlace, getDirectionsSegment } from "@/lib/api";
@@ -399,6 +401,9 @@ function RoadbookPage() {
   const [shareTokenLoading, setShareTokenLoading] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  // PDF export — palette dialog
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
   const [shareStats, setShareStats] = useState<{
     view_count: number;
     last_viewed_at: string | null;
@@ -1287,9 +1292,9 @@ function RoadbookPage() {
     );
   }
 
-  const handleExportPdf = async () => {
-    // Gate PDF — uniquement les plans payants peuvent exporter en haute
-    // qualité. Le free tier voit le paywall.
+  // Bouton "Exporter PDF" → vérifie le plan puis ouvre la modale de
+  // sélection de palette. Le PDF est généré APRÈS via generatePdfWithPalette.
+  const handleExportPdf = () => {
     if (subInfo) {
       const plan = getPlan(subInfo.planKey);
       if (!plan.allowsPdfExport) {
@@ -1302,6 +1307,14 @@ function RoadbookPage() {
         return;
       }
     }
+    setPdfDialogOpen(true);
+  };
+
+  // Génère et télécharge le PDF avec la palette choisie dans PdfExportDialog.
+  const generatePdfWithPalette = async (
+    palette: import("@/lib/pdf/palettes").PdfPalette,
+  ) => {
+    setPdfGenerating(true);
     const toastId = toast.loading("Génération du PDF en cours…");
     try {
       const [{ pdf }, { RoadbookPDF }] = await Promise.all([
@@ -1338,9 +1351,10 @@ function RoadbookPage() {
           mapsApiKey={apiKey || undefined}
           coverImageUrl={coverImageUrl}
           watermark={isPdfWatermarked(subInfo?.planKey)}
+          palette={palette}
         />,
       ).toBlob();
-      const filename = `Roadbook-${slug(content.client_name)}-${slug(content.destination)}.pdf`;
+      const filename = `Roadbook-${slug(content.client_name)}-${slug(content.destination)}-${palette.id}.pdf`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -1350,9 +1364,9 @@ function RoadbookPage() {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast.success("PDF téléchargé", { id: toastId });
+      setPdfDialogOpen(false);
 
-      // PostHog : tracker l'export PDF (signal d'usage actif = qualité de la
-      // base de users payants).
+      // PostHog : tracker l'export PDF + la palette choisie.
       track("pdf_exported", {
         roadbook_id: id,
         destination: rb?.destination ?? undefined,
@@ -1367,6 +1381,8 @@ function RoadbookPage() {
       toast.error("Erreur génération PDF: " + (err?.message || "inconnue"), {
         id: toastId,
       });
+    } finally {
+      setPdfGenerating(false);
     }
   };
 
@@ -1676,6 +1692,15 @@ function RoadbookPage() {
           subtitle={paywallContext?.subtitle}
         />
       )}
+
+      {/* Sélecteur de palette PDF avant export */}
+      <PdfExportDialog
+        open={pdfDialogOpen}
+        onOpenChange={setPdfDialogOpen}
+        onConfirm={generatePdfWithPalette}
+        generating={pdfGenerating}
+      />
+
 
       {/* Chat IA — drawer flottant */}
       <AIChat

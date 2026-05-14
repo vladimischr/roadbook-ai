@@ -138,16 +138,25 @@ export interface RoadbookContent {
 }
 
 // ---------- Colors ----------
-const TEAL = "#0F6E56";
-const TEAL_LIGHT = "#1D9E75";
-const TEAL_SOFT = "#E1F5EE";
-const INK = "#1A1A1A";
-const MUTED = "#6B7075";
-const PAPER = "#FFFFFF";
-const STRIPE = "#F5F5F0";
+// Une palette est passée en prop au composant RoadbookPDF, ce qui permet aux
+// travel designers de personnaliser visuellement le livrable avant export.
+// Voir src/lib/pdf/palettes.ts pour les 6 palettes prédéfinies.
+//
+// Les constantes ci-dessous sont la palette par DÉFAUT (Émeraude). Elles sont
+// remplacées par les valeurs de la palette choisie via `makeStyles(palette)`.
+import { DEFAULT_PALETTE, type PdfPalette } from "./palettes";
 
-// ---------- Styles ----------
-const styles = StyleSheet.create({
+// ---------- Styles (factory) ----------
+function makeStyles(p: PdfPalette) {
+  const TEAL = p.primary;
+  const TEAL_LIGHT = p.primaryLight;
+  const TEAL_SOFT = p.primarySoft;
+  const INK = p.ink;
+  const MUTED = p.muted;
+  const PAPER = p.paper;
+  const STRIPE = p.stripe;
+
+  return StyleSheet.create({
   // Cover
   coverPage: {
     backgroundColor: TEAL,
@@ -603,9 +612,30 @@ const styles = StyleSheet.create({
     color: MUTED,
     letterSpacing: 1,
   },
-});
+  });
+}
+
+// Styles par défaut (palette Émeraude) — utilisés par les sub-renderers
+// quand ils sont appelés sans contexte palette (rare, backward compat).
+const styles = makeStyles(DEFAULT_PALETTE);
 
 // ---------- Helpers ----------
+/**
+ * Convertit un code hex (#RRGGBB ou #RGB) en notation rgba avec alpha.
+ * Utilisé pour appliquer un overlay coloré au-dessus de la cover image.
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  let h = hex.replace(/^#/, "");
+  if (h.length === 3) {
+    h = h.split("").map((c) => c + c).join("");
+  }
+  const num = parseInt(h, 16);
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 function formatDateFR(iso?: string): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -902,13 +932,24 @@ export function RoadbookPDF({
   mapsApiKey,
   coverImageUrl,
   watermark = false,
+  palette = DEFAULT_PALETTE,
 }: {
   roadbook: RoadbookContent;
   mapsApiKey?: string;
   coverImageUrl?: string | null;
   /** Si true, ajoute un nudge "via Roadbook.ai" prononcé sur cover + footer. */
   watermark?: boolean;
+  /**
+   * Palette de couleurs à appliquer au PDF. Par défaut : Émeraude (la palette
+   * historique). Voir src/lib/pdf/palettes.ts pour la liste complète et l'UI
+   * de sélection dans `src/components/PdfExportDialog.tsx`.
+   */
+  palette?: PdfPalette;
 }) {
+  // Recalcule les styles dès que la palette change. Le coût est négligeable
+  // (~1ms pour 70 entries de StyleSheet) et seulement à chaque render initial
+  // d'un PDF (pas pendant la création des pages).
+  const styles = React.useMemo(() => makeStyles(palette), [palette]);
   const cover = roadbook.cover || {};
   const days = roadbook.days || [];
   const accommodations = roadbook.accommodations_summary || [];
@@ -977,8 +1018,8 @@ export function RoadbookPDF({
             right: 0,
             bottom: 0,
             backgroundColor: coverImageUrl
-              ? "rgba(15,110,86,0.78)"
-              : TEAL,
+              ? hexToRgba(palette.primary, 0.78)
+              : palette.primary,
           }}
         />
         <View style={styles.coverWrap}>
@@ -1272,7 +1313,7 @@ export function RoadbookPDF({
               >
                 <Text style={[styles.tableCell, { width: "38%", fontWeight: 600 }]}>{a.name}</Text>
                 <Text style={[styles.tableCell, { width: "30%" }]}>{a.location}</Text>
-                <Text style={[styles.tableCell, { width: "20%", color: MUTED }]}>{a.type}</Text>
+                <Text style={[styles.tableCell, { width: "20%", color: palette.muted }]}>{a.type}</Text>
                 <Text style={[styles.tableCell, { width: "12%", textAlign: "right" }]}>{a.nights}</Text>
               </View>
             ))}
@@ -1302,7 +1343,7 @@ export function RoadbookPDF({
               <Text style={styles.contactName}>{c.name}</Text>
               {c.phone ? <Text style={styles.contactLine}>{c.phone}</Text> : null}
               {c.email ? (
-                <Text style={[styles.contactLine, { color: MUTED }]}>{c.email}</Text>
+                <Text style={[styles.contactLine, { color: palette.muted }]}>{c.email}</Text>
               ) : null}
             </View>
           ))}
