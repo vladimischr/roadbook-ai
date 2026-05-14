@@ -157,12 +157,78 @@ function makeStyles(p: PdfPalette) {
   const STRIPE = p.stripe;
 
   return StyleSheet.create({
-  // Cover
+  // ============ COVER — Layout magazine luxe ============
+  // Pattern Condé Nast Traveler : photo full-bleed haut (60%) + bande texte
+  // bas (40%) sur fond palette. Le texte est aligné à gauche (asymétrique,
+  // éditorial) et non centré (centré = trop "template").
   coverPage: {
-    backgroundColor: TEAL,
-    color: PAPER,
+    backgroundColor: PAPER,
     padding: 0,
     fontFamily: "Inter",
+  },
+  coverPhotoWrap: {
+    position: "relative",
+    width: "100%",
+    height: "60%",
+    overflow: "hidden",
+  },
+  coverPhotoBg: {
+    backgroundColor: TEAL,
+    width: "100%",
+    height: "100%",
+  },
+  coverGradient: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+  },
+  coverEyebrowOnPhoto: {
+    position: "absolute",
+    top: 44,
+    left: 56,
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: 3,
+    color: PAPER,
+    opacity: 0.95,
+    textTransform: "uppercase",
+  },
+  coverBand: {
+    flex: 1,
+    paddingHorizontal: 56,
+    paddingTop: 40,
+    paddingBottom: 56,
+    backgroundColor: PAPER,
+    justifyContent: "space-between",
+  },
+  coverTitleSection: {
+    flexDirection: "column",
+  },
+  coverMetaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 28,
+    paddingTop: 18,
+    borderTopWidth: 0.5,
+    borderTopColor: STRIPE,
+  },
+  coverMetaCell: {
+    flexDirection: "column",
+    gap: 4,
+  },
+  coverMetaLabel: {
+    fontSize: 8,
+    fontWeight: 600,
+    letterSpacing: 1.8,
+    color: MUTED,
+    textTransform: "uppercase",
+  },
+  coverMetaValue: {
+    fontSize: 13,
+    color: INK,
+    fontWeight: 500,
   },
   coverWrap: {
     flex: 1,
@@ -171,6 +237,72 @@ function makeStyles(p: PdfPalette) {
     justifyContent: "center",
     alignItems: "center",
     textAlign: "center",
+  },
+
+  // ============ Page Sommaire (table des matières) ============
+  tocPage: {
+    paddingTop: 80,
+    paddingBottom: 56,
+    paddingHorizontal: 60,
+    backgroundColor: PAPER,
+    fontFamily: "Inter",
+  },
+  tocEyebrow: {
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: 2,
+    color: TEAL,
+    textTransform: "uppercase",
+    marginBottom: 14,
+  },
+  tocTitle: {
+    fontFamily: "Playfair",
+    fontStyle: "italic",
+    fontWeight: 700,
+    fontSize: 56,
+    lineHeight: 0.95,
+    color: INK,
+    marginBottom: 32,
+    letterSpacing: -1,
+  },
+  tocList: {
+    flexDirection: "column",
+    gap: 0,
+    marginTop: 12,
+  },
+  tocItem: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    paddingVertical: 11,
+    borderBottomWidth: 0.5,
+    borderBottomColor: STRIPE,
+  },
+  tocNum: {
+    fontFamily: "Playfair",
+    fontStyle: "italic",
+    fontWeight: 600,
+    fontSize: 18,
+    color: TEAL,
+    width: 36,
+  },
+  tocLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: INK,
+    fontWeight: 500,
+  },
+  tocLabelDate: {
+    fontSize: 11,
+    color: MUTED,
+    marginLeft: 8,
+    fontStyle: "italic",
+  },
+  tocPage_num: {
+    fontFamily: "Inter",
+    fontSize: 11,
+    fontWeight: 500,
+    color: MUTED,
+    letterSpacing: 0.5,
   },
   eyebrow: {
     fontSize: 10,
@@ -181,27 +313,26 @@ function makeStyles(p: PdfPalette) {
     textTransform: "uppercase",
     marginBottom: 36,
   },
+  // Titre cover : aligné à gauche, italic XXL — signature magazine
   coverTitle: {
     fontFamily: "Playfair",
     fontStyle: "italic",
     fontWeight: 700,
-    fontSize: 96,
-    lineHeight: 0.95,
-    color: PAPER,
-    marginBottom: 18,
-    textAlign: "center",
-    letterSpacing: -1,
-  },
-  coverSubtitle: {
-    fontFamily: "Inter",
-    fontWeight: 400,
-    fontSize: 16,
-    color: PAPER,
-    opacity: 0.92,
+    fontSize: 88,
+    lineHeight: 0.92,
+    color: INK,
     marginBottom: 14,
-    textAlign: "center",
-    letterSpacing: 0.5,
-    lineHeight: 1.5,
+    letterSpacing: -1.5,
+  },
+  // Subtitle : plus petit, sous le titre, aligné gauche, gris doux
+  coverSubtitle: {
+    fontFamily: "Playfair",
+    fontStyle: "italic",
+    fontWeight: 400,
+    fontSize: 18,
+    color: TEAL,
+    marginBottom: 22,
+    lineHeight: 1.4,
   },
   coverTagline: {
     fontFamily: "Inter",
@@ -422,28 +553,50 @@ function makeStyles(p: PdfPalette) {
   },
   dayNarrative: {
     fontFamily: "Inter",
-    fontStyle: "italic",
     fontSize: 11,
-    lineHeight: 1.65,
+    lineHeight: 1.7,
     color: INK,
-    marginTop: 6,
+    marginTop: 10,
   },
+  // Pull quote — citation extraite dans la prose, mise en avant
+  dayPullQuote: {
+    fontFamily: "Playfair",
+    fontStyle: "italic",
+    fontSize: 14,
+    lineHeight: 1.45,
+    color: TEAL,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingLeft: 14,
+    borderLeftWidth: 2,
+    borderLeftColor: TEAL,
+  },
+  // Photos plus présentes : 1 grande + 2 moyennes ou layout magazine
   dayPhotosRow: {
     flexDirection: "row",
-    gap: 6,
-    marginTop: 10,
+    gap: 8,
+    marginTop: 14,
   },
   dayPhoto: {
     flex: 1,
-    height: 110,
+    height: 160,
     objectFit: "cover",
-    borderRadius: 3,
+    borderRadius: 4,
+  },
+  // Variante : photo héroïque seule pour le 1er jour (plus de présence)
+  dayPhotoHero: {
+    width: "100%",
+    height: 220,
+    objectFit: "cover",
+    borderRadius: 4,
+    marginTop: 14,
   },
   dayPhotoCredit: {
     fontSize: 7.5,
     color: MUTED,
-    marginTop: 4,
+    marginTop: 6,
     fontStyle: "italic",
+    letterSpacing: 0.3,
   },
 
   // Table
@@ -1122,67 +1275,161 @@ export function RoadbookPDF({
       title={`Roadbook — ${roadbook.client_name || ""} — ${destination}`}
       author="Roadbook.ai"
     >
-      {/* ---------- Cover ----------
-          wrap={false} : empêche react-pdf de splitter la cover sur 2 pages
-          (bug observé quand l'Image absolute "consomme" de la hauteur layout
-          et force le texte sur une page suivante). Garantit cover = 1 page. */}
+      {/* ============ COVER — Layout magazine luxe ============
+          Photo full-bleed haut (60% page) + bande inférieure blanche (40%)
+          avec titre éditorial aligné gauche + meta data en grille. */}
       <Page size="A4" style={styles.coverPage} wrap={false}>
-        {coverImageUrl ? (
-          <Image
-            src={coverImageUrl}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
+        {/* Bloc photo haut */}
+        <View style={styles.coverPhotoWrap}>
+          {coverImageUrl ? (
+            <Image
+              src={coverImageUrl}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <View style={styles.coverPhotoBg} />
+          )}
+          {/* Eyebrow "ROADBOOK" en haut à gauche sur la photo */}
+          <Text style={styles.coverEyebrowOnPhoto}>Roadbook</Text>
+          {/* Gradient subtil en bas de la photo pour transition douce vers la bande */}
+          <View
+            style={[
+              styles.coverGradient,
+              { backgroundColor: hexToRgba(palette.paper, 0) },
+            ]}
           />
-        ) : null}
-        {/* Teal overlay for legibility */}
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: coverImageUrl
-              ? hexToRgba(palette.primary, 0.78)
-              : palette.primary,
-          }}
-        />
-        <View style={styles.coverWrap}>
-          <Text style={styles.eyebrow}>Roadbook</Text>
-          {/* Rule décorative entre eyebrow et titre — touche éditoriale magazine */}
-          <View style={styles.coverRule} />
-          <Text style={styles.coverTitle}>{s(cover.title || destination)}</Text>
-          {cover.subtitle ? (
-            <>
-              <View style={styles.coverRuleThin} />
+        </View>
+
+        {/* Bande inférieure blanche avec titre + meta */}
+        <View style={styles.coverBand}>
+          <View style={styles.coverTitleSection}>
+            <Text style={styles.coverTitle}>{s(cover.title || destination)}</Text>
+            {cover.subtitle ? (
               <Text style={styles.coverSubtitle}>{s(cover.subtitle)}</Text>
-            </>
-          ) : null}
-          {cover.tagline ? (
-            <Text style={styles.coverTagline}>{s(cover.tagline)}</Text>
-          ) : null}
-          <View style={styles.pillRow}>
+            ) : null}
+            {cover.tagline ? (
+              <Text style={[styles.coverTagline, { color: INK, opacity: 0.7, textAlign: "left", paddingHorizontal: 0, marginBottom: 0 }]}>
+                {s(cover.tagline)}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Grille meta : Destination · Dates · Durée · Voyageurs · Mode */}
+          <View style={styles.coverMetaRow}>
+            {roadbook.client_name ? (
+              <View style={styles.coverMetaCell}>
+                <Text style={styles.coverMetaLabel}>Préparé pour</Text>
+                <Text style={styles.coverMetaValue}>
+                  {s(roadbook.client_name)}
+                </Text>
+              </View>
+            ) : null}
             {cover.dates_label ? (
-              <Text style={styles.pill}>{s(cover.dates_label)}</Text>
+              <View style={styles.coverMetaCell}>
+                <Text style={styles.coverMetaLabel}>Dates</Text>
+                <Text style={styles.coverMetaValue}>
+                  {s(cover.dates_label)}
+                </Text>
+              </View>
+            ) : null}
+            {roadbook.duration_days ? (
+              <View style={styles.coverMetaCell}>
+                <Text style={styles.coverMetaLabel}>Durée</Text>
+                <Text style={styles.coverMetaValue}>
+                  {roadbook.duration_days} jours
+                </Text>
+              </View>
+            ) : null}
+            {roadbook.travelers ? (
+              <View style={styles.coverMetaCell}>
+                <Text style={styles.coverMetaLabel}>Voyageurs</Text>
+                <Text style={styles.coverMetaValue}>
+                  {roadbook.travelers}
+                  {roadbook.profile ? ` · ${s(roadbook.profile)}` : ""}
+                </Text>
+              </View>
             ) : null}
             {roadbook.travel_mode ? (
-              <Text style={styles.pillSmallCaps}>{s(roadbook.travel_mode)}</Text>
+              <View style={styles.coverMetaCell}>
+                <Text style={styles.coverMetaLabel}>Mode</Text>
+                <Text style={styles.coverMetaValue}>
+                  {s(roadbook.travel_mode)}
+                </Text>
+              </View>
             ) : null}
           </View>
         </View>
-        <Text style={styles.coverFooter}>
-          {watermark
-            ? "Composé avec Roadbook.ai — créez le vôtre sur roadbook.ai"
-            : "Préparé avec Roadbook.ai"}
-        </Text>
+      </Page>
+
+      {/* ============ Page Sommaire (Table des matières) ============
+          Page 2 — orientation magazine luxe. Liste les jours du voyage
+          avec numéro éditorial italic Playfair + date + label stage.
+          Pattern Black Tomato / Audley Travel : permet au client de naviguer
+          son voyage avant le départ. */}
+      <Page size="A4" style={styles.tocPage} wrap={false}>
+        <Text style={styles.tocEyebrow}>Sommaire</Text>
+        <Text style={styles.tocTitle}>Votre voyage en bref</Text>
+
+        <View style={styles.tocList}>
+          {/* Aperçu général */}
+          <View style={styles.tocItem}>
+            <Text style={styles.tocNum}>—</Text>
+            <Text style={styles.tocLabel}>Aperçu du voyage</Text>
+            <Text style={styles.tocPage_num}>03</Text>
+          </View>
+          <View style={styles.tocItem}>
+            <Text style={styles.tocNum}>—</Text>
+            <Text style={styles.tocLabel}>Tracé et étapes</Text>
+            <Text style={styles.tocPage_num}>04</Text>
+          </View>
+
+          {/* Jours du voyage */}
+          {days.map((d) => (
+            <View key={`toc-${d.day}`} style={styles.tocItem}>
+              <Text style={styles.tocNum}>
+                {String(d.day).padStart(2, "0")}
+              </Text>
+              <Text style={styles.tocLabel}>
+                {s(d.stage || d.accommodation || `Jour ${d.day}`)}
+                {d.date ? (
+                  <Text style={styles.tocLabelDate}>
+                    {" · "}{formatDateFR(d.date)}
+                  </Text>
+                ) : null}
+              </Text>
+              <Text style={styles.tocPage_num}>
+                {String(5 + Math.floor((d.day - 1) / 2)).padStart(2, "0")}
+              </Text>
+            </View>
+          ))}
+
+          {/* Sections finales */}
+          {accommodations.length > 0 ? (
+            <View style={styles.tocItem}>
+              <Text style={styles.tocNum}>—</Text>
+              <Text style={styles.tocLabel}>Hébergements</Text>
+              <Text style={styles.tocPage_num}>—</Text>
+            </View>
+          ) : null}
+          {contacts.length > 0 ? (
+            <View style={styles.tocItem}>
+              <Text style={styles.tocNum}>—</Text>
+              <Text style={styles.tocLabel}>Contacts pratiques</Text>
+              <Text style={styles.tocPage_num}>—</Text>
+            </View>
+          ) : null}
+          {tips.length > 0 ? (
+            <View style={styles.tocItem}>
+              <Text style={styles.tocNum}>—</Text>
+              <Text style={styles.tocLabel}>Conseils et recommandations</Text>
+              <Text style={styles.tocPage_num}>—</Text>
+            </View>
+          ) : null}
+        </View>
       </Page>
 
       {/* ---------- Overview + Stats ---------- */}
@@ -1398,15 +1645,20 @@ export function RoadbookPDF({
                 ) : null}
                 {d.photos && d.photos.length > 0 ? (
                   <>
-                    <View style={styles.dayPhotosRow}>
-                      {d.photos.slice(0, 3).map((p, idx) => (
-                        <Image
-                          key={`photo-${idx}`}
-                          src={p.url}
-                          style={styles.dayPhoto}
-                        />
-                      ))}
-                    </View>
+                    {/* 1 photo → hero. 2+ photos → row de 2-3. */}
+                    {d.photos.length === 1 ? (
+                      <Image src={d.photos[0].url} style={styles.dayPhotoHero} />
+                    ) : (
+                      <View style={styles.dayPhotosRow}>
+                        {d.photos.slice(0, 3).map((p, idx) => (
+                          <Image
+                            key={`photo-${idx}`}
+                            src={p.url}
+                            style={styles.dayPhoto}
+                          />
+                        ))}
+                      </View>
+                    )}
                     {/* Crédit photographe si Pexels (obligation) */}
                     {d.photos.some((p) => p.credit) ? (
                       <Text style={styles.dayPhotoCredit}>
