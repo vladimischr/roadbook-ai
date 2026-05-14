@@ -151,9 +151,10 @@ function Hero() {
           </h1>
 
           <p className="mx-auto mt-8 max-w-xl text-[16px] leading-[1.65] text-muted-foreground sm:text-[18px]">
-            IA, saisie manuelle ou import Excel — apportez votre matière,
-            Roadbook.ai en fait un document beau à lire et prêt à livrer
-            à vos voyageurs.
+            Brief de 2 min, génération en 60 s, retouches libres&nbsp;:
+            chaque dossier qui prenait <span className="text-foreground">4 heures</span> de
+            Word + Canva sort prêt à livrer en moins de
+            <span className="text-foreground"> 10 minutes</span>.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -175,7 +176,7 @@ function Hero() {
           </div>
 
           <p className="mt-6 text-[12px] text-text-soft">
-            Connexion par lien magique · Pas de carte bancaire pour démarrer
+            Connexion par lien magique · 14 jours d'essai · Sans carte bancaire
           </p>
         </div>
 

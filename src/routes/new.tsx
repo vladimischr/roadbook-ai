@@ -430,8 +430,28 @@ function NewRoadbook() {
             />
           </div>
 
-        <form onSubmit={onGenerate} className="mt-10 space-y-10">
-          <Section title="Client et destination">
+        {/* Bandeau d'orientation — réduit l'anxiété "ça va être long ?" */}
+        <div className="mt-10 flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-surface-warm/30 px-5 py-3.5">
+          <div className="flex items-center gap-3 text-[13px] leading-relaxed">
+            <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+            <p className="text-foreground/80">
+              <strong className="text-foreground">{form.generation_mode === "manual" ? "4 sections courtes" : "3 sections courtes"}</strong>
+              <span className="mx-1.5 text-foreground/30">·</span>
+              <span className="text-muted-foreground">brief en ~2 min, génération en 60 s</span>
+            </p>
+          </div>
+          <span className="hidden text-[11px] text-muted-foreground/70 sm:inline">
+            Tu peux tout retoucher après
+          </span>
+        </div>
+
+        <form onSubmit={onGenerate} className="mt-6 space-y-10">
+          <Section
+            title="Client et destination"
+            step={1}
+            totalSteps={form.generation_mode === "manual" ? 4 : 3}
+            estimate="30 s"
+          >
             <Field label="Nom du client">
               <Input
                 value={form.client_name}
@@ -466,7 +486,12 @@ function NewRoadbook() {
             </div>
           </Section>
 
-          <Section title="Voyageurs">
+          <Section
+            title="Voyageurs"
+            step={2}
+            totalSteps={form.generation_mode === "manual" ? 4 : 3}
+            estimate="1 min"
+          >
             <div className="grid grid-cols-2 gap-4">
               <Field label="Nombre de voyageurs">
                 <SelectField
@@ -522,7 +547,12 @@ function NewRoadbook() {
           </Section>
 
           {form.generation_mode === "manual" && (
-            <Section title="Vos étapes">
+            <Section
+              title="Vos étapes"
+              step={3}
+              totalSteps={4}
+              estimate="1-2 min"
+            >
               <p className="-mt-2 text-[13px] leading-relaxed text-muted-foreground">
                 Saisissez les lieux, le nombre de nuits, et les activités
                 clés. L'IA composera la trame éditoriale autour.
@@ -575,7 +605,12 @@ function NewRoadbook() {
             </Section>
           )}
 
-          <Section title="Notes personnelles facultatives">
+          <Section
+            title="Notes personnelles facultatives"
+            step={form.generation_mode === "manual" ? 4 : 3}
+            totalSteps={form.generation_mode === "manual" ? 4 : 3}
+            estimate="30 s"
+          >
             <Textarea
               rows={3}
               value={form.agent_notes}
@@ -632,12 +667,46 @@ function NewRoadbook() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  step,
+  totalSteps,
+  estimate,
+}: {
+  title: string;
+  children: React.ReactNode;
+  step?: number;
+  totalSteps?: number;
+  estimate?: string;
+}) {
+  // Anchor pour la sticky nav (slugified depuis le title)
+  const anchorId = `step-${(step ?? 0)}-${title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")}`;
   return (
-    <section className="space-y-5">
-      <h2 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-        {title}
-      </h2>
+    <section id={anchorId} className="space-y-5 scroll-mt-24">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+          {step && totalSteps ? (
+            <>
+              <span className="text-foreground/40">Étape {step}/{totalSteps}</span>
+              <span className="mx-2 text-foreground/20">·</span>
+              {title}
+            </>
+          ) : (
+            title
+          )}
+        </h2>
+        {estimate && (
+          <span className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
+            ~{estimate}
+          </span>
+        )}
+      </div>
       <div className="space-y-4 rounded-2xl border border-border bg-surface p-6 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
         {children}
       </div>

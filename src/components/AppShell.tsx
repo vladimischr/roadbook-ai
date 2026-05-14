@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut, useAuth } from "@/lib/auth";
+import { QuotaBadge } from "@/components/QuotaBadge";
 import {
   createContext,
   useContext,
@@ -192,8 +193,11 @@ export function AppShell({
                   {effectiveCrumb}
                 </div>
 
-                {/* Page-injected topbar slot */}
-                <div className="flex shrink-0 items-center gap-2">{effectiveSlot}</div>
+                {/* Page-injected topbar slot + quota badge (free users only) */}
+                <div className="flex shrink-0 items-center gap-2">
+                  <QuotaBadge />
+                  {effectiveSlot}
+                </div>
               </div>
             </header>
 
