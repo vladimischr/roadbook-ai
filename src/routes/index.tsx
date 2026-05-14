@@ -23,6 +23,37 @@ export const Route = createFileRoute("/")({
         content:
           "Composez en quelques minutes des roadbooks éditoriaux pour vos voyageurs. L'IA pose la trame, vous gardez la main.",
       },
+      { property: "og:title", content: "Roadbook.ai — Roadbooks de voyage sur-mesure" },
+      {
+        property: "og:description",
+        content:
+          "Composez en quelques minutes des roadbooks éditoriaux pour vos voyageurs. L'IA pose la trame, vous gardez la main.",
+      },
+      { property: "og:url", content: "https://getroadbook.com/" },
+    ],
+    links: [{ rel: "canonical", href: "https://getroadbook.com/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Roadbook.ai",
+          url: "https://getroadbook.com/",
+          inLanguage: "fr-FR",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Roadbook.ai",
+          url: "https://getroadbook.com/",
+          description:
+            "Outil SaaS pour travel designers : composez des roadbooks éditoriaux sur-mesure pour vos voyageurs.",
+        }),
+      },
     ],
   }),
 });
