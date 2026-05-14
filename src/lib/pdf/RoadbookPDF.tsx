@@ -1312,7 +1312,7 @@ export function RoadbookPDF({
               <Text style={styles.coverSubtitle}>{s(cover.subtitle)}</Text>
             ) : null}
             {cover.tagline ? (
-              <Text style={[styles.coverTagline, { color: INK, opacity: 0.7, textAlign: "left", paddingHorizontal: 0, marginBottom: 0 }]}>
+              <Text style={[styles.coverTagline, { color: palette.ink, opacity: 0.7, textAlign: "left", paddingHorizontal: 0, marginBottom: 0 }]}>
                 {s(cover.tagline)}
               </Text>
             ) : null}
@@ -1395,11 +1395,7 @@ export function RoadbookPDF({
               </Text>
               <Text style={styles.tocLabel}>
                 {s(d.stage || d.accommodation || `Jour ${d.day}`)}
-                {d.date ? (
-                  <Text style={styles.tocLabelDate}>
-                    {" · "}{formatDateFR(d.date)}
-                  </Text>
-                ) : null}
+                {d.date ? ` · ${formatDateFR(d.date)}` : ""}
               </Text>
               <Text style={styles.tocPage_num}>
                 {String(5 + Math.floor((d.day - 1) / 2)).padStart(2, "0")}
@@ -1488,12 +1484,10 @@ export function RoadbookPDF({
           ) : null}
         </View>
 
-        <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
-          <>
-            <Text>{pageMeta}</Text>
-            <Text>{`${pageNumber}`}</Text>
-          </>
-        )} />
+        <View style={styles.pageNumber} fixed>
+          <Text>{pageMeta}</Text>
+          <Text render={({ pageNumber }) => `${pageNumber}`} />
+        </View>
       </Page>
 
       {/* ---------- Map ---------- */}
@@ -1584,12 +1578,10 @@ export function RoadbookPDF({
             </View>
           ) : null}
 
-          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
-            <>
-              <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber}`}</Text>
-            </>
-          )} />
+          <View style={styles.pageNumber} fixed>
+            <Text>{pageMeta}</Text>
+            <Text render={({ pageNumber }) => `${pageNumber}`} />
+          </View>
         </Page>
       ) : null}
 
@@ -1675,12 +1667,10 @@ export function RoadbookPDF({
             </View>
           ))}
 
-          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
-            <>
-              <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber}`}</Text>
-            </>
-          )} />
+          <View style={styles.pageNumber} fixed>
+            <Text>{pageMeta}</Text>
+            <Text render={({ pageNumber }) => `${pageNumber}`} />
+          </View>
         </Page>
       ))}
 
@@ -1714,12 +1704,10 @@ export function RoadbookPDF({
               </View>
             ))}
           </View>
-          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
-            <>
-              <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber}`}</Text>
-            </>
-          )} />
+          <View style={styles.pageNumber} fixed>
+            <Text>{pageMeta}</Text>
+            <Text render={({ pageNumber }) => `${pageNumber}`} />
+          </View>
         </Page>
       ) : null}
 
@@ -1743,12 +1731,10 @@ export function RoadbookPDF({
               ) : null}
             </View>
           ))}
-          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
-            <>
-              <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber}`}</Text>
-            </>
-          )} />
+          <View style={styles.pageNumber} fixed>
+            <Text>{pageMeta}</Text>
+            <Text render={({ pageNumber }) => `${pageNumber}`} />
+          </View>
         </Page>
       ) : null}
 
@@ -1770,12 +1756,10 @@ export function RoadbookPDF({
               <Text style={styles.tipText}>{s(t)}</Text>
             </View>
           ))}
-          <View style={styles.pageNumber} fixed render={({ pageNumber }) => (
-            <>
-              <Text>{pageMeta}</Text>
-              <Text>{`${pageNumber}`}</Text>
-            </>
-          )} />
+          <View style={styles.pageNumber} fixed>
+            <Text>{pageMeta}</Text>
+            <Text render={({ pageNumber }) => `${pageNumber}`} />
+          </View>
         </Page>
       ) : null}
 
