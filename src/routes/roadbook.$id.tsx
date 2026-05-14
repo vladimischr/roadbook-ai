@@ -2489,9 +2489,9 @@ function CoverSection({
         <div className="mx-auto max-w-4xl px-6 text-center sm:px-10">
           <p className="eyebrow-light mb-6">Roadbook</p>
           {(() => {
-            // Échelle de typo adaptative — sans ça, "Namibie & Botswana"
-            // (18 chars) ou pire, des titres longs débordent ou wrappent
-            // moche. On scale par longueur de chaîne.
+            // Échelle de typo adaptative selon la longueur — sans ça, "Namibie
+            // & Botswana" (18 chars) ou pire, des titres longs débordent ou
+            // wrappent moche. On scale par longueur de chaîne.
             const len = (cover.title || "").length;
             const fontSize =
               len > 22
@@ -2501,16 +2501,15 @@ function CoverSection({
                   : len > 10
                     ? "clamp(52px, 7vw, 104px)"
                     : "clamp(56px, 8vw, 120px)";
-            const maxWidth = len > 16 ? "22ch" : "16ch";
             return (
               <h1
-                className="font-display font-bold leading-[0.95] text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.25)]"
+                className="font-display mx-auto block text-center font-bold leading-[0.95] text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.25)]"
                 style={{
                   fontSize,
-                  maxWidth,
-                  margin: "0 auto",
+                  maxWidth: "min(900px, 92%)",
                   wordBreak: "break-word",
                   hyphens: "auto",
+                  textAlign: "center",
                 }}
               >
                 {cover.title}

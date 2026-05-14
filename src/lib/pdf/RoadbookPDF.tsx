@@ -158,31 +158,28 @@ function makeStyles(p: PdfPalette) {
 
   return StyleSheet.create({
   // ============ COVER — Layout magazine luxe ============
-  // Pattern Condé Nast Traveler : photo full-bleed haut (60%) + bande texte
-  // bas (40%) sur fond palette. Le texte est aligné à gauche (asymétrique,
-  // éditorial) et non centré (centré = trop "template").
+  // Pattern Condé Nast Traveler : photo full-bleed haut + bande texte bas
+  // sur fond blanc. Le texte est aligné à gauche (asymétrique éditorial).
+  //
+  // ⚠️ react-pdf : utiliser FLEX (pas height en %) pour les hauteurs relatives,
+  // sinon bug runtime "Cannot read properties of null (reading 'props')".
   coverPage: {
     backgroundColor: PAPER,
     padding: 0,
     fontFamily: "Inter",
+    flexDirection: "column",
   },
+  // Bloc photo en haut — flex: 1.5 donne ~60% de la page
   coverPhotoWrap: {
+    flex: 1.5,
     position: "relative",
     width: "100%",
-    height: "60%",
     overflow: "hidden",
   },
   coverPhotoBg: {
     backgroundColor: TEAL,
     width: "100%",
     height: "100%",
-  },
-  coverGradient: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 120,
   },
   coverEyebrowOnPhoto: {
     position: "absolute",
@@ -195,6 +192,7 @@ function makeStyles(p: PdfPalette) {
     opacity: 0.95,
     textTransform: "uppercase",
   },
+  // Bande inférieure — flex: 1 donne ~40% de la page (complément du photoWrap)
   coverBand: {
     flex: 1,
     paddingHorizontal: 56,
@@ -202,6 +200,7 @@ function makeStyles(p: PdfPalette) {
     paddingBottom: 56,
     backgroundColor: PAPER,
     justifyContent: "space-between",
+    flexDirection: "column",
   },
   coverTitleSection: {
     flexDirection: "column",
@@ -1295,13 +1294,6 @@ export function RoadbookPDF({
           )}
           {/* Eyebrow "ROADBOOK" en haut à gauche sur la photo */}
           <Text style={styles.coverEyebrowOnPhoto}>Roadbook</Text>
-          {/* Gradient subtil en bas de la photo pour transition douce vers la bande */}
-          <View
-            style={[
-              styles.coverGradient,
-              { backgroundColor: hexToRgba(palette.paper, 0) },
-            ]}
-          />
         </View>
 
         {/* Bande inférieure blanche avec titre + meta */}
@@ -1340,7 +1332,7 @@ export function RoadbookPDF({
               <View style={styles.coverMetaCell}>
                 <Text style={styles.coverMetaLabel}>Durée</Text>
                 <Text style={styles.coverMetaValue}>
-                  {roadbook.duration_days} jours
+                  {String(roadbook.duration_days)} jours
                 </Text>
               </View>
             ) : null}
@@ -1348,7 +1340,7 @@ export function RoadbookPDF({
               <View style={styles.coverMetaCell}>
                 <Text style={styles.coverMetaLabel}>Voyageurs</Text>
                 <Text style={styles.coverMetaValue}>
-                  {roadbook.travelers}
+                  {String(roadbook.travelers)}
                   {roadbook.profile ? ` · ${s(roadbook.profile)}` : ""}
                 </Text>
               </View>
