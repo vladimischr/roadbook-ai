@@ -46,6 +46,7 @@ import { Route as ApiGeocodePlaceRouteImport } from './routes/api/geocode-place'
 import { Route as ApiGenerateRoadbookRouteImport } from './routes/api/generate-roadbook'
 import { Route as ApiDirectionsSegmentRouteImport } from './routes/api/directions-segment'
 import { Route as ApiDestinationCoverRouteImport } from './routes/api/destination-cover'
+import { Route as ApiCronWelcomeFollowupsRouteImport } from './routes/api/cron-welcome-followups'
 import { Route as ApiClientUpdateRouteImport } from './routes/api/client-update'
 import { Route as ApiClientListRouteImport } from './routes/api/client-list'
 import { Route as ApiClientGetRouteImport } from './routes/api/client-get'
@@ -251,6 +252,11 @@ const ApiDestinationCoverRoute = ApiDestinationCoverRouteImport.update({
   path: '/api/destination-cover',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronWelcomeFollowupsRoute = ApiCronWelcomeFollowupsRouteImport.update({
+  id: '/api/cron-welcome-followups',
+  path: '/api/cron-welcome-followups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiClientUpdateRoute = ApiClientUpdateRouteImport.update({
   id: '/api/client-update',
   path: '/api/client-update',
@@ -376,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/api/client-get': typeof ApiClientGetRoute
   '/api/client-list': typeof ApiClientListRoute
   '/api/client-update': typeof ApiClientUpdateRoute
+  '/api/cron-welcome-followups': typeof ApiCronWelcomeFollowupsRoute
   '/api/destination-cover': typeof ApiDestinationCoverRoute
   '/api/directions-segment': typeof ApiDirectionsSegmentRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
@@ -434,6 +441,7 @@ export interface FileRoutesByTo {
   '/api/client-get': typeof ApiClientGetRoute
   '/api/client-list': typeof ApiClientListRoute
   '/api/client-update': typeof ApiClientUpdateRoute
+  '/api/cron-welcome-followups': typeof ApiCronWelcomeFollowupsRoute
   '/api/destination-cover': typeof ApiDestinationCoverRoute
   '/api/directions-segment': typeof ApiDirectionsSegmentRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
@@ -493,6 +501,7 @@ export interface FileRoutesById {
   '/api/client-get': typeof ApiClientGetRoute
   '/api/client-list': typeof ApiClientListRoute
   '/api/client-update': typeof ApiClientUpdateRoute
+  '/api/cron-welcome-followups': typeof ApiCronWelcomeFollowupsRoute
   '/api/destination-cover': typeof ApiDestinationCoverRoute
   '/api/directions-segment': typeof ApiDirectionsSegmentRoute
   '/api/generate-roadbook': typeof ApiGenerateRoadbookRoute
@@ -553,6 +562,7 @@ export interface FileRouteTypes {
     | '/api/client-get'
     | '/api/client-list'
     | '/api/client-update'
+    | '/api/cron-welcome-followups'
     | '/api/destination-cover'
     | '/api/directions-segment'
     | '/api/generate-roadbook'
@@ -611,6 +621,7 @@ export interface FileRouteTypes {
     | '/api/client-get'
     | '/api/client-list'
     | '/api/client-update'
+    | '/api/cron-welcome-followups'
     | '/api/destination-cover'
     | '/api/directions-segment'
     | '/api/generate-roadbook'
@@ -669,6 +680,7 @@ export interface FileRouteTypes {
     | '/api/client-get'
     | '/api/client-list'
     | '/api/client-update'
+    | '/api/cron-welcome-followups'
     | '/api/destination-cover'
     | '/api/directions-segment'
     | '/api/generate-roadbook'
@@ -728,6 +740,7 @@ export interface RootRouteChildren {
   ApiClientGetRoute: typeof ApiClientGetRoute
   ApiClientListRoute: typeof ApiClientListRoute
   ApiClientUpdateRoute: typeof ApiClientUpdateRoute
+  ApiCronWelcomeFollowupsRoute: typeof ApiCronWelcomeFollowupsRoute
   ApiDestinationCoverRoute: typeof ApiDestinationCoverRoute
   ApiDirectionsSegmentRoute: typeof ApiDirectionsSegmentRoute
   ApiGenerateRoadbookRoute: typeof ApiGenerateRoadbookRoute
@@ -1022,6 +1035,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDestinationCoverRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron-welcome-followups': {
+      id: '/api/cron-welcome-followups'
+      path: '/api/cron-welcome-followups'
+      fullPath: '/api/cron-welcome-followups'
+      preLoaderRoute: typeof ApiCronWelcomeFollowupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/client-update': {
       id: '/api/client-update'
       path: '/api/client-update'
@@ -1184,6 +1204,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiClientGetRoute: ApiClientGetRoute,
   ApiClientListRoute: ApiClientListRoute,
   ApiClientUpdateRoute: ApiClientUpdateRoute,
+  ApiCronWelcomeFollowupsRoute: ApiCronWelcomeFollowupsRoute,
   ApiDestinationCoverRoute: ApiDestinationCoverRoute,
   ApiDirectionsSegmentRoute: ApiDirectionsSegmentRoute,
   ApiGenerateRoadbookRoute: ApiGenerateRoadbookRoute,
@@ -1219,3 +1240,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
