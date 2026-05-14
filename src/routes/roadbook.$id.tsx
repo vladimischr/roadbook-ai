@@ -2489,27 +2489,35 @@ function CoverSection({
         <div className="mx-auto max-w-4xl px-6 text-center sm:px-10">
           <p className="eyebrow-light mb-6">Roadbook</p>
           {(() => {
-            // Échelle de typo adaptative selon la longueur — sans ça, "Namibie
-            // & Botswana" (18 chars) ou pire, des titres longs débordent ou
-            // wrappent moche. On scale par longueur de chaîne.
+            // Échelle de typo adaptative selon la longueur — scale DOWN pour
+            // titre long pour qu'il tienne sur 1 ligne (vise lecture confortable).
+            // Si quand même besoin de wrapper, balance proprement.
             const len = (cover.title || "").length;
             const fontSize =
-              len > 22
-                ? "clamp(34px, 4.5vw, 64px)"
-                : len > 16
-                  ? "clamp(44px, 6vw, 88px)"
-                  : len > 10
-                    ? "clamp(52px, 7vw, 104px)"
-                    : "clamp(56px, 8vw, 120px)";
+              len > 28
+                ? "clamp(28px, 3.5vw, 52px)"
+                : len > 22
+                  ? "clamp(32px, 4vw, 60px)"
+                  : len > 16
+                    ? "clamp(40px, 5.5vw, 80px)"
+                    : len > 10
+                      ? "clamp(48px, 6.5vw, 96px)"
+                      : "clamp(52px, 7.5vw, 112px)";
             return (
               <h1
-                className="font-display mx-auto block text-center font-bold leading-[0.95] text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.25)]"
+                className="font-display font-bold leading-[0.98] text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.25)]"
                 style={{
                   fontSize,
-                  maxWidth: "min(900px, 92%)",
-                  wordBreak: "break-word",
-                  hyphens: "auto",
+                  // Force le centrage : pas de maxWidth (le parent .text-center
+                  // s'en charge), display block, marges auto.
+                  display: "block",
+                  width: "100%",
+                  margin: "0 auto",
                   textAlign: "center",
+                  wordBreak: "normal",
+                  overflowWrap: "break-word",
+                  hyphens: "manual",
+                  textWrap: "balance",
                 }}
               >
                 {cover.title}

@@ -181,10 +181,15 @@ function makeStyles(p: PdfPalette) {
     width: "100%",
     height: "100%",
   },
-  coverEyebrowOnPhoto: {
+  // ⚠️ react-pdf : un <Text> ne peut PAS porter `position: absolute` direct
+  // (crash runtime "Cannot read properties of null reading props"). Il faut
+  // wrapper dans un <View> qui porte la position, puis y mettre le Text.
+  coverEyebrowOnPhotoWrap: {
     position: "absolute",
     top: 44,
     left: 56,
+  },
+  coverEyebrowOnPhoto: {
     fontSize: 9,
     fontWeight: 600,
     letterSpacing: 3,
@@ -1292,8 +1297,11 @@ export function RoadbookPDF({
           ) : (
             <View style={styles.coverPhotoBg} />
           )}
-          {/* Eyebrow "ROADBOOK" en haut à gauche sur la photo */}
-          <Text style={styles.coverEyebrowOnPhoto}>Roadbook</Text>
+          {/* Eyebrow "ROADBOOK" en haut à gauche sur la photo
+              (Text wrappé dans View car react-pdf interdit position absolute sur Text) */}
+          <View style={styles.coverEyebrowOnPhotoWrap}>
+            <Text style={styles.coverEyebrowOnPhoto}>Roadbook</Text>
+          </View>
         </View>
 
         {/* Bande inférieure blanche avec titre + meta */}
