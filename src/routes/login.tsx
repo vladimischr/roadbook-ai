@@ -20,6 +20,8 @@ import {
   useAuth,
 } from "@/lib/auth";
 import { toast } from "sonner";
+// PostHog analytics
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -104,6 +106,19 @@ function Login() {
       toast.error(error.message);
       return;
     }
+    // PostHog : signup réussi (email confirmé ou non — on track le moment où
+    // le compte est créé, peu importe la confirmation email).
+    track("signup_completed", { method: "email", plan_key: "free" });
+
+    // Welcome J0 — envoi immédiat (best-effort, ne bloque pas l'UX).
+    // Note : nécessite une session active. Si l'email Supabase "Confirm email"
+    // est ON, data.session est null → on skippe (l'user reverra l'app plus tard).
+    if (data?.session?.access_token && data.user?.email) {
+      sendWelcomeJ0(data.session.access_token, data.user.email).catch((err) =>
+        console.warn("[welcome-j0] send failed:", err),
+      );
+    }
+
     if (data?.user && !data.session) {
       // Confirmation email requise (Supabase "Confirm email" ON)
       setEmailSent("signup");
@@ -111,6 +126,28 @@ function Login() {
       // Auto-confirmé → redirection auto via useEffect
       toast.success("Compte créé. Bienvenue !");
     }
+  };
+
+  // Helper local : appelle le système email Lovable avec le template welcome-j0.
+  // Best-effort — toute erreur est loggée mais n'interrompt jamais le signup.
+  const sendWelcomeJ0 = async (accessToken: string, recipientEmail: string) => {
+    const firstName = recipientEmail.split("@")[0]; // fallback simple
+    await fetch("/lovable/email/transactional/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        templateName: "welcome-j0",
+        recipientEmail,
+        idempotencyKey: `welcome-j0-${recipientEmail}`,
+        templateData: {
+          firstName,
+          dashboardUrl: `${window.location.origin}/new`,
+        },
+      }),
+    });
   };
 
   const onForgot = async (e: React.FormEvent) => {

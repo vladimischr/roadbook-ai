@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getStripe } from "@/integrations/stripe/client.server";
 import { planKeyForStripePrice, type PlanKey } from "@/lib/plans";
+import { captureServer } from "@/lib/posthog.server";
 
 // ============================================================================
 // Webhook Stripe — source de vérité pour l'état d'abonnement
@@ -169,6 +170,39 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const stripe = getStripe();
   const sub = await stripe.subscriptions.retrieve(subId);
   await handleSubscriptionUpsert(sub);
+
+  // PostHog : tracker la conversion finale. C'est ici qu'on sait que le
+  // paiement a abouti pour la première fois (vs subscription.updated qui
+  // peut être un upgrade/downgrade ultérieur).
+  // Distinct ID = supabase user id (déjà stocké en metadata par stripe-checkout.ts).
+  const distinctId =
+    sub.metadata?.supabase_user_id ??
+    (typeof session.client_reference_id === "string"
+      ? session.client_reference_id
+      : null);
+
+  if (distinctId) {
+    const priceId = sub.items.data[0]?.price?.id;
+    const planKey = priceId ? planKeyForStripePrice(priceId) : null;
+    const amountCents = sub.items.data[0]?.price?.unit_amount ?? 0;
+    const interval = sub.items.data[0]?.price?.recurring?.interval;
+    const billing: "monthly" | "annual" = interval === "year" ? "annual" : "monthly";
+
+    await captureServer({
+      distinctId,
+      event: "subscription_active",
+      properties: {
+        plan_key: planKey,
+        billing,
+        amount_cents: amountCents,
+        stripe_subscription_id: sub.id,
+      },
+    });
+  } else {
+    console.warn(
+      "[stripe-webhook] subscription_active non envoyé (distinct_id introuvable)",
+    );
+  }
 }
 
 async function handleSubscriptionUpsert(sub: Stripe.Subscription) {

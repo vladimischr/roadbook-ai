@@ -260,6 +260,79 @@ function Pricing() {
             })}
           </div>
 
+          {/* Comparateur vs faire-soi-même — handle l'objection "encore un outil" */}
+          <div className="mt-24">
+            <h2 className="font-display text-[26px] font-semibold leading-tight text-foreground sm:text-[30px]">
+              Sans Roadbook vs Avec Roadbook
+            </h2>
+            <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground">
+              Ce que ça change concrètement quand tu remplaces Word + Canva par un outil dédié.
+            </p>
+
+            <div className="mt-8 grid gap-5 md:grid-cols-2">
+              <div className="rounded-2xl border border-border/60 bg-surface p-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  Sans Roadbook (Word + Canva)
+                </p>
+                <ul className="mt-5 space-y-3 text-[14px] leading-relaxed text-foreground/80">
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 inline-block h-1 w-1 flex-shrink-0 rounded-full bg-muted-foreground" />
+                    <span>3 à 5 heures de mise en forme par roadbook livré</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 inline-block h-1 w-1 flex-shrink-0 rounded-full bg-muted-foreground" />
+                    <span>Cohérence visuelle qui dépend du dernier collègue qui a touché au modèle</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 inline-block h-1 w-1 flex-shrink-0 rounded-full bg-muted-foreground" />
+                    <span>Carte statique recopiée depuis Google Maps</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 inline-block h-1 w-1 flex-shrink-0 rounded-full bg-muted-foreground" />
+                    <span>Modifications de dernière minute = tout réimprimer</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 inline-block h-1 w-1 flex-shrink-0 rounded-full bg-muted-foreground" />
+                    <span>Pas de version partageable en ligne</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-primary/60 bg-surface p-6 shadow-soft-md">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-warm">
+                  Avec Roadbook
+                </p>
+                <ul className="mt-5 space-y-3 text-[14px] leading-relaxed text-foreground/85">
+                  <li className="flex items-start gap-2.5">
+                    <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                    <span>6 minutes pour générer un roadbook complet</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                    <span>Ta charte appliquée automatiquement à chaque roadbook</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                    <span>Carte interactive Google Maps embarquée</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                    <span>Modifications instantanées, lien client à jour</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                    <span>Lien partageable + export PDF en un clic</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <p className="mt-6 text-[13px] text-muted-foreground">
+              ROI : à partir de 5 roadbooks livrés par mois, l'abonnement Solo
+              est rentabilisé en temps gagné (base 100 €/h).
+            </p>
+          </div>
+
           {/* FAQ rapide pour rassurer */}
           <div className="mt-24 grid gap-x-12 gap-y-10 md:grid-cols-2">
             {[
@@ -278,6 +351,22 @@ function Pricing() {
               {
                 q: "Mes clients voient-ils Roadbook.ai ?",
                 a: "Le PDF exporté est neutre — uniquement le nom de votre agence. Le mode marque blanche est inclus dès le plan Atelier.",
+              },
+              {
+                q: "Et si je dépasse mon quota un mois exceptionnel ?",
+                a: "Tu reçois une alerte à 80% d'utilisation. Tu peux passer au plan supérieur instantanément (prorata calculé) ou attendre la réinitialisation au début du cycle suivant. Pas de surcharge cachée.",
+              },
+              {
+                q: "Mes données partent-elles aux US ?",
+                a: "Non. La base est hébergée en Europe (Supabase Frankfurt) et le PDF est généré dans ton navigateur. Seules les requêtes de génération de plan transitent par l'API Claude (Anthropic) — anonymisées (pas de nom client transmis).",
+              },
+              {
+                q: "Je suis déjà sur HARVEST / O2S / Quantalys — vous remplacez ?",
+                a: "Non, on est complémentaires. Eux gèrent le devis, la résa, la facturation. Nous, on gère le livrable que tu envoies au client. La plupart de nos utilisateurs gardent leur outil PMS et utilisent Roadbook juste pour la production du carnet de voyage.",
+              },
+              {
+                q: "Le générateur IA va-t-il inventer des choses fausses ?",
+                a: "Le plan généré est une trame de départ — toujours à valider par toi avant envoi client. On affiche les sources quand on les a (Google Maps pour les lieux, base hôtelière pour les hébergements). Mais c'est ton expertise qui valide. Le but : te faire gagner les 80% mécaniques, pas remplacer ton oeil.",
               },
             ].map((it, i) => (
               <div key={i}>

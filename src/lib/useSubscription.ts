@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { PlanKey } from "@/lib/plans";
+// PostHog analytics
+import { identifyUser, resetUser, setUserProps, track } from "@/lib/analytics";
 
 export interface SubscriptionInfo {
   planKey: PlanKey;
@@ -66,6 +68,37 @@ export function useSubscription() {
     refetch();
   }, [refetch]);
 
+  // PostHog : identify l'utilisateur dès que session + plan sont connus,
+  // reset au logout. Garantit que tous les events sont liés au bon user.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+      const user = session?.user;
+      if (user?.id && info) {
+        identifyUser(user.id, {
+          email: user.email ?? undefined,
+          plan_key: info.planKey,
+          subscription_status: info.planStatus as
+            | "active"
+            | "trialing"
+            | "past_due"
+            | "canceled"
+            | "incomplete",
+          created_at: user.created_at,
+        });
+      } else if (!user) {
+        resetUser();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [info]);
+
   return { info, loading, error, refetch };
 }
 
@@ -78,6 +111,10 @@ export async function redirectToCheckout(
   planKey: Exclude<PlanKey, "free">,
   billing: "monthly" | "annual" = "monthly",
 ) {
+  // PostHog : enregistrer l'intention AVANT de quitter l'app vers Stripe
+  // (sinon l'event part avec le pageview suivant qui sera celui de Stripe).
+  track("checkout_started", { target_plan: planKey, billing });
+
   const {
     data: { session },
   } = await supabase.auth.getSession();

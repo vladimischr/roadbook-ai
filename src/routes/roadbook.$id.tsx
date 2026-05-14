@@ -63,6 +63,8 @@ import { useAuth } from "@/lib/auth";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { useGoogleMapsKey } from "@/lib/useGoogleMapsKey";
 import { useDestinationCover } from "@/lib/useDestinationCover";
+// PostHog analytics
+import { track } from "@/lib/analytics";
 import { RoadbookMap, type DirectionsSegment } from "@/components/RoadbookMap";
 import { PlacesAutocompleteInput, type PlaceSelection } from "@/components/PlacesAutocompleteInput";
 import { geocodePlace, getDirectionsSegment } from "@/lib/api";
@@ -1224,6 +1226,14 @@ function RoadbookPage() {
       setShareCopied(true);
       toast.success("Lien copié dans le presse-papier", { duration: 2000 });
       setTimeout(() => setShareCopied(false), 2500);
+
+      // PostHog : tracker le partage (boucle virale potentielle).
+      track("roadbook_shared", {
+        roadbook_id: id,
+        destination: rb?.destination ?? undefined,
+        days_count: (rb?.days || []).length,
+        channel: "copy_url",
+      });
     } catch {
       toast.error("Impossible de copier — sélectionne et copie manuellement.");
     }
@@ -1340,6 +1350,17 @@ function RoadbookPage() {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast.success("PDF téléchargé", { id: toastId });
+
+      // PostHog : tracker l'export PDF (signal d'usage actif = qualité de la
+      // base de users payants).
+      track("pdf_exported", {
+        roadbook_id: id,
+        destination: rb?.destination ?? undefined,
+        days_count: (rb?.days || []).length,
+        export_type: isPdfWatermarked(subInfo?.planKey)
+          ? "pdf_watermarked"
+          : "pdf_clean",
+      });
     } catch (e: unknown) {
       const err = e as { message?: string };
       console.error("PDF export failed", e);

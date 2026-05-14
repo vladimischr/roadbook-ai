@@ -18,7 +18,13 @@ export interface TemplateEntry {
  *   // then add to TEMPLATES: 'welcome': welcomeTemplate
  */
 import { template as contactMessage } from './contact-message'
+import { template as welcomeJ0 } from './welcome-j0'
+import { template as welcomeJ3Nudge } from './welcome-j3-nudge'
+import { template as welcomeJ7LastCall } from './welcome-j7-lastcall'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'contact-message': contactMessage,
+  'welcome-j0': welcomeJ0,
+  'welcome-j3-nudge': welcomeJ3Nudge,
+  'welcome-j7-lastcall': welcomeJ7LastCall,
 }

@@ -7,8 +7,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+// PostHog analytics
+import { track } from "@/lib/analytics";
 import {
   PAID_PLAN_ORDER,
   PLANS,
@@ -97,6 +99,21 @@ export function Paywall({
 }: PaywallProps) {
   const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
   const [billing, setBilling] = useState<Billing>("annual");
+
+  // PostHog : tracker le moment où la modale Paywall s'ouvre (= friction
+  // monétisation rencontrée par l'utilisateur). Mapping reason → trigger
+  // PostHog : quota_* → quota_reached, feature_* → premium_feature, sinon
+  // manual_open (utilisateur a explicitement cliqué "Upgrade").
+  useEffect(() => {
+    if (!open) return;
+    const trigger: "quota_reached" | "premium_feature" | "manual_open" =
+      reason === "quota_roadbooks" || reason === "quota_chat" || reason === "past_due"
+        ? "quota_reached"
+        : reason === "feature_recompute" || reason === "feature_pdf"
+          ? "premium_feature"
+          : "manual_open";
+    track("paywall_seen", { trigger, current_plan: currentPlanKey });
+  }, [open, reason, currentPlanKey]);
 
   // Priorité : title/subtitle explicites > reason > fallback générique
   const copy = REASON_COPY[reason ?? "generic"];

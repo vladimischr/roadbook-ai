@@ -14,6 +14,8 @@ import { Paywall } from "@/components/Paywall";
 import { useSubscription } from "@/lib/useSubscription";
 import { ImportRoadbookDialog } from "@/components/ImportRoadbookDialog";
 import { composePromptFromBrief } from "@/lib/briefQuestions";
+// PostHog analytics
+import { track } from "@/lib/analytics";
 
 interface NewSearch {
   brief_id?: string;
@@ -226,6 +228,14 @@ function NewRoadbook() {
 
     setSubmitting(true);
     setStepKey("prompt");
+
+    // PostHog : on track le START dès qu'on lance la génération (avant les 30-60s
+    // d'attente Claude). Le `source` distingue les flows d'entrée.
+    track("first_roadbook_started", {
+      destination: form.destination,
+      source: briefPrefilled ? "import_excel" : "blank",
+    });
+
     try {
       // Petit délai visuel pour que l'utilisateur enregistre l'étape "prompt"
       // avant le passage à "ai" (l'appel Claude met 30-60s).
@@ -311,6 +321,16 @@ function NewRoadbook() {
           console.warn("[new] brief-mark-used failed:", e);
         }
       }
+
+      // PostHog : roadbook créé avec succès et persisté en DB. C'est le SIGNAL
+      // d'activation le plus net (le user a vu Claude produire un livrable).
+      track("first_roadbook_completed", {
+        roadbook_id: data.id,
+        destination,
+        days_count: Array.isArray((roadbook as any).days)
+          ? (roadbook as any).days.length
+          : 0,
+      });
 
       setStepKey("done");
       navigate({ to: "/roadbook/$id", params: { id: data.id } });
