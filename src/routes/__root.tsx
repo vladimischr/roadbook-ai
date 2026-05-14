@@ -30,6 +30,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "google-site-verification", content: "gwsp1u-bvqrMLUr8sLF08ljIqvG66TJiIXjW3-SOUnY" },
       // Defense in depth — si Cloudflare ne sert pas /public/_headers (cas
       // Workers pur), ces meta s'appliquent côté navigateur quand même.
       {
