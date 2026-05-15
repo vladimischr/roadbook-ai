@@ -157,11 +157,13 @@ export const Route = createFileRoute("/api/stripe-checkout")({
           // Récupère ou crée le profil — au cas où la migration trigger n'a
           // pas tourné pour cet utilisateur (devrait pas arriver, mais
           // safety net).
-          const { data: profile } = await supabaseAdmin
+          // Cast `any` : colonne referred_by_code ajoutée par migration récente,
+          // pas encore dans les types générés.
+          const { data: profile } = (await (supabaseAdmin as any)
             .from("profiles")
-            .select("stripe_customer_id, email")
+            .select("stripe_customer_id, email, referred_by_code")
             .eq("id", user.id)
-            .maybeSingle();
+            .maybeSingle()) as { data: { stripe_customer_id: string | null; email: string | null; referred_by_code: string | null } | null };
 
           const stripe = getStripe();
 
@@ -181,10 +183,25 @@ export const Route = createFileRoute("/api/stripe-checkout")({
               .eq("id", user.id);
           }
 
+          // Affiliation : si le user a été parrainé (referred_by_code), on
+          // applique un coupon -20% sur le 1er mois (geste pour le filleul).
+          // Le coupon est identifié par STRIPE_AFFILIATE_COUPON_ID (env var)
+          // — à créer une fois dans le dashboard Stripe avec :
+          //   percent_off=20, duration=once.
+          // Si la var n'est pas configurée, on n'applique pas de discount mais
+          // le tracking de la commission affilié continue de marcher (cf.
+          // stripe-webhook → handleInvoicePaid).
+          const couponId = process.env.STRIPE_AFFILIATE_COUPON_ID;
+          const discounts: Array<{ coupon: string }> = [];
+          if (profile?.referred_by_code && couponId) {
+            discounts.push({ coupon: couponId });
+          }
+
           const session = await stripe.checkout.sessions.create({
             mode: "subscription",
             customer: customerId,
             line_items: [{ price: priceId, quantity: 1 }],
+            ...(discounts.length > 0 ? { discounts } : {}),
             // 7 jours d'essai gratuit avec CB demandée → conversion forte.
             // Stripe gère automatiquement le passage trialing → active.
             subscription_data: {
@@ -207,7 +224,11 @@ export const Route = createFileRoute("/api/stripe-checkout")({
               address: "auto",
               name: "auto",
             },
-            allow_promotion_codes: true,
+            // Stripe interdit `discounts` + `allow_promotion_codes` simultanés.
+            // Quand on applique un coupon affiliation, on désactive le champ
+            // code promo manuel pour cette session (le filleul a déjà son
+            // -20% appliqué automatiquement).
+            ...(discounts.length === 0 ? { allow_promotion_codes: true } : {}),
             billing_address_collection: "required",
             success_url: `${origin}/billing?status=success&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/pricing?status=canceled`,

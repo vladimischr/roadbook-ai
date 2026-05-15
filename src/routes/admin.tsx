@@ -234,6 +234,13 @@ function AdminPage() {
           <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground">
             Vue d'ensemble des inscrits, leurs plans et leur usage.
           </p>
+          <div className="mt-4">
+            <Link to="/admin-affiliates">
+              <Button variant="outline" size="sm">
+                Programme d'affiliation →
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats globales */}

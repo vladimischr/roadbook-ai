@@ -22,6 +22,8 @@ import {
 import { toast } from "sonner";
 // PostHog analytics
 import { track } from "@/lib/analytics";
+// Affiliation : attache le code ?ref=XXX (cookie) au profil après signup
+import { getStoredRefCode, clearRefCode } from "@/lib/affiliate";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -108,7 +110,34 @@ function Login() {
     }
     // PostHog : signup réussi (email confirmé ou non — on track le moment où
     // le compte est créé, peu importe la confirmation email).
-    track("signup_completed", { method: "email", plan_key: "free" });
+    const refCode = getStoredRefCode();
+    track("signup_completed", {
+      method: "email",
+      plan_key: "free",
+      ...(refCode ? { referrer_code: refCode } : {}),
+    } as never);
+
+    // Affiliation : si un code ?ref=XXX était stocké en cookie, on l'attache
+    // au profil. Best-effort, ne bloque pas l'UX. Nécessite une session active.
+    if (data?.session?.access_token && refCode) {
+      fetch("/api/affiliate-attribute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session.access_token}`,
+        },
+        body: JSON.stringify({ code: refCode }),
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          if (res?.code || res?.already_attributed) {
+            clearRefCode();
+          }
+        })
+        .catch((err) =>
+          console.warn("[affiliate-attribute] failed:", err),
+        );
+    }
 
     // Welcome J0 — envoi immédiat (best-effort, ne bloque pas l'UX).
     // Note : nécessite une session active. Si l'email Supabase "Confirm email"

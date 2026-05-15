@@ -126,6 +126,12 @@ export const Route = createFileRoute("/api/stripe-webhook")({
               await handlePaymentFailed(invoice);
               break;
             }
+            case "invoice.payment_succeeded":
+            case "invoice.paid": {
+              const invoice = event.data.object as Stripe.Invoice;
+              await handleInvoicePaid(invoice);
+              break;
+            }
             default:
               // On ignore les events qu'on n'écoute pas — pas d'erreur.
               break;
@@ -318,4 +324,112 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     .from("profiles")
     .update({ plan_status: "past_due" })
     .eq("stripe_customer_id", customerId);
+}
+
+/* ========================================================================
+ * Affiliation : crée une ligne affiliate_conversions à chaque paiement réussi
+ * ====================================================================== */
+
+async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  // amount_paid = 0 → essai gratuit, période trial — pas de commission
+  if (!invoice.amount_paid || invoice.amount_paid <= 0) return;
+  // invoice.id required pour idempotence
+  if (!invoice.id) return;
+
+  const customerId =
+    typeof invoice.customer === "string"
+      ? invoice.customer
+      : invoice.customer?.id;
+  if (!customerId) return;
+
+  // 1. Lookup profile via customer_id
+  // Cast `any` : colonne referred_by_code ajoutée par migration récente.
+  const { data: profile } = (await (supabaseAdmin as any)
+    .from("profiles")
+    .select("id, referred_by_code")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle()) as {
+    data: { id: string; referred_by_code: string | null } | null;
+  };
+
+  if (!profile?.referred_by_code) return; // pas un filleul
+
+  // 2. Lookup affiliate
+  const { data: affiliate } = (await (supabaseAdmin as any)
+    .from("affiliates")
+    .select("code, status, commission_rate, commission_months")
+    .eq("code", profile.referred_by_code)
+    .maybeSingle()) as {
+    data: {
+      code: string;
+      status: string;
+      commission_rate: number;
+      commission_months: number;
+    } | null;
+  };
+
+  if (!affiliate || affiliate.status !== "active") {
+    // Si l'affilié a été paused entre-temps, on ne crée plus de commission.
+    return;
+  }
+
+  // 3. Compter les paiements déjà attribués à ce user pour ce code → savoir
+  // si on est encore dans la fenêtre commission_months.
+  const { count: existingCount } = (await (supabaseAdmin as any)
+    .from("affiliate_conversions")
+    .select("id", { count: "exact", head: true })
+    .eq("affiliate_code", affiliate.code)
+    .eq("referred_user_id", profile.id)) as { count: number | null };
+
+  const paymentNumber = (existingCount ?? 0) + 1;
+
+  // commission_months = 0 → à vie. Sinon on coupe après N paiements.
+  if (
+    affiliate.commission_months > 0 &&
+    paymentNumber > affiliate.commission_months
+  ) {
+    return; // fin de la fenêtre de commission
+  }
+
+  // 4. Calcul commission
+  const commissionCents = Math.round(
+    (invoice.amount_paid * affiliate.commission_rate) / 100,
+  );
+
+  // 5. INSERT idempotent (stripe_invoice_id UNIQUE)
+  const subId =
+    typeof invoice.subscription === "string"
+      ? invoice.subscription
+      : invoice.subscription?.id ?? null;
+
+  const { error: insertErr } = (await (supabaseAdmin as any)
+    .from("affiliate_conversions")
+    .insert({
+      affiliate_code: affiliate.code,
+      referred_user_id: profile.id,
+      stripe_invoice_id: invoice.id,
+      stripe_subscription_id: subId,
+      invoice_amount_cents: invoice.amount_paid,
+      commission_amount_cents: commissionCents,
+      commission_rate: affiliate.commission_rate,
+      payment_number: paymentNumber,
+    })) as { error: { code?: string; message?: string } | null };
+
+  if (insertErr) {
+    // Code 23505 = unique violation → invoice déjà traité, ok.
+    const isDup =
+      (insertErr as { code?: string }).code === "23505" ||
+      /duplicate key/i.test(insertErr.message ?? "");
+    if (!isDup) {
+      console.error(
+        "[stripe-webhook] affiliate conversion insert error:",
+        insertErr,
+      );
+      throw new Error(insertErr.message);
+    }
+  } else {
+    console.log(
+      `[stripe-webhook] affiliate conversion +${commissionCents}c for ${affiliate.code} (payment ${paymentNumber}/${affiliate.commission_months || "∞"})`,
+    );
+  }
 }
