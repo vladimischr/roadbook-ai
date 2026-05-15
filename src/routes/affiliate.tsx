@@ -60,6 +60,7 @@ function AffiliateDashboard() {
   const { session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState(false);
   const [data, setData] = useState<{
     affiliate: Affiliate | null;
     conversions: Conversion[];
@@ -91,6 +92,30 @@ function AffiliateDashboard() {
     }
   }
 
+  async function handleSelfEnroll() {
+    if (!session) return;
+    setEnrolling(true);
+    try {
+      const res = await fetch("/api/affiliate-self-enroll", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erreur");
+      toast.success(
+        json.already_enrolled
+          ? `Tu as déjà un code : ${json.code}`
+          : `Code généré : ${json.code}`,
+      );
+      // Recharge le dashboard avec le nouveau code
+      await fetchData(session.access_token);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setEnrolling(false);
+    }
+  }
+
   if (loading || authLoading) {
     return (
       <PageShell>
@@ -105,14 +130,49 @@ function AffiliateDashboard() {
     return (
       <PageShell>
         <div className="mx-auto max-w-2xl py-16 text-center">
-          <h1 className="text-3xl font-bold">Pas encore affilié</h1>
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Coins className="h-8 w-8" />
+          </div>
+          <h1 className="mt-6 text-3xl font-bold">
+            Active ton programme d'affiliation
+          </h1>
           <p className="mt-4 text-muted-foreground">
-            Candidate au programme pour toucher 30% des abonnements de tes
-            filleuls pendant 12 mois.
+            Touche <b>30% de chaque abonnement</b> que tu ramènes,{" "}
+            <b>pendant 12 mois</b>. Pas besoin d'être abonné toi-même —
+            même un compte Découverte peut parrainer.
           </p>
-          <Button asChild size="lg" className="mt-6">
-            <Link to="/affiliation">Candidater</Link>
+
+          <div className="mt-8 rounded-2xl border bg-card p-6 text-left">
+            <h2 className="font-semibold">Comment ça marche</h2>
+            <ol className="mt-4 space-y-3 text-sm text-muted-foreground">
+              <li>
+                <b className="text-foreground">1.</b> Tu cliques le bouton
+                ci-dessous → ton code personnel est généré instantanément
+              </li>
+              <li>
+                <b className="text-foreground">2.</b> Tu partages ton lien
+                getroadbook.com?ref=TONCODE (LinkedIn, mails, etc.)
+              </li>
+              <li>
+                <b className="text-foreground">3.</b> Tes filleuls profitent
+                de <b>-20% le 1er mois</b>, toi tu touches <b>30% pendant
+                12 mois</b>
+              </li>
+            </ol>
+          </div>
+
+          <Button
+            size="lg"
+            className="mt-8"
+            onClick={handleSelfEnroll}
+            disabled={enrolling}
+          >
+            {enrolling ? "Génération..." : "Activer mon programme — c'est gratuit"}
           </Button>
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            Aucun engagement. Tu peux mettre ton code en pause à tout moment.
+          </p>
         </div>
       </PageShell>
     );

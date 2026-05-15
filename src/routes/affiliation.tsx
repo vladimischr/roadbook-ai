@@ -128,6 +128,20 @@ function AffiliationPage() {
           Tu connais des travel designers freelance ou des agences boutique ?
           Partage ton code, ils signent, tu gagnes — pendant un an.
         </p>
+
+        {/* Banner pour les users : code instantané sans candidature */}
+        <div className="mx-auto mt-8 max-w-2xl rounded-2xl border-2 border-primary/30 bg-primary/5 p-5">
+          <p className="text-sm">
+            <b>Tu as déjà un compte Roadbook AI ?</b>{" "}
+            Pas besoin de candidater. Connecte-toi et active ton code en 1 clic.
+          </p>
+          <Button asChild className="mt-4" size="sm">
+            <Link to="/affiliate">
+              Activer mon programme
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </section>
 
       {/* ===== Comment ça marche ===== */}
@@ -229,8 +243,16 @@ function AffiliationPage() {
         <div className="rounded-2xl border bg-card p-8 shadow-sm">
           <h2 className="text-2xl font-bold">Candidate au programme</h2>
           <p className="mt-2 text-muted-foreground">
-            Réponse sous 48h. Pas de question piège, juste de quoi te
-            connaître.
+            Ce formulaire est pour les <b>partenaires externes</b> (blogueurs,
+            formateurs, écoles, consultants) qui n'ont pas de compte
+            Roadbook AI. Réponse sous 48h.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Si tu as déjà un compte Roadbook AI, va plutôt sur{" "}
+            <Link to="/affiliate" className="text-primary underline">
+              ton dashboard affiliation
+            </Link>{" "}
+            (code instantané, pas de candidature).
           </p>
 
           {sent === "pending" ? (
