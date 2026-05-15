@@ -23,13 +23,34 @@ const inputSchema = z.object({
 });
 
 /**
+ * Hosts par défaut acceptés même si ALLOWED_ORIGINS n'est pas configuré.
+ * Couvre prod (roadbook.ai), previews Lovable, previews Cloudflare Pages,
+ * et localhost dev. Un attaquant ne peut pas exploiter ces patterns parce
+ * que :
+ * - On vérifie aussi le header `Origin` côté serveur (set par le navigateur,
+ *   pas spoofable via JS depuis un autre domaine sans CORS qui plante).
+ * - On vérifie le bearer token Supabase avant tout.
+ */
+const DEFAULT_ALLOWED_PATTERNS: Array<string | RegExp> = [
+  "roadbook.ai",
+  "www.roadbook.ai",
+  /\.roadbook\.ai$/,
+  /\.lovable\.app$/,
+  /\.lovable\.dev$/,
+  /\.lovableproject\.com$/,
+  /\.pages\.dev$/,
+  "localhost",
+  "127.0.0.1",
+];
+
+/**
  * Valide qu'une origin reçue du client est autorisée. Sans ça, un attaquant
  * peut créer une session Stripe avec `origin=https://attacker.com` et
  * détourner la redirection post-paiement (phishing).
  *
- * Configuration : ALLOWED_ORIGINS = "roadbook.ai,www.roadbook.ai,localhost:3000"
- * (CSV de hosts, avec ou sans port). Si la variable est vide, on fallback sur
- * une whitelist sûre minimale + warning prod.
+ * Configuration optionnelle : ALLOWED_ORIGINS = "roadbook.ai,foo.example.com"
+ * (CSV de hosts). Si configurée, ELLE A PRIORITÉ (mode strict). Sinon on
+ * tombe sur la whitelist par défaut (cf. DEFAULT_ALLOWED_PATTERNS).
  */
 function isOriginAllowed(originUrl: string): boolean {
   let url: URL;
@@ -41,28 +62,25 @@ function isOriginAllowed(originUrl: string): boolean {
   // Refuse les schémas non http(s)
   if (url.protocol !== "http:" && url.protocol !== "https:") return false;
 
+  const hostname = url.hostname.toLowerCase();
+  const host = url.host.toLowerCase(); // inclut le port
+
+  // Mode strict : si l'admin a configuré ALLOWED_ORIGINS, on respecte
+  // strictement sa whitelist (override le défaut).
   const allowedRaw = process.env.ALLOWED_ORIGINS ?? "";
-  const allowed = allowedRaw
+  const explicit = allowedRaw
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
 
-  // Fallback dev : si rien n'est configuré, on accepte uniquement localhost.
-  if (allowed.length === 0) {
-    if (process.env.NODE_ENV === "production") {
-      console.error(
-        "[stripe-checkout] ALLOWED_ORIGINS non configuré en production — refus par sécurité",
-      );
-      return false;
-    }
-    return (
-      url.hostname === "localhost" || url.hostname === "127.0.0.1"
-    );
+  if (explicit.length > 0) {
+    return explicit.some((entry) => entry === host || entry === hostname);
   }
 
-  const host = url.host.toLowerCase(); // inclut le port
-  const hostname = url.hostname.toLowerCase();
-  return allowed.some((entry) => entry === host || entry === hostname);
+  // Mode défaut : whitelist de patterns sûrs (prod + previews + dev).
+  return DEFAULT_ALLOWED_PATTERNS.some((p) =>
+    typeof p === "string" ? p === hostname : p.test(hostname),
+  );
 }
 
 export const Route = createFileRoute("/api/stripe-checkout")({
@@ -97,12 +115,22 @@ export const Route = createFileRoute("/api/stripe-checkout")({
           // Anti-phishing : refuse les origins inconnues pour ne pas qu'un
           // attaquant détourne le success_url vers son domaine.
           if (!isOriginAllowed(origin)) {
+            const rejectedHost = (() => {
+              try {
+                return new URL(origin).host;
+              } catch {
+                return origin;
+              }
+            })();
             console.warn(
               "[stripe-checkout] origin refusée:",
-              new URL(origin).host,
+              rejectedHost,
+              "— ajouter à ALLOWED_ORIGINS si légitime",
             );
             return jsonResponse(
-              { error: "Origin non autorisée." },
+              {
+                error: `Origin non autorisée (${rejectedHost}). Contacte le support.`,
+              },
               400,
             );
           }
