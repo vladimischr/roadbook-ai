@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Slide 5 — Scénarios</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .scenario {
+    padding: 32px 0;
+    border-bottom: 1px solid var(--stripe);
+  }
+  .scenario:last-child {
+    border-bottom: none;
+  }
+  .scenario-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .scenario-who {
+    font-family: 'Inter', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .scenario-plan {
+    font-family: 'Inter', sans-serif;
+    font-size: 18px;
+    color: var(--muted);
+  }
+  .scenario-total {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 88px;
+    line-height: 1;
+    color: var(--teal);
+    letter-spacing: -2px;
+  }
+  .scenario.highlight {
+    background: var(--teal-soft);
+    margin: 0 -32px;
+    padding: 32px 32px;
+    border-radius: 16px;
+    border: none;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="brand">
+    <span class="brand-name">Roadbook.ai</span>
+    <span>05 / 08</span>
+  </div>
+
+  <div class="eyebrow" style="margin-top: 60px;">Trois scénarios</div>
+  <h3 style="margin-bottom: 48px;">
+    Combien sur 12 mois ?
+  </h3>
+
+  <div class="scenario">
+    <div class="scenario-top">
+      <span class="scenario-who">3 filleuls</span>
+      <span class="scenario-plan">Plan Solo · 29 €/mois</span>
+    </div>
+    <div class="scenario-total">313 €</div>
+  </div>
+
+  <div class="scenario highlight">
+    <div class="scenario-top">
+      <span class="scenario-who">10 filleuls</span>
+      <span class="scenario-plan">Plan Solo · 29 €/mois</span>
+    </div>
+    <div class="scenario-total">1 044 €</div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-top">
+      <span class="scenario-who">5 agences</span>
+      <span class="scenario-plan">Plan Atelier · 99 €/mois</span>
+    </div>
+    <div class="scenario-total">1 782 €</div>
+  </div>
+
+  <div class="footer">
+    <span>Trois scénarios</span>
+    <span class="swipe-hint">Glisse →</span>
+  </div>
+</div>
+</body>
+</html>

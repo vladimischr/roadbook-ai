@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Carrousel Affiliation — Preview 8 slides</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a1a1a;
+    color: #fff;
+    font-family: -apple-system, sans-serif;
+    padding: 40px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: #888;
+    margin-bottom: 32px;
+    font-size: 14px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+  .slide-wrap {
+    background: #2a2a2a;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  .slide-label {
+    padding: 12px 16px;
+    background: #333;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+  }
+  .slide-num {
+    color: #999;
+  }
+  .iframe-wrap {
+    position: relative;
+    width: 100%;
+    padding-bottom: 125%; /* 4:5 ratio */
+  }
+  iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 1080px;
+    height: 1350px;
+    border: 0;
+    transform-origin: 0 0;
+    transform: scale(0.25);
+    /* responsive scale calc'd via JS below */
+  }
+  .instructions {
+    margin-top: 40px;
+    padding: 24px;
+    background: #2a2a2a;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .instructions code {
+    background: #1a1a1a;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #C8A157;
+  }
+</style>
+</head>
+<body>
+<h1>Carrousel Instagram — Affiliation Roadbook AI</h1>
+<p class="subtitle">8 slides 1080×1350 px (4:5). Preview à 25 %.</p>
+
+<div class="grid">
+  <div class="slide-wrap">
+    <div class="slide-label">Cover <span class="slide-num">01</span></div>
+    <div class="iframe-wrap"><iframe src="slides/01.html" scrolling="no"></iframe></div>
+  </div>
+  <div class="slide-wrap">
+    <div class="slide-label">Le constat <span class="slide-num">02</span></div>
+    <div class="iframe-wrap"><iframe src="slides/02.html" scrolling="no"></iframe></div>
+  </div>
+  <div class="slide-wrap">
+    <div class="slide-label">Le mécanisme <span class="slide-num">03</span></div>
+    <div class="iframe-wrap"><iframe src="slides/03.html" scrolling="no"></iframe></div>
+  </div>
+  <div class="slide-wrap">
+    <div class="slide-label">Le calcul <span class="slide-num">04</span></div>
+    <div class="iframe-wrap"><iframe src="slides/04.html" scrolling="no"></iframe></div>
+  </div>
+  <div class="slide-wrap">
+    <div class="slide-label">Scénarios <span class="slide-num">05</span></div>
+    <div class="iframe-wrap"><iframe src="slides/05.html" scrolling="no"></iframe></div>
+  </div>
+  <div class="slide-wrap">
+    <div class="slide-label">Étapes <span class="slide-num">06</span></div>
+    <div class="iframe-wrap"><iframe src="slides/06.html" scrolling="no"></iframe></div>
+  </div>
+  <div class="slide-wrap">
+    <div class="slide-label">Conditions <span class="slide-num">07</span></div>
+    <div class="iframe-wrap"><iframe src="slides/07.html" scrolling="no"></iframe></div>
+  </div>
+  <div class="slide-wrap">
+    <div class="slide-label">CTA <span class="slide-num">08</span></div>
+    <div class="iframe-wrap"><iframe src="slides/08.html" scrolling="no"></iframe></div>
+  </div>
+</div>
+
+<div class="instructions">
+  <strong>Export en PNG :</strong> dans le terminal, depuis ce dossier, lance
+  <code>node export.mjs</code> — ça génère 8 fichiers <code>slide-01.png</code> à <code>slide-08.png</code> en 1080×1350,
+  prêts à uploader sur Instagram (8 swipes).
+</div>
+
+<script>
+  // Auto-scale les iframes selon la largeur du conteneur
+  function rescale() {
+    document.querySelectorAll('iframe').forEach((f) => {
+      const wrap = f.closest('.iframe-wrap');
+      if (!wrap) return;
+      const w = wrap.clientWidth;
+      const scale = w / 1080;
+      f.style.transform = `scale(${scale})`;
+    });
+  }
+  window.addEventListener('load', rescale);
+  window.addEventListener('resize', rescale);
+</script>
+</body>
+</html>

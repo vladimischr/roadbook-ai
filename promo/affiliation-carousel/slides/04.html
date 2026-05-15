@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Slide 4 — Le calcul</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .calc-line {
+    display: flex;
+    align-items: baseline;
+    gap: 28px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--stripe);
+  }
+  .calc-line:last-child {
+    border-bottom: none;
+  }
+  .calc-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--muted);
+    flex: 1;
+  }
+  .calc-value {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 56px;
+    color: var(--ink);
+  }
+  .calc-value.accent {
+    color: var(--teal);
+  }
+  .calc-total {
+    font-size: 80px !important;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="brand">
+    <span class="brand-name">Roadbook.ai</span>
+    <span>04 / 08</span>
+  </div>
+
+  <div class="eyebrow" style="margin-top: 60px;">Le calcul</div>
+  <h3 style="margin-bottom: 56px;">
+    1 filleul.<br>
+    Plan Solo à 29 €/mois.
+  </h3>
+
+  <div class="calc-line">
+    <span class="calc-label">Commission par mois</span>
+    <span class="calc-value">8,70 €</span>
+  </div>
+  <div class="calc-line">
+    <span class="calc-label">× 12 mois</span>
+    <span class="calc-value">12</span>
+  </div>
+  <div class="calc-line" style="border-top: 2px solid var(--ink); padding-top: 36px; margin-top: 16px;">
+    <span class="calc-label" style="font-weight:700; color:var(--ink); font-size:28px;">Total sur 12 mois</span>
+    <span class="calc-value calc-total accent">104 €</span>
+  </div>
+
+  <p style="margin-top: 60px; font-size: 22px; color: var(--muted);">
+    Multiplie par le nombre de confrères que tu connais.
+  </p>
+
+  <div class="footer">
+    <span>Le calcul</span>
+    <span class="swipe-hint">Glisse →</span>
+  </div>
+</div>
+</body>
+</html>
