@@ -29,32 +29,31 @@ Ouvre `index.html` dans Chrome (double-clic). L'animation tourne en boucle autom
 | **S4 — 3 promesses** | 16 - 21 s | "Gratuit. Sans engagement. Sans seuil." + "Même un compte Découverte peut parrainer" |
 | **S5 — CTA** | 21 - 25 s | Dark mode + gold accent — "Ça prend un clic" + `getroadbook.com/affiliate` |
 
-## 📹 Exporter en MP4 (3 options)
+## 📹 Générer le MP4 (auto, 1 min)
 
-### Option A — QuickTime Screen Recording (le plus simple, 2 min)
+Le script `render-mp4.mjs` utilise puppeteer + ffmpeg pour rendre l'animation
+GSAP en MP4 H264 frame par frame (750 frames à 30 fps = 25 s).
 
-1. Ouvre `index.html` dans Chrome
-2. Mets en plein écran : **Cmd+Shift+F** (ou F11)
-3. Lance **QuickTime Player** → Fichier → **Nouvel enregistrement d'écran**
-4. Sélectionne la zone du Reel (1080×1920 sur ton écran selon ta résolution)
-5. Clique **Démarrer l'enregistrement**, attends 1 sec, reload Chrome (Cmd+R) pour relancer l'animation
-6. Attends 25 secondes, stop
-7. Crop dans QuickTime ou iMovie pour avoir exactement 9:16
-
-### Option B — Pipeline Hyperframes existant
-
-Tu as déjà un système pour render HTML → MP4 (cf. Reel IG Solo Pain #001).
-Pointe-le sur ce HTML et laisse-le rendre.
-
-### Option C — Playwright + ffmpeg (auto)
-
-Si tu veux un script reproductible :
-
+### Première fois (install)
 ```bash
 cd ~/Documents/GitHub/roadbook-ai/promo/affiliation-reel
-# Une fois installé Playwright + ffmpeg
-node export-mp4.mjs  # à coder si besoin
+npm install
 ```
+
+### Render
+```bash
+npm run render
+```
+
+Sortie : `out/reel-affiliation.mp4` (~1 MB, 1080×1920, 30 fps, H264).
+
+### Le MP4 généré
+- **Format** : MP4 H264 (compatible IG / TikTok / LinkedIn / Twitter)
+- **Résolution** : 1080×1920 (9:16)
+- **Frame rate** : 30 fps
+- **Durée** : 25 secondes
+- **Bitrate** : ~340 kb/s (très léger, ~1 MB)
+- **Audio** : pas de piste audio (ajoute le voice-over en post)
 
 ## 📝 Caption Instagram
 

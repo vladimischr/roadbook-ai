@@ -1,0 +1,13 @@
+{
+  "name": "affiliation-reel",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Génère le Reel IG affiliation Roadbook AI en MP4 (puppeteer + ffmpeg)",
+  "scripts": {
+    "render": "node render-mp4.mjs"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.0.2"
+  }
+}

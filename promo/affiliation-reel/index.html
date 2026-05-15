@@ -457,10 +457,36 @@ gsap.from('#s5 .s5-title', { opacity: 0, y: 32, duration: 0.6, delay: 21.7, ease
 gsap.from('#s5 .s5-url', { opacity: 0, scale: 0.8, duration: 0.6, delay: 22.6, ease: 'back.out(1.4)' });
 gsap.from('#s5 .s5-bio', { opacity: 0, y: 12, duration: 0.4, delay: 23.4, ease: 'power2.out' });
 
-// Auto-restart pour preview en boucle
-gsap.delayedCall(DURATION + 0.5, () => {
-  window.location.reload();
-});
+// Auto-restart pour preview en boucle (sauf en mode capture)
+const CAPTURE_MODE = new URLSearchParams(location.search).has('capture');
+if (!CAPTURE_MODE) {
+  gsap.delayedCall(DURATION + 0.5, () => {
+    window.location.reload();
+  });
+}
+
+// ============ Mode capture frame-par-frame ============
+// Quand l'URL contient ?capture=1, on pause toute la timeline globale GSAP
+// et on expose window.gsapSeek(t) pour que puppeteer puisse positionner
+// le rendu à un instant précis avant chaque screenshot.
+//
+// Utilisation depuis puppeteer :
+//   await page.goto('file://.../index.html?capture=1')
+//   await page.waitForFunction(() => window.gsapReady === true)
+//   await page.evaluate(t => window.gsapSeek(t), frameTime)
+//   await page.screenshot(...)
+if (CAPTURE_MODE) {
+  // Attendre le tick suivant pour laisser les fromTo s'enregistrer
+  requestAnimationFrame(() => {
+    gsap.globalTimeline.pause();
+    window.gsapSeek = (t) => {
+      gsap.globalTimeline.time(t);
+    };
+    // Position initiale : frame 0
+    window.gsapSeek(0);
+    window.gsapReady = true;
+  });
+}
 </script>
 </body>
 </html>
