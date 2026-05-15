@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Reel IG — Affiliation Roadbook AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+:root {
+  --teal: #0F6E56;
+  --teal-light: #1A8B70;
+  --teal-soft: #E8F2EE;
+  --ink: #0D0F12;
+  --paper: #F8F5EE;
+  --muted: #6B6D75;
+  --stripe: #E0DCD2;
+  --gold: #C8A157;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.stage {
+  width: 1080px;
+  height: 1920px;
+  position: relative;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+/* Brand bar — toujours visible */
+.brand-top {
+  position: absolute;
+  top: 100px;
+  left: 80px;
+  right: 80px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  z-index: 50;
+}
+.brand-top .brand-name { color: var(--teal); }
+.brand-top .brand-tag { color: var(--muted); }
+
+/* Progress bar timeline (subtil) */
+.progress {
+  position: absolute;
+  top: 60px;
+  left: 80px;
+  right: 80px;
+  height: 3px;
+  background: rgba(13, 15, 18, 0.08);
+  z-index: 50;
+}
+.progress-fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  width: 0%;
+  background: var(--teal);
+}
+
+/* Scènes empilées */
+.scene {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 200px 80px 200px;
+  opacity: 0;
+  text-align: center;
+}
+
+.scene.active { opacity: 1; }
+
+/* SCÈNE 1 — Hook */
+#s1 .s1-eyebrow {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 48px;
+}
+#s1 .s1-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 124px;
+  line-height: 0.95;
+  letter-spacing: -2px;
+  color: var(--ink);
+}
+#s1 .s1-sub {
+  margin-top: 56px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 36px;
+  color: var(--muted);
+  max-width: 800px;
+  line-height: 1.4;
+}
+
+/* SCÈNE 2 — 30% hero */
+#s2 .s2-eyebrow {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 60px;
+}
+#s2 .s2-pct {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 520px;
+  line-height: 0.85;
+  color: var(--teal);
+  letter-spacing: -16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+#s2 .s2-pct .num { display: inline-block; }
+#s2 .s2-pct .sign {
+  font-size: 200px;
+  letter-spacing: -4px;
+}
+#s2 .s2-text {
+  margin-top: 60px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 52px;
+  line-height: 1.25;
+  color: var(--ink);
+  max-width: 840px;
+}
+#s2 .s2-text .em {
+  font-weight: 700;
+  color: var(--teal);
+}
+
+/* SCÈNE 3 — 3 étapes */
+#s3 .s3-eyebrow {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 56px;
+}
+#s3 .s3-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 92px;
+  line-height: 0.95;
+  letter-spacing: -1.5px;
+  margin-bottom: 80px;
+  color: var(--ink);
+}
+#s3 .steps {
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+  width: 100%;
+  max-width: 760px;
+  align-items: flex-start;
+  text-align: left;
+}
+#s3 .step {
+  display: flex;
+  gap: 36px;
+  align-items: baseline;
+  opacity: 0;
+}
+#s3 .step-num {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 112px;
+  line-height: 0.9;
+  color: var(--teal);
+  letter-spacing: -3px;
+  width: 130px;
+  flex-shrink: 0;
+}
+#s3 .step-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 42px;
+  font-weight: 500;
+  color: var(--ink);
+  padding-top: 32px;
+  line-height: 1.2;
+}
+
+/* SCÈNE 4 — Conditions */
+#s4 .s4-eyebrow {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 56px;
+}
+#s4 .promises {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  align-items: center;
+}
+#s4 .promise {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 96px;
+  line-height: 1;
+  letter-spacing: -1.5px;
+  color: var(--ink);
+  opacity: 0;
+}
+#s4 .promise .em { color: var(--teal); }
+#s4 .s4-sub {
+  margin-top: 80px;
+  font-family: 'Inter', sans-serif;
+  font-size: 32px;
+  color: var(--muted);
+  line-height: 1.4;
+  max-width: 820px;
+  opacity: 0;
+}
+
+/* SCÈNE 5 — CTA dark */
+#s5 {
+  background: var(--ink);
+  color: var(--paper);
+}
+#s5 .brand-name { color: var(--paper) !important; opacity: 0.9; }
+#s5 .s5-eyebrow {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 56px;
+}
+#s5 .s5-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 128px;
+  line-height: 0.95;
+  letter-spacing: -2.5px;
+  color: var(--paper);
+}
+#s5 .s5-title .em { color: var(--gold); }
+#s5 .s5-url {
+  margin-top: 100px;
+  padding: 48px 72px;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+#s5 .s5-bio {
+  margin-top: 56px;
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  color: var(--paper);
+  opacity: 0.7;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="progress"><div class="progress-fill" id="progress"></div></div>
+
+  <!-- Brand bar light (scènes 1-4) -->
+  <div class="brand-top" id="brandLight">
+    <span class="brand-name">Roadbook.ai</span>
+    <span class="brand-tag">Programme d'affiliation</span>
+  </div>
+
+  <!-- SCÈNE 1 — Hook (0-3.5s) -->
+  <div class="scene" id="s1">
+    <div class="s1-eyebrow">Pour les travel designers</div>
+    <h1 class="s1-title">
+      Tu utilises<br>
+      Roadbook AI ?
+    </h1>
+    <p class="s1-sub">On te paye pour en parler.</p>
+  </div>
+
+  <!-- SCÈNE 2 — 30% (3.5-9s) -->
+  <div class="scene" id="s2">
+    <div class="s2-eyebrow">Le deal</div>
+    <div class="s2-pct">
+      <span class="num">30</span><span class="sign">%</span>
+    </div>
+    <p class="s2-text">
+      de <span class="em">commission</span> sur chaque<br>
+      abonnement que tu ramènes.
+    </p>
+  </div>
+
+  <!-- SCÈNE 3 — 3 étapes (9-16s) -->
+  <div class="scene" id="s3">
+    <div class="s3-eyebrow">Comment ça marche</div>
+    <h2 class="s3-title">Trois étapes.</h2>
+    <div class="steps">
+      <div class="step" id="step1">
+        <span class="step-num">01</span>
+        <span class="step-text">Tu actives ton code<br>en 1 clic.</span>
+      </div>
+      <div class="step" id="step2">
+        <span class="step-num">02</span>
+        <span class="step-text">Tu partages ton lien<br>à tes confrères.</span>
+      </div>
+      <div class="step" id="step3">
+        <span class="step-num">03</span>
+        <span class="step-text">Tu touches ta part<br>chaque mois.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCÈNE 4 — Conditions (16-21s) -->
+  <div class="scene" id="s4">
+    <div class="s4-eyebrow">Trois promesses</div>
+    <div class="promises">
+      <div class="promise" id="p1"><span class="em">Gratuit.</span></div>
+      <div class="promise" id="p2">Sans engagement.</div>
+      <div class="promise" id="p3">Sans seuil.</div>
+    </div>
+    <p class="s4-sub" id="s4sub">
+      Même un compte Découverte gratuit peut parrainer.
+    </p>
+  </div>
+
+  <!-- SCÈNE 5 — CTA dark (21-25s) -->
+  <div class="scene" id="s5">
+    <div class="s5-eyebrow">Active ton code</div>
+    <h1 class="s5-title">
+      Ça prend<br>
+      <span class="em">un clic</span>.
+    </h1>
+    <div class="s5-url">getroadbook.com/affiliate</div>
+    <div class="s5-bio">Lien en bio</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Reel IG Affiliation — timeline GSAP 25 secondes
+// ============================================================
+// 5 scènes :
+//  S1 (0.0 - 3.5s)  Hook
+//  S2 (3.5 - 9.0s)  30%
+//  S3 (9.0 - 16.0s) 3 étapes
+//  S4 (16.0 - 21.0s) Conditions
+//  S5 (21.0 - 25.0s) CTA
+
+const DURATION = 25; // secondes
+gsap.config({ nullTargetWarn: false });
+
+// Progress bar continue de 0 → 100% sur 25s
+gsap.to('#progress', { width: '100%', duration: DURATION, ease: 'none' });
+
+// Helper pour fade-in / fade-out des scènes
+function showScene(id, atTime, durIn = 0.5) {
+  gsap.fromTo(id, { opacity: 0 }, { opacity: 1, duration: durIn, ease: 'power2.out', delay: atTime });
+}
+function hideScene(id, atTime, durOut = 0.4) {
+  gsap.to(id, { opacity: 0, duration: durOut, ease: 'power2.in', delay: atTime });
+}
+
+// ============ S1 — Hook ============
+showScene('#s1', 0, 0.4);
+// Titre slide-up
+gsap.from('#s1 .s1-eyebrow', { opacity: 0, y: 24, duration: 0.6, delay: 0.4, ease: 'power2.out' });
+gsap.from('#s1 .s1-title', { opacity: 0, y: 40, duration: 0.7, delay: 0.6, ease: 'power3.out' });
+gsap.from('#s1 .s1-sub', { opacity: 0, y: 20, duration: 0.5, delay: 1.4, ease: 'power2.out' });
+hideScene('#s1', 3.0, 0.5);
+
+// ============ S2 — 30% ============
+showScene('#s2', 3.5, 0.4);
+gsap.from('#s2 .s2-eyebrow', { opacity: 0, y: 16, duration: 0.5, delay: 3.8, ease: 'power2.out' });
+// Le 30% qui zoom in
+gsap.from('#s2 .s2-pct', {
+  scale: 0.3,
+  opacity: 0,
+  duration: 0.8,
+  delay: 4.0,
+  ease: 'back.out(1.4)',
+});
+gsap.from('#s2 .s2-text', { opacity: 0, y: 20, duration: 0.5, delay: 5.2, ease: 'power2.out' });
+hideScene('#s2', 8.5, 0.5);
+
+// ============ S3 — 3 étapes ============
+showScene('#s3', 9.0, 0.4);
+gsap.from('#s3 .s3-eyebrow', { opacity: 0, y: 12, duration: 0.4, delay: 9.2, ease: 'power2.out' });
+gsap.from('#s3 .s3-title', { opacity: 0, y: 24, duration: 0.5, delay: 9.5, ease: 'power2.out' });
+// Étapes une par une
+gsap.to('#step1', { opacity: 1, x: 0, duration: 0.6, delay: 10.3, ease: 'power2.out' });
+gsap.from('#step1', { x: -40, duration: 0.6, delay: 10.3, ease: 'power2.out' });
+gsap.to('#step2', { opacity: 1, x: 0, duration: 0.6, delay: 11.6, ease: 'power2.out' });
+gsap.from('#step2', { x: -40, duration: 0.6, delay: 11.6, ease: 'power2.out' });
+gsap.to('#step3', { opacity: 1, x: 0, duration: 0.6, delay: 12.9, ease: 'power2.out' });
+gsap.from('#step3', { x: -40, duration: 0.6, delay: 12.9, ease: 'power2.out' });
+hideScene('#s3', 15.5, 0.5);
+
+// ============ S4 — Conditions ============
+showScene('#s4', 16.0, 0.4);
+gsap.from('#s4 .s4-eyebrow', { opacity: 0, y: 12, duration: 0.4, delay: 16.2, ease: 'power2.out' });
+gsap.to('#p1', { opacity: 1, duration: 0.5, delay: 16.7, ease: 'power2.out' });
+gsap.from('#p1', { y: 24, duration: 0.5, delay: 16.7, ease: 'power2.out' });
+gsap.to('#p2', { opacity: 1, duration: 0.5, delay: 17.5, ease: 'power2.out' });
+gsap.from('#p2', { y: 24, duration: 0.5, delay: 17.5, ease: 'power2.out' });
+gsap.to('#p3', { opacity: 1, duration: 0.5, delay: 18.3, ease: 'power2.out' });
+gsap.from('#p3', { y: 24, duration: 0.5, delay: 18.3, ease: 'power2.out' });
+gsap.to('#s4sub', { opacity: 1, duration: 0.5, delay: 19.4, ease: 'power2.out' });
+hideScene('#s4', 20.5, 0.5);
+
+// ============ S5 — CTA ============
+showScene('#s5', 21.0, 0.5);
+// Hide brand light, le CTA a son propre style dark
+gsap.to('#brandLight .brand-name', { color: '#F8F5EE', duration: 0, delay: 21.0 });
+gsap.to('#brandLight .brand-tag', { color: '#F8F5EE', opacity: 0.7, duration: 0, delay: 21.0 });
+
+gsap.from('#s5 .s5-eyebrow', { opacity: 0, y: 16, duration: 0.5, delay: 21.4, ease: 'power2.out' });
+gsap.from('#s5 .s5-title', { opacity: 0, y: 32, duration: 0.6, delay: 21.7, ease: 'power3.out' });
+gsap.from('#s5 .s5-url', { opacity: 0, scale: 0.8, duration: 0.6, delay: 22.6, ease: 'back.out(1.4)' });
+gsap.from('#s5 .s5-bio', { opacity: 0, y: 12, duration: 0.4, delay: 23.4, ease: 'power2.out' });
+
+// Auto-restart pour preview en boucle
+gsap.delayedCall(DURATION + 0.5, () => {
+  window.location.reload();
+});
+</script>
+</body>
+</html>
