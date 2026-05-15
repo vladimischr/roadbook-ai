@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Send,
   Users,
+  Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut, useAuth } from "@/lib/auth";
@@ -60,6 +61,11 @@ const NAV_ITEMS = [
 const SECONDARY_NAV_ITEMS = [
   { to: "/profil" as const, label: "Mon profil", icon: UserCircle2 },
   { to: "/billing" as const, label: "Mon abonnement", icon: CreditCard },
+  // Programme d'affiliation : visible pour tous les users connectés.
+  // La page /affiliate gère automatiquement les 2 cas :
+  //  - user a un code → dashboard stats
+  //  - user n'a pas de code → CTA "Candidater"
+  { to: "/affiliate" as const, label: "Affiliation", icon: Coins },
 ];
 
 // Liste des emails admin exposée côté client pour afficher le lien
