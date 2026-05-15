@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getStripe } from "@/integrations/stripe/client.server";
 import { planKeyForStripePrice, type PlanKey } from "@/lib/plans";
 import { captureServer } from "@/lib/posthog.server";
+import { metaCapiSend } from "@/lib/meta-capi.server";
 
 // ============================================================================
 // Webhook Stripe — source de vérité pour l'état d'abonnement
@@ -204,6 +205,34 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         stripe_subscription_id: sub.id,
       },
     });
+
+    // Meta Conversions API : Subscribe event = la conversion finale (paiement
+    // confirmé). C'est CE event qui optimise les campagnes Meta Ads
+    // (vs Lead/Registration qui sont des proxies).
+    // Best-effort, ne bloque pas le webhook.
+    try {
+      const customer = await stripe.customers.retrieve(
+        typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+      );
+      const email = (customer as Stripe.Customer)?.email ?? undefined;
+      await metaCapiSend({
+        event_name: "Subscribe",
+        event_id: `sub_${sub.id}`, // déduplication si on émet aussi côté client
+        action_source: "system_generated",
+        user_data: {
+          email,
+          external_id: distinctId,
+        },
+        custom_data: {
+          value: amountCents / 100,
+          currency: "EUR",
+          content_name: "subscription",
+          plan_key: planKey ?? undefined,
+        },
+      });
+    } catch (err) {
+      console.warn("[stripe-webhook] meta-capi send failed:", err);
+    }
   } else {
     console.warn(
       "[stripe-webhook] subscription_active non envoyé (distinct_id introuvable)",

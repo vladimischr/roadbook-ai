@@ -32,3 +32,4 @@ dist-ssr
 *.sw?
 promo/*/out/
 promo/*/node_modules/
+promo/meta-ads/creas/out/

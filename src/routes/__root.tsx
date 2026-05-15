@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { captureRefFromUrl } from "@/lib/affiliate";
+import { initMetaPixel } from "@/lib/meta-pixel";
 
 import appCss from "../styles.css?url";
 
@@ -111,8 +112,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   // Capture du code d'affilié au premier render : si l'URL contient ?ref=XXX,
   // on stocke le code dans un cookie 30j pour attribution au signup.
+  // Initialise aussi le Meta Pixel pour le tracking Meta Ads.
   useEffect(() => {
     captureRefFromUrl();
+    initMetaPixel();
   }, []);
   return <Outlet />;
 }

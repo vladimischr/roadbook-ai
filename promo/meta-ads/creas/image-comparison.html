@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Meta Ad - Comparaison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal: #0F6E56;
+  --ink: #0D0F12;
+  --paper: #F8F5EE;
+  --muted: #6B6D75;
+  --stripe: #E0DCD2;
+  --gold: #C8A157;
+  --red-soft: #B85C5C;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 1080px;
+  height: 1080px;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.canvas {
+  width: 1080px;
+  height: 1080px;
+  display: flex;
+  flex-direction: column;
+  padding: 64px 72px;
+  position: relative;
+}
+
+/* Header */
+.brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 48px;
+}
+.brand-name { color: var(--teal); }
+.brand-tag { color: var(--muted); }
+
+/* Hero title */
+.hero {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 64px;
+  line-height: 0.95;
+  letter-spacing: -1.5px;
+  color: var(--ink);
+  max-width: 880px;
+  margin-bottom: 48px;
+}
+.hero .em { color: var(--teal); }
+
+/* Two-column comparison */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  flex: 1;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  padding: 32px 28px;
+  border-radius: 16px;
+}
+
+.col.bad {
+  background: rgba(184, 92, 92, 0.06);
+  border: 1px solid rgba(184, 92, 92, 0.2);
+}
+.col.good {
+  background: var(--paper);
+  border: 2px solid var(--teal);
+}
+
+.col-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.col.bad .col-label { color: var(--red-soft); }
+.col.good .col-label { color: var(--teal); }
+
+.col-title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 1.05;
+  letter-spacing: -1px;
+  margin-bottom: 24px;
+}
+.col.bad .col-title { color: var(--red-soft); opacity: 0.85; }
+.col.good .col-title { color: var(--ink); }
+
+/* Mock PDF preview */
+.mock {
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  padding: 24px 20px;
+  font-size: 11px;
+  line-height: 1.4;
+  position: relative;
+  overflow: hidden;
+}
+.col.bad .mock {
+  font-family: 'Times New Roman', Times, serif;
+  background: #fff;
+  border: 1px dashed #ccc;
+  color: #555;
+}
+.col.bad .mock-title {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 12px;
+  text-decoration: underline;
+}
+.col.bad .mock-line {
+  margin-bottom: 6px;
+}
+
+.col.good .mock {
+  background: var(--paper);
+  position: relative;
+  border: 1px solid var(--stripe);
+}
+.col.good .mock::before {
+  content: 'PATAGONIE';
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  color: var(--teal);
+  font-weight: 600;
+}
+.mock-photo {
+  height: 70px;
+  background: linear-gradient(135deg, #4A6B5C 0%, #7BA08F 100%);
+  border-radius: 4px;
+  margin: 32px 0 14px;
+  position: relative;
+}
+.mock-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.4) 100%);
+  border-radius: 4px;
+}
+.mock-title-good {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 0.95;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+.mock-sub {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+.mock-rule {
+  width: 28px;
+  height: 2px;
+  background: var(--teal);
+  margin-bottom: 10px;
+}
+.mock-line-good {
+  font-size: 9px;
+  color: var(--ink);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+/* Bottom bar */
+.bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid var(--stripe);
+}
+.bottom-text {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--ink);
+}
+.bottom-text .em { color: var(--teal); font-weight: 700; }
+
+.cta-pill {
+  padding: 14px 28px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 100px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="brand">
+    <span class="brand-name">Roadbook.ai</span>
+    <span class="brand-tag">Pour les travel designers</span>
+  </div>
+
+  <h1 class="hero">
+    Ton client paie <span class="em">5 000 €</span> pour un voyage.<br>
+    Ton livrable mérite la même classe.
+  </h1>
+
+  <div class="compare">
+
+    <!-- BAD COLUMN -->
+    <div class="col bad">
+      <div class="col-label">Aujourd'hui</div>
+      <div class="col-title">PDF Word générique</div>
+      <div class="mock">
+        <div class="mock-title">Programme Patagonie</div>
+        <div class="mock-line">Jour 1 : Arrivée à Buenos Aires.</div>
+        <div class="mock-line">Vol AF234 - 11h30.</div>
+        <div class="mock-line">Hôtel Recoleta - check-in 15h.</div>
+        <div class="mock-line">Diner libre.</div>
+        <div class="mock-line"></div>
+        <div class="mock-line">Jour 2 : Vol Buenos Aires - El Calafate.</div>
+        <div class="mock-line">Glacier Perito Moreno - 3h sur place.</div>
+        <div class="mock-line">Retour hôtel 17h.</div>
+        <div class="mock-line"></div>
+        <div class="mock-line">Jour 3 : Trek Torres del Paine.</div>
+        <div class="mock-line">Réveil 6h. Petit déj inclus.</div>
+        <div class="mock-line">Guide local : Carlos.</div>
+        <div class="mock-line"></div>
+      </div>
+    </div>
+
+    <!-- GOOD COLUMN -->
+    <div class="col good">
+      <div class="col-label">Avec Roadbook AI</div>
+      <div class="col-title">PDF éditorial premium</div>
+      <div class="mock">
+        <div class="mock-photo"></div>
+        <div class="mock-title-good">Patagonie sauvage</div>
+        <div class="mock-sub">Une traversée de 14 jours</div>
+        <div class="mock-rule"></div>
+        <div class="mock-line-good">Jour 1 · Buenos Aires</div>
+        <div class="mock-line-good">Recoleta, café à San Telmo</div>
+        <div class="mock-line-good">&nbsp;</div>
+        <div class="mock-line-good">Jour 2 · El Calafate</div>
+        <div class="mock-line-good">Glaciar Perito Moreno</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom">
+    <div class="bottom-text">
+      Génère le tien en <span class="em">5 minutes.</span>
+    </div>
+    <div class="cta-pill">Essai gratuit →</div>
+  </div>
+
+</div>
+</body>
+</html>

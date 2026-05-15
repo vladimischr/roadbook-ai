@@ -115,6 +115,17 @@ export async function redirectToCheckout(
   // (sinon l'event part avec le pageview suivant qui sera celui de Stripe).
   track("checkout_started", { target_plan: planKey, billing });
 
+  // Meta Pixel : InitiateCheckout = signal d'intention forte. Optimise les
+  // campagnes Meta même avant que le paiement Stripe soit confirmé.
+  // Lazy import pour éviter de charger le module si pas utilisé.
+  const { metaTrack, generateMetaEventId } = await import("@/lib/meta-pixel");
+  const metaEventId = generateMetaEventId();
+  metaTrack(
+    "InitiateCheckout",
+    { content_name: `plan_${planKey}`, plan_key: planKey, billing },
+    metaEventId,
+  );
+
   const {
     data: { session },
   } = await supabase.auth.getSession();

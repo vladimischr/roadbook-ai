@@ -24,6 +24,8 @@ import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 // Affiliation : attache le code ?ref=XXX (cookie) au profil après signup
 import { getStoredRefCode, clearRefCode } from "@/lib/affiliate";
+// Meta Pixel : tracker CompleteRegistration pour Meta Ads attribution
+import { metaTrack, generateMetaEventId } from "@/lib/meta-pixel";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -116,6 +118,31 @@ function Login() {
       plan_key: "free",
       ...(refCode ? { referrer_code: refCode } : {}),
     } as never);
+
+    // Meta Pixel : CompleteRegistration. event_id unique pour dédup avec
+    // la Conversions API server-side (à câbler dans /api/meta-capi-track
+    // ou directement dans le webhook signup côté Supabase si besoin).
+    const metaEventId = generateMetaEventId();
+    metaTrack(
+      "CompleteRegistration",
+      { content_name: "signup_free", status: "completed" },
+      metaEventId,
+    );
+    // Best-effort : on appelle un endpoint server pour répliquer l'event
+    // via CAPI (dédup automatique via event_id).
+    if (data?.user?.email) {
+      fetch("/api/meta-capi-track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_name: "CompleteRegistration",
+          event_id: metaEventId,
+          user_email: data.user.email,
+          user_id: data.user.id,
+          content_name: "signup_free",
+        }),
+      }).catch((err) => console.warn("[meta-capi-track] failed:", err));
+    }
 
     // Affiliation : si un code ?ref=XXX était stocké en cookie, on l'attache
     // au profil. Best-effort, ne bloque pas l'UX. Nécessite une session active.
