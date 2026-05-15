@@ -32,13 +32,20 @@ const inputSchema = z.object({
  * - On vérifie le bearer token Supabase avant tout.
  */
 const DEFAULT_ALLOWED_PATTERNS: Array<string | RegExp> = [
+  // Prod
   "roadbook.ai",
   "www.roadbook.ai",
   /\.roadbook\.ai$/,
+  "getroadbook.com",
+  "www.getroadbook.com",
+  /\.getroadbook\.com$/,
+  // Lovable preview
   /\.lovable\.app$/,
   /\.lovable\.dev$/,
   /\.lovableproject\.com$/,
+  // Cloudflare Pages preview
   /\.pages\.dev$/,
+  // Dev local
   "localhost",
   "127.0.0.1",
 ];
